@@ -29,7 +29,7 @@
         </div>
         <div class="row">
           <label for="schedule">Jam harian</label>
-          <input id="schedule" name="schedule" type="time" value="{{ schedule or '' }}" />
+          <input id="schedule" name="schedule" class="form-control" type="time" aria-label="Jam harian" value="{{ schedule or '' }}" />
         </div>
         <div class="actions">
           <button type="submit" class="btn btn-primary">Simpan Jadwal</button>
