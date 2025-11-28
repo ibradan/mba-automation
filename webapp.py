@@ -8,6 +8,8 @@ import json
 import re
 import threading
 import time
+import logging
+from logging.handlers import RotatingFileHandler
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET", "please-change-this")
@@ -28,6 +30,19 @@ def _format_phone_for_cli(raw_phone: str) -> str:
     if not norm:
         return ''
     return norm[2:] if norm.startswith('62') else norm
+
+
+# configure module-level logger writing to LOG_FILE (best-effort)
+logger = logging.getLogger("mba-automation")
+if not logger.handlers:
+    logger.setLevel(logging.INFO)
+    try:
+        handler = RotatingFileHandler(LOG_FILE, maxBytes=10 * 1024 * 1024, backupCount=3)
+        handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+        logger.addHandler(handler)
+    except Exception:
+        # fallback to basic logging to stderr when file not writable
+        logging.basicConfig(level=logging.INFO)
 
 
 def normalize_phone(raw: str) -> str:
@@ -162,19 +177,14 @@ def index():
             if headless:
                 cmd.append("--headless")
 
-            with open(LOG_FILE, "a") as f:
-                f.write(f"{datetime.datetime.now().isoformat()} START for {phone}: {' '.join(shlex.quote(c) for c in cmd)}\n")
+            logger.info("START for %s: %s", phone, ' '.join(shlex.quote(c) for c in cmd))
 
             try:
                 subprocess.Popen(cmd, cwd=os.path.dirname(__file__), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 started += 1
             except Exception as e:
                 # don't crash the request; log and show flash
-                try:
-                    with open(LOG_FILE, 'a') as lf:
-                        lf.write(f"{datetime.datetime.now().isoformat()} FAILED START for {phone_for_cli}: {e}\n")
-                except Exception:
-                    pass
+                logger.exception("FAILED START for %s: %s", phone_for_cli, e)
                 flash(f"Gagal memulai automation untuk {phone}: {e}", "error")
 
         if started:
@@ -200,8 +210,7 @@ def index():
             _safe_write_accounts(saved)
         except Exception as e:
             # don't fail the request if saving fails
-            with open(LOG_FILE, "a") as f:
-                f.write(f"{datetime.datetime.now().isoformat()} WARNING saving accounts failed: {e}\n")
+            logger.warning("WARNING saving accounts failed: %s", e)
 
         return redirect(url_for("index"))
 
@@ -283,13 +292,9 @@ def _safe_write_accounts(accounts):
             with open(tmp, 'w') as f:
                 json.dump(accounts, f, indent=2)
             os.replace(tmp, ACCOUNTS_FILE)
-        except Exception:
+        except Exception as e:
             # try best-effort logging
-            try:
-                with open(LOG_FILE, 'a') as lf:
-                    lf.write(f"{datetime.datetime.now().isoformat()} WARNING failed to write accounts file\n")
-            except Exception:
-                pass
+            logger.warning("WARNING failed to write accounts file: %s", e)
 
 
 def _trigger_run_for_account(acc):
@@ -302,8 +307,7 @@ def _trigger_run_for_account(acc):
     pwd = acc.get('password', '')
     if not pwd:
         # skip accounts without password
-        with open(LOG_FILE, 'a') as f:
-            f.write(f"{datetime.datetime.now().isoformat()} SKIP {phone_norm}: missing password\n")
+        logger.info("SKIP %s: missing password", phone_norm)
         return False
 
     lvl = acc.get('level', 'E2')
@@ -338,15 +342,13 @@ def _trigger_run_for_account(acc):
     # run headless by default for scheduled runs
     cmd.append("--headless")
 
-    with open(LOG_FILE, "a") as f:
-        f.write(f"{datetime.datetime.now().isoformat()} SCHEDULED START for {phone_display}: {' '.join(shlex.quote(c) for c in cmd)}\n")
+    logger.info("SCHEDULED START for %s: %s", phone_display, ' '.join(shlex.quote(c) for c in cmd))
 
     try:
         subprocess.Popen(cmd, cwd=os.path.dirname(__file__), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         return True
     except Exception as e:
-        with open(LOG_FILE, "a") as f:
-            f.write(f"{datetime.datetime.now().isoformat()} FAILED SCHEDULED START for {phone_display}: {e}\n")
+        logger.exception("FAILED SCHEDULED START for %s: %s", phone_display, e)
         return False
 
 
@@ -415,8 +417,7 @@ def _scheduler_loop():
             if modified:
                 _safe_write_accounts(accounts)
         except Exception as e:
-            with open(LOG_FILE, "a") as f:
-                f.write(f"{datetime.datetime.now().isoformat()} Scheduler error: {e}\n")
+            logger.exception("Scheduler error: %s", e)
 
         time.sleep(SCHED_CHECK_INTERVAL)
 
@@ -581,8 +582,7 @@ if __name__ == "__main__":
     if not app.debug or os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
         t = threading.Thread(target=_scheduler_loop, daemon=True)
         t.start()
-        with open(LOG_FILE, "a") as f:
-            f.write(f"{datetime.datetime.now().isoformat()} Scheduler thread started.\n")
+        logger.info("Scheduler thread started.")
 
     app.run(host="0.0.0.0", port=5000, debug=True)
 
