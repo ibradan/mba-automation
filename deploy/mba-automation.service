@@ -1,0 +1,32 @@
+# Sample systemd unit for MBA Automation webapp
+# Copy this file to /etc/systemd/system/mba-automation.service and edit the paths/user as needed.
+
+[Unit]
+Description=MBA Automation Web UI
+After=network.target
+
+[Service]
+# Run as the user that owns the project (change 'pi' to your username)
+User=pi
+Group=pi
+
+# Working directory where webapp.py and accounts.json live
+WorkingDirectory=/home/pi/projects/mba-automation-workspace
+
+# Optional: read environment variables from a file (create .env in WorkingDirectory)
+# This file should contain lines like: FLASK_SECRET=some_secret
+EnvironmentFile=/home/pi/projects/mba-automation-workspace/.env
+
+# Path to python executable inside your virtualenv
+# Update this to match your venv path: e.g. /home/pi/projects/mba-automation-workspace/.venv/bin/python
+ExecStart=/home/pi/projects/mba-automation-workspace/.venv/bin/python webapp.py
+
+# Restart on failure
+Restart=on-failure
+RestartSec=5
+
+# Make sure logs are not buffered
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

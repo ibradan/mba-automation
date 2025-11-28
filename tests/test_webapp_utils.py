@@ -1,0 +1,109 @@
+import unittest
+import tempfile
+import os
+import json
+import re
+
+import sys
+import os
+# ensure project root is on path so imports like 'import webapp' work
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import webapp
+
+
+class TestWebappUtils(unittest.TestCase):
+    def test_normalize_phone_variants(self):
+        self.assertEqual(webapp.normalize_phone('08123456789'), '628123456789')
+        self.assertEqual(webapp.normalize_phone('+628123456789'), '628123456789')
+        self.assertEqual(webapp.normalize_phone('8123456789'), '628123456789')
+        self.assertEqual(webapp.normalize_phone('628123456789'), '628123456789')
+        self.assertEqual(webapp.normalize_phone(''), '')
+
+    def test_phone_display(self):
+        self.assertEqual(webapp.phone_display('628123456789'), '8123456789')
+        # phone_display expects a normalized stored value (e.g. '62...'). If a non-normalized
+        # value is passed it will be returned unchanged.
+        self.assertEqual(webapp.phone_display('0812345'), '0812345')
+        self.assertEqual(webapp.phone_display(''), '')
+
+    def test_format_phone_for_cli(self):
+        # Output should be display format without leading '62'
+        self.assertEqual(webapp._format_phone_for_cli('0812345'), '812345')
+        self.assertEqual(webapp._format_phone_for_cli('+62812345'), '812345')
+        self.assertEqual(webapp._format_phone_for_cli(''), '')
+
+    def test_safe_write_and_load_accounts_atomic(self):
+        tmpfd, tmppath = tempfile.mkstemp(prefix='accounts-', suffix='.json')
+        os.close(tmpfd)
+        try:
+            # point the module to the temp path
+            orig = webapp.ACCOUNTS_FILE
+            webapp.ACCOUNTS_FILE = tmppath
+
+            data = [{"phone": "62811", "password": "x"}]
+            webapp._safe_write_accounts(data)
+            read = webapp._safe_load_accounts()
+            self.assertEqual(read, data)
+
+        finally:
+            webapp.ACCOUNTS_FILE = orig
+            try:
+                os.unlink(tmppath)
+            except Exception:
+                pass
+
+    def test_trigger_run_missing_password(self):
+        # account missing password should be skipped
+        acc = {"phone": "628123", "password": ""}
+        # monkeypatch popen to avoid launching processes
+        orig_popen = webapp.subprocess.Popen
+        try:
+            webapp.subprocess.Popen = lambda *a, **k: (_ for _ in ()).throw(RuntimeError("should not be called"))
+            ok = webapp._trigger_run_for_account(acc)
+            self.assertFalse(ok)
+        finally:
+            webapp.subprocess.Popen = orig_popen
+
+    def test_trigger_run_calls_popen(self):
+        acc = {"phone": "628123", "password": "pw", "level": 'E2'}
+        calls = []
+        orig_popen = webapp.subprocess.Popen
+        try:
+            def fake_popen(*args, **kwargs):
+                calls.append((args, kwargs))
+                class Dummy:
+                    def __init__(self):
+                        pass
+                return Dummy()
+
+            webapp.subprocess.Popen = fake_popen
+            ok = webapp._trigger_run_for_account(acc)
+            self.assertTrue(ok)
+            self.assertTrue(len(calls) == 1)
+            # ensure CLI module is present in the command
+            argv = calls[0][0][0]
+            self.assertIn('-m', argv)
+            self.assertIn('mba_automation.cli', argv)
+        finally:
+            webapp.subprocess.Popen = orig_popen
+
+    def test_schedule_regex(self):
+        good = ['08:30', '8:30', '00:00', '23:59']
+        for s in good:
+            m = re.fullmatch(r"(\d{1,2}):(\d{2})", s)
+            self.assertIsNotNone(m)
+
+        bad = ['24:00', '12:60', 'abc', '1:2', '']
+        for s in bad:
+            m = re.fullmatch(r"(\d{1,2}):(\d{2})", s)
+            if m:
+                hh = int(m.group(1))
+                mm = int(m.group(2))
+                self.assertFalse(0 <= hh <= 23 and 0 <= mm <= 59)
+            else:
+                # non-matching strings are also expected
+                self.assertIsNone(m)
+
+
+if __name__ == '__main__':
+    unittest.main()

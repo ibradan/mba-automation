@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Set Review Harian</title>
+    <style>
+      body{font-family:Inter, system-ui, Arial; padding:20px; max-width:900px;margin:auto}
+      h1{font-size:1.2rem}
+      table{width:100%;border-collapse:collapse;margin-top:12px}
+      td,th{border:1px solid #e6e6e6;padding:8px;text-align:left}
+      input[type=text]{width:100%;padding:8px;border:1px solid #ddd;border-radius:6px}
+      .actions{margin-top:12px;display:flex;gap:8px}
+      .btn{padding:8px 12px;border-radius:8px;border:0;cursor:pointer}
+      .btn.save{background:#0ea5a4;color:#fff}
+      .btn.cancel{background:#e5e7eb}
+    </style>
+  </head>
+  <body>
+    <h1>Set Review Harian untuk <code>+62{{ phone_display }}</code></h1>
+
+    <form method="post">
+      <input type="hidden" name="phone" value="{{ phone_display }}" />
+      <table>
+        <thead>
+          <tr>
+            <th>Hari</th>
+            <th>Review Text</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for key, label in days %}
+          <tr>
+            <td>{{ label }}</td>
+            <td><input type="text" name="{{ key }}" value="{{ reviews.get(key, '') }}" placeholder="Teks review untuk {{ label }}" /></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <div class="actions">
+        <button class="btn save" type="submit">Simpan</button>
+        <a class="btn cancel" href="/">Batal</a>
+      </div>
+    </form>
+  </body>
+</html>

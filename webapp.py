@@ -1,0 +1,588 @@
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+import subprocess
+import sys
+import os
+import shlex
+import datetime
+import json
+import re
+import threading
+import time
+
+app = Flask(__name__)
+app.secret_key = os.getenv("FLASK_SECRET", "please-change-this")
+
+LOG_FILE = os.path.join(os.path.dirname(__file__), "runs.log")
+ACCOUNTS_FILE = os.path.join(os.path.dirname(__file__), "accounts.json")
+SCHED_LOCK = threading.Lock()
+SCHED_CHECK_INTERVAL = 20  # seconds between schedule checks
+
+
+def _format_phone_for_cli(raw_phone: str) -> str:
+    """Return phone string in display format expected by the CLI (no leading '62').
+    Returns empty string if phone cannot be normalized.
+    """
+    if not raw_phone:
+        return ''
+    norm = normalize_phone(raw_phone)
+    if not norm:
+        return ''
+    return norm[2:] if norm.startswith('62') else norm
+
+
+def normalize_phone(raw: str) -> str:
+    """Normalize various phone formats into a CLI-friendly digits-only string.
+    Examples:
+      "0812..." -> "62812..."
+      "812..."  -> "62812..."
+      "+62812"  -> "62812..."
+      "62812"   -> "62812..."
+    """
+    if not raw:
+        return ""
+    digits = re.sub(r"\D", "", raw)
+    if digits.startswith('0'):
+        return '62' + digits[1:]
+    if digits.startswith('8'):
+        return '62' + digits
+    if digits.startswith('62'):
+        return digits
+    return digits
+
+
+def phone_display(normalized: str) -> str:
+    """Convert stored normalized phone into the UI input value (without the +62 prefix).
+    If normalized starts with '62', return the rest; otherwise return normalized.
+    """
+    if not normalized:
+        return ''
+    if normalized.startswith('62'):
+        return normalized[2:]
+    return normalized
+
+@app.route("/", methods=["GET", "POST"])
+def index():
+    if request.method == "POST":
+        phones = request.form.getlist('phone[]')
+        passwords = request.form.getlist('password[]')
+        levels = request.form.getlist('level[]')
+        action = request.form.get('action', 'start')
+        headless = True if request.form.get("headless") == "on" else False
+
+        # normalize lists to same length
+        entries = []
+        for i, phone in enumerate(phones):
+            phone = (phone or '').strip()
+            if not phone:
+                continue
+            pwd = passwords[i].strip() if i < len(passwords) else ''
+            lvl = levels[i].strip() if i < len(levels) else ''
+            entries.append((phone, pwd, lvl))
+
+        if not entries:
+            flash("Isi minimal satu nomor HP.", "error")
+            return redirect(url_for("index"))
+
+        # If user only wants to save accounts, do that and return
+        if action == 'save':
+            try:
+                # load existing accounts to preserve reviews using locked read
+                existing = {}
+                raw_existing = _safe_load_accounts()
+                for a in raw_existing:
+                    existing[a.get('phone')] = a
+
+                saved = []
+                for phone, pwd, lvl in entries:
+                    norm = normalize_phone(phone)
+                    acc = {"phone": norm, "password": pwd, "level": (lvl or "E2")}
+                    # merge reviews if present in existing data
+                    if norm in existing and isinstance(existing[norm].get('reviews'), dict):
+                        acc['reviews'] = existing[norm].get('reviews')
+                    # merge schedule if present
+                    if norm in existing and existing[norm].get('schedule'):
+                        acc['schedule'] = existing[norm].get('schedule')
+                    saved.append(acc)
+                # persist using locked, atomic write
+                _safe_write_accounts(saved)
+                flash(f"{len(saved)} akun disimpan.", "success")
+            except Exception as e:
+                flash(f"Gagal menyimpan akun: {e}", "error")
+            return redirect(url_for("index"))
+
+        # load saved accounts to read per-account reviews (if any)
+        saved_accounts = _safe_load_accounts()
+
+        started = 0
+        for phone, pwd, lvl in entries:
+            if not pwd:
+                flash(f"Password kosong untuk {phone}, dilewati.", "error")
+                continue
+
+            # Map level strings to iterations: E1=15, E2=30, E3=60. If a numeric value was submitted, accept it.
+            iterations = 30
+            lvl_up = (lvl or '').upper()
+            if lvl_up == 'E1':
+                iterations = 15
+            elif lvl_up == 'E2':
+                iterations = 30
+            elif lvl_up == 'E3':
+                iterations = 60
+            else:
+                # fallback: allow numeric strings
+                try:
+                    iterations = int(lvl)
+                except Exception:
+                    iterations = 30
+
+            # determine today's review text (if saved)
+            review_text = None
+            try:
+                norm_phone = normalize_phone(phone)
+                for a in saved_accounts:
+                    if a.get('phone') == norm_phone:
+                        r = a.get('reviews', {}) or {}
+                        # weekday mapping: Monday=0 -> mon
+                        wk = ['mon','tue','wed','thu','fri','sat','sun']
+                        key = wk[datetime.datetime.now().weekday()]
+                        review_text = r.get(key) or None
+                        break
+            except Exception:
+                review_text = None
+
+            # use a consistent CLI phone format (display without leading 62)
+            phone_for_cli = _format_phone_for_cli(phone)
+            if not phone_for_cli:
+                flash(f"Nomor HP tidak valid: {phone}, dilewati.", "error")
+                continue
+
+            cmd = [sys.executable, "-m", "mba_automation.cli", "--phone", phone_for_cli, "--password", pwd, "--iterations", str(iterations)]
+            if review_text:
+                cmd.extend(["--review", review_text])
+            if headless:
+                cmd.append("--headless")
+
+            with open(LOG_FILE, "a") as f:
+                f.write(f"{datetime.datetime.now().isoformat()} START for {phone}: {' '.join(shlex.quote(c) for c in cmd)}\n")
+
+            try:
+                subprocess.Popen(cmd, cwd=os.path.dirname(__file__), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                started += 1
+            except Exception as e:
+                # don't crash the request; log and show flash
+                try:
+                    with open(LOG_FILE, 'a') as lf:
+                        lf.write(f"{datetime.datetime.now().isoformat()} FAILED START for {phone_for_cli}: {e}\n")
+                except Exception:
+                    pass
+                flash(f"Gagal memulai automation untuk {phone}: {e}", "error")
+
+        if started:
+            flash(f"Automation started in background for {started} phone(s).", "success")
+
+        # Persist submitted accounts so they can be reused later (update saved list)
+        try:
+            # load existing accounts to preserve reviews via locked read
+            existing = {}
+            raw_existing = _safe_load_accounts()
+            for a in raw_existing:
+                existing[a.get('phone')] = a
+
+            saved = []
+            for phone, pwd, lvl in entries:
+                norm = normalize_phone(phone)
+                acc = {"phone": norm, "password": pwd, "level": (lvl or "E2")}
+                if norm in existing and isinstance(existing[norm].get('reviews'), dict):
+                    acc['reviews'] = existing[norm].get('reviews')
+                if norm in existing and existing[norm].get('schedule'):
+                    acc['schedule'] = existing[norm].get('schedule')
+                saved.append(acc)
+            _safe_write_accounts(saved)
+        except Exception as e:
+            # don't fail the request if saving fails
+            with open(LOG_FILE, "a") as f:
+                f.write(f"{datetime.datetime.now().isoformat()} WARNING saving accounts failed: {e}\n")
+
+        return redirect(url_for("index"))
+
+    # GET: load saved accounts to prefill the form
+    saved_accounts = []
+    raw = _safe_load_accounts()
+    try:
+        # prepare display form (strip leading country code for the visible input)
+        now = datetime.datetime.now()
+        for it in raw:
+                    phone = it.get("phone", "")
+                    pwd = it.get("password", "")
+                    lvl = it.get("level", "E2")
+                    display = phone_display(phone)
+                    schedule = it.get('schedule', '')
+                    # determine last run datetime (prefer ISO ts)
+                    last_run_ts = it.get('last_run_ts')
+                    last_run_dt = None
+                    if last_run_ts:
+                        try:
+                            last_run_dt = datetime.datetime.fromisoformat(last_run_ts)
+                        except Exception:
+                            last_run_dt = None
+                    else:
+                        legacy = it.get('last_run')
+                        if legacy:
+                            try:
+                                d = datetime.date.fromisoformat(legacy)
+                                last_run_dt = datetime.datetime.combine(d, datetime.time(hour=0, minute=0))
+                            except Exception:
+                                last_run_dt = None
+
+                    # compute status: 'ran' if already run at/after scheduled time today; 'due' if scheduled time passed but not run; 'pending' if scheduled in future or no schedule => ''
+                    status = ''
+                    if schedule:
+                        try:
+                            hh, mm = (int(x) for x in schedule.split(':'))
+                            scheduled_dt = datetime.datetime.combine(now.date(), datetime.time(hour=hh, minute=mm))
+                            if last_run_dt and last_run_dt >= scheduled_dt:
+                                status = 'ran'
+                            else:
+                                if scheduled_dt <= now:
+                                    status = 'due'
+                                else:
+                                    status = 'pending'
+                        except Exception:
+                            status = ''
+
+                    saved_accounts.append({"phone_display": display, "password": pwd, "level": lvl, "schedule": schedule, "last_run_ts": last_run_ts or it.get('last_run'), "status": status})
+    except Exception:
+        saved_accounts = []
+
+    return render_template("index.html", saved=saved_accounts)
+
+
+def _safe_load_accounts():
+    with SCHED_LOCK:
+        if os.path.exists(ACCOUNTS_FILE):
+            try:
+                with open(ACCOUNTS_FILE, 'r') as f:
+                    return json.load(f)
+            except Exception:
+                # file corrupted or unreadable -> return empty list so callers can recover
+                try:
+                    # log the problem to the log file if possible
+                    with open(LOG_FILE, 'a') as lf:
+                        lf.write(f"{datetime.datetime.now().isoformat()} WARNING failed to read accounts file\n")
+                except Exception:
+                    pass
+                return []
+        return []
+
+
+def _safe_write_accounts(accounts):
+    with SCHED_LOCK:
+        # atomic write to avoid partial files when concurrent readers exist
+        tmp = ACCOUNTS_FILE + ".tmp"
+        try:
+            with open(tmp, 'w') as f:
+                json.dump(accounts, f, indent=2)
+            os.replace(tmp, ACCOUNTS_FILE)
+        except Exception:
+            # try best-effort logging
+            try:
+                with open(LOG_FILE, 'a') as lf:
+                    lf.write(f"{datetime.datetime.now().isoformat()} WARNING failed to write accounts file\n")
+            except Exception:
+                pass
+
+
+def _trigger_run_for_account(acc):
+    # acc is the stored account dict with 'phone' normalized (starts with 62)
+    phone_norm = acc.get('phone')
+    if not phone_norm:
+        return False
+    # build display phone (without +62) as UI/CLI expects
+    phone_display = phone_norm[2:] if phone_norm.startswith('62') else phone_norm
+    pwd = acc.get('password', '')
+    if not pwd:
+        # skip accounts without password
+        with open(LOG_FILE, 'a') as f:
+            f.write(f"{datetime.datetime.now().isoformat()} SKIP {phone_norm}: missing password\n")
+        return False
+
+    lvl = acc.get('level', 'E2')
+    iterations = 30
+    lvl_up = (lvl or '').upper()
+    if lvl_up == 'E1':
+        iterations = 15
+    elif lvl_up == 'E2':
+        iterations = 30
+    elif lvl_up == 'E3':
+        iterations = 60
+    else:
+        try:
+            iterations = int(lvl)
+        except Exception:
+            iterations = 30
+
+    # determine today's review text
+    review_text = None
+    r = acc.get('reviews', {}) or {}
+    wk = ['mon','tue','wed','thu','fri','sat','sun']
+    try:
+        key = wk[datetime.datetime.now().weekday()]
+        review_text = r.get(key) or None
+    except Exception:
+        review_text = None
+
+    cmd = [sys.executable, "-m", "mba_automation.cli", "--phone", phone_display, "--password", pwd, "--iterations", str(iterations)]
+    if review_text:
+        cmd.extend(["--review", review_text])
+
+    # run headless by default for scheduled runs
+    cmd.append("--headless")
+
+    with open(LOG_FILE, "a") as f:
+        f.write(f"{datetime.datetime.now().isoformat()} SCHEDULED START for {phone_display}: {' '.join(shlex.quote(c) for c in cmd)}\n")
+
+    try:
+        subprocess.Popen(cmd, cwd=os.path.dirname(__file__), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return True
+    except Exception as e:
+        with open(LOG_FILE, "a") as f:
+            f.write(f"{datetime.datetime.now().isoformat()} FAILED SCHEDULED START for {phone_display}: {e}\n")
+        return False
+
+
+def _scheduler_loop():
+    # Loop forever checking schedules and triggering runs when needed.
+    while True:
+        try:
+            now = datetime.datetime.now()
+            now_hm = now.strftime('%H:%M')
+            today_str = now.date().isoformat()
+
+            accounts = _safe_load_accounts()
+            modified = False
+            for acc in accounts:
+                sched = acc.get('schedule')
+                if not sched:
+                    continue
+
+                # only check when the clock matches the scheduled H:M
+                if sched != now_hm:
+                    continue
+
+                # Determine last run time. Prefer ISO timestamp 'last_run_ts'.
+                last_ts = acc.get('last_run_ts')
+                last_dt = None
+                if last_ts:
+                    try:
+                        last_dt = datetime.datetime.fromisoformat(last_ts)
+                    except Exception:
+                        last_dt = None
+                else:
+                    # fallback for legacy 'last_run' date-only value: treat as that date at 00:00
+                    legacy = acc.get('last_run')
+                    if legacy:
+                        try:
+                            d = datetime.date.fromisoformat(legacy)
+                            last_dt = datetime.datetime.combine(d, datetime.time(hour=0, minute=0))
+                        except Exception:
+                            last_dt = None
+
+                # scheduled datetime for today at HH:MM
+                try:
+                    hh, mm = (int(x) for x in sched.split(':'))
+                    scheduled_dt = datetime.datetime.combine(now.date(), datetime.time(hour=hh, minute=mm))
+                except Exception:
+                    # bad schedule format — skip
+                    continue
+
+                # If last_dt exists and is >= scheduled_dt, we've already run at/after the scheduled time — skip
+                if last_dt is not None and last_dt >= scheduled_dt:
+                    continue
+
+                # Otherwise trigger the run
+                ok = _trigger_run_for_account(acc)
+                if ok:
+                    # store full timestamp to allow precise comparisons later
+                    acc['last_run_ts'] = datetime.datetime.now().isoformat()
+                    # remove legacy field if present
+                    if 'last_run' in acc:
+                        try:
+                            del acc['last_run']
+                        except Exception:
+                            pass
+                    modified = True
+
+            if modified:
+                _safe_write_accounts(accounts)
+        except Exception as e:
+            with open(LOG_FILE, "a") as f:
+                f.write(f"{datetime.datetime.now().isoformat()} Scheduler error: {e}\n")
+
+        time.sleep(SCHED_CHECK_INTERVAL)
+
+
+@app.route("/review", methods=["GET", "POST"])
+def review():
+    # phone passed as display (without leading 62) or full digits
+    if request.method == 'POST':
+        display_phone = request.form.get('phone', '').strip()
+        if not display_phone:
+            flash('Nomor HP tidak ditemukan pada form.', 'error')
+            return redirect(url_for('index'))
+
+        norm = normalize_phone(display_phone)
+        # load accounts safely
+        accounts = _safe_load_accounts()
+
+        # find account by normalized phone
+        acc = None
+        for a in accounts:
+            if a.get('phone') == norm:
+                acc = a
+                break
+
+        # collect reviews from form
+        days_keys = ['mon','tue','wed','thu','fri','sat','sun']
+        reviews = {}
+        for k in days_keys:
+            reviews[k] = request.form.get(k, '').strip()
+
+        if acc is None:
+            # create account entry if missing
+            acc = {'phone': norm, 'password': '', 'level': 'E2', 'reviews': reviews}
+            accounts.append(acc)
+        else:
+            acc['reviews'] = reviews
+
+        try:
+            _safe_write_accounts(accounts)
+            flash('Review harian disimpan.', 'success')
+        except Exception as e:
+            flash(f'Gagal menyimpan review: {e}', 'error')
+
+        return redirect(url_for('index'))
+
+    # GET: show form
+    display_phone = request.args.get('phone', '').strip()
+    if not display_phone:
+        flash('Masukkan nomor HP pada query string untuk mengedit review.', 'error')
+        return redirect(url_for('index'))
+
+    norm = normalize_phone(display_phone)
+    existing = {}
+    accounts = _safe_load_accounts()
+    for a in accounts:
+        if a.get('phone') == norm:
+            existing = a.get('reviews', {}) or {}
+            break
+
+    days = [('mon','Senin'),('tue','Selasa'),('wed','Rabu'),('thu','Kamis'),('fri','Jumat'),('sat','Sabtu'),('sun','Minggu')]
+    return render_template('review.html', phone_display=display_phone, reviews=existing, days=days)
+
+
+@app.route('/schedule', methods=['GET', 'POST'])
+def schedule():
+    if request.method == 'POST':
+        display_phone = request.form.get('phone', '').strip()
+        if not display_phone:
+            flash('Nomor HP tidak ditemukan pada form.', 'error')
+            return redirect(url_for('index'))
+
+        norm = normalize_phone(display_phone)
+        schedule_val = request.form.get('schedule', '').strip()
+
+        # load accounts (locked)
+        accounts = _safe_load_accounts()
+
+        # find account by normalized phone
+        acc = None
+        for a in accounts:
+            if a.get('phone') == norm:
+                acc = a
+                break
+
+        if acc is None:
+            acc = {'phone': norm, 'password': '', 'level': 'E2'}
+            accounts.append(acc)
+
+        if schedule_val:
+            # validate schedule format HH:MM
+            m = re.fullmatch(r"(\d{1,2}):(\d{2})", schedule_val)
+            if not m:
+                flash('Format jadwal tidak valid, gunakan HH:MM mis. 08:30', 'error')
+                return redirect(url_for('index'))
+            hh = int(m.group(1))
+            mm = int(m.group(2))
+            if not (0 <= hh <= 23 and 0 <= mm <= 59):
+                flash('Waktu jadwal di luar jangkauan (00:00-23:59).', 'error')
+                return redirect(url_for('index'))
+
+            acc['schedule'] = f"{hh:02d}:{mm:02d}"
+        else:
+            if 'schedule' in acc:
+                del acc['schedule']
+
+        try:
+            _safe_write_accounts(accounts)
+            flash('Jadwal disimpan.', 'success')
+        except Exception as e:
+            flash(f'Gagal menyimpan jadwal: {e}', 'error')
+
+        return redirect(url_for('index'))
+
+    # GET
+    display_phone = request.args.get('phone', '').strip()
+    if not display_phone:
+        flash('Masukkan nomor HP pada query string untuk mengatur jadwal.', 'error')
+        return redirect(url_for('index'))
+
+    norm = normalize_phone(display_phone)
+    existing_schedule = ''
+    accounts = _safe_load_accounts()
+    for a in accounts:
+        if a.get('phone') == norm:
+            existing_schedule = a.get('schedule', '') or ''
+            break
+
+    return render_template('schedule.html', phone_display=display_phone, schedule=existing_schedule)
+
+
+@app.route('/reset_last_run', methods=['POST'])
+def reset_last_run():
+    # Accept form-encoded 'phone' (display format, without +62)
+    display_phone = request.form.get('phone', '').strip()
+    if not display_phone:
+        return jsonify({'ok': False, 'msg': 'Nomor HP tidak disertakan.'}), 400
+
+    norm = normalize_phone(display_phone)
+
+    accounts = _safe_load_accounts()
+    found = False
+    for a in accounts:
+        if a.get('phone') == norm:
+            a.pop('last_run', None)
+            a.pop('last_run_ts', None)
+            found = True
+            break
+
+    if not found:
+        return jsonify({'ok': False, 'msg': 'Akun tidak ditemukan.'}), 404
+
+    try:
+        _safe_write_accounts(accounts)
+        return jsonify({'ok': True, 'msg': 'Cleared last_run.'})
+    except Exception as e:
+        return jsonify({'ok': False, 'msg': str(e)}), 500
+
+
+if __name__ == "__main__":
+    # Development server only. For production, use gunicorn/uWSGI.
+    # Start scheduler thread only when running the main process (avoid Werkzeug reloader double-start)
+    if not app.debug or os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+        t = threading.Thread(target=_scheduler_loop, daemon=True)
+        t.start()
+        with open(LOG_FILE, "a") as f:
+            f.write(f"{datetime.datetime.now().isoformat()} Scheduler thread started.\n")
+
+    app.run(host="0.0.0.0", port=5000, debug=True)
+

@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtualenv
+.venv/
+venv/
+
+# IDEs
+.vscode/
+.idea/
+
+# dotenv/local config
+.env
+
+# Runtime / logs / data
+runs.log
+accounts.json
+
+# pytest
+.pytest_cache/
+
+# macOS
+.DS_Store
