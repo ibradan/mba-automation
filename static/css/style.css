@@ -1,0 +1,49 @@
+:root{
+  --bg: #f6fbfb;
+  --card: #ffffff;
+  --accent: #0f1720;
+  --muted: #6b7280;
+  --primary: #0ea5a4;
+  --glass: rgba(255,255,255,0.8);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;background:linear-gradient(180deg,#f9fbfb,#eef6f6);color:var(--accent);margin:0;padding:0}
+.container{max-width:980px;margin:36px auto;padding:20px}
+.site-head{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:18px}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:46px;height:46px;background:linear-gradient(135deg,#06b6d4,#7c3aed);border-radius:10px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:18px}
+h1.app-title{font-size:1.3rem;margin:0}
+.lead{color:var(--muted);font-size:0.95rem;margin-top:4px}
+.top-actions{font-size:0.95rem;color:var(--muted)}
+
+.card{background:var(--card);border-radius:14px;padding:14px;box-shadow:0 8px 22px rgba(8,15,23,0.06)}
+.account-card{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;margin-bottom:10px}
+.account-card .inputs{display:flex;gap:10px;align-items:center;flex:1;flex-wrap:wrap}
+.phone-prefix{background:#f3f9f9;border-radius:999px;padding:8px 12px;color:var(--muted);font-weight:700;border:1px solid #ecf8f8}
+input[type=text], input[type=password], select{padding:9px 12px;border-radius:10px;border:1px solid #e6f2f1;background:var(--glass);min-width:120px}
+.pwd-field{position:relative}
+.pwd-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:transparent;border:0;color:var(--muted);cursor:pointer}
+.actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;border:0;font-weight:700;cursor:pointer}
+.btn-primary{background:var(--primary);color:#fff;box-shadow:0 8px 20px rgba(14,165,164,0.12)}
+.btn-ghost{background:#fff;border:1px solid #eef7f7;color:var(--accent)}
+.btn-outline{background:transparent;border:1px dashed #e6f2f1;color:var(--primary)}
+.mt-8{margin-top:8px}
+.muted{color:var(--muted)}
+
+/* responsive */
+@media (max-width:760px){
+  .container{padding:16px;margin:18px}
+  .account-card{flex-direction:column;align-items:stretch}
+  .account-card .inputs{flex-direction:column}
+}
+
+/* small status badges */
+.badge{display:inline-flex;padding:6px 10px;border-radius:999px;font-weight:700;font-size:0.82rem}
+.status-ran{background:#ecfdf5;border:1px solid #bbf7d0;color:#065f46}
+.status-due{background:#fffbeb;border:1px solid #fef3c7;color:#92400e}
+.status-pending{background:#f8fafc;border:1px solid #eef2f3;color:var(--muted)}
+
+/* small footer */
+footer{margin-top:22px;color:var(--muted);font-size:0.9rem;text-align:center}

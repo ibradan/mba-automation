@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>MBA7 Automation</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
     <style>
       :root{
         --bg:#f7f8fa;
@@ -83,13 +84,17 @@
     </style>
   </head>
   <body>
-    <header>
-      <div>
-        <h1>MBA7 Automation</h1>
-        <div class="lead">Isi akun per baris — nomor, kata sandi, dan pilih level (E1/E2/E3).</div>
-      </div>
-      <div class="top-right">Local UI — tidak terekspos publik</div>
-    </header>
+    <div class="container">
+      <header class="site-head">
+        <div class="brand">
+          <div class="logo">MA</div>
+          <div>
+            <h1 class="app-title">MBA7 Automation</h1>
+            <div class="lead">Isi akun per baris — nomor, kata sandi, dan pilih level (E1/E2/E3).</div>
+          </div>
+        </div>
+        <div class="top-actions muted">Local UI — private</div>
+      </header>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
@@ -342,7 +347,7 @@
       
     </script>
 
-    <p style="margin-top:1rem; font-size:0.9rem; color:#666">Catatan: proses automation dijalankan di background. Periksa `runs.log` untuk catatan recent runs.</p>
+    <p class="mt-8 muted">Catatan: proses automation dijalankan di background. Periksa <code>runs.log</code> untuk catatan recent runs.</p>
     <div style="margin-top:0.6rem; font-size:0.9rem; color:var(--muted)">
       <strong>Level → Tugas</strong>
       <ul style="margin:0.4rem 0 0 1.1rem; padding:0; color:var(--muted)">
@@ -368,6 +373,8 @@
         </div>
         <div style="margin-top:6px;color:var(--muted);font-size:0.88rem">Warna akan otomatis di-reset setiap pukul <strong>00:00</strong> agar status mencerminkan hari ini.</div>
       </div>
+    </div>
+      <footer>Built with ❤️ — keep your secrets out of git & use environment variables.</footer>
     </div>
   </body>
 </html>
