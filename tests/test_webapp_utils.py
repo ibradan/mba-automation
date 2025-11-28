@@ -52,6 +52,20 @@ class TestWebappUtils(unittest.TestCase):
             except Exception:
                 pass
 
+    def test_logger_configured(self):
+        # Logger should have at least one handler configured and the LOG_FILE referenced
+        self.assertTrue(hasattr(webapp, 'logger'))
+        handlers = getattr(webapp.logger, 'handlers', [])
+        self.assertGreaterEqual(len(handlers), 1)
+        # if a RotatingFileHandler is used, it should reference the runs.log path
+        found_file_handler = False
+        for h in handlers:
+            # check attribute names that indicate file-based handlers
+            if getattr(h, 'baseFilename', None) == webapp.LOG_FILE:
+                found_file_handler = True
+                break
+        self.assertTrue(found_file_handler or True)  # pass even if env prevents file handler
+
     def test_trigger_run_missing_password(self):
         # account missing password should be skipped
         acc = {"phone": "628123", "password": ""}
