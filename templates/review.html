@@ -34,7 +34,7 @@
           {% for key, label in days %}
           <tr>
             <td>{{ label }}</td>
-            <td><input class="form-control" type="text" name="{{ key }}" value="{{ reviews.get(key, '') }}" aria-label="Ulasan untuk {{ label }}" placeholder="Teks review untuk {{ label }}" /></td>
+            <td><input type="text" name="{{ key }}" value="{{ reviews.get(key, '') }}" placeholder="Teks review untuk {{ label }}" /></td>
           </tr>
           {% endfor %}
         </tbody>
