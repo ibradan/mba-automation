@@ -120,8 +120,10 @@ body {
 }
 
 .row-item.pending::before {
-  background: var(--blue);
+  background: #9ca3af;
 }
+
+/* Abu-abu untuk pending */
 
 /* Card Background Color Based on Status */
 .row-item.ran {
@@ -135,9 +137,9 @@ body {
 }
 
 .row-item.pending {
-  /* Pending = putih polos, tidak ada gradient */
+  /* Pending = putih polos dengan border abu-abu */
   background: #ffffff;
-  border-color: #bfdbfe;
+  border-color: #e5e7eb;
 }
 
 /* Grid Layout - Lebih Rapi dengan Flex */
