@@ -18,8 +18,18 @@
   </head>
   <body>
     <div class="container">
-      <h2>Set Jadwal Harian</h2>
-      <div class="muted">Jalankan automation setiap hari pada jam yang dipilih untuk akun ini.</div>
+      <header style="display:flex;align-items:center;justify-content:flex-start;gap:12px;margin-bottom:12px">
+        <span class="brand-dots" aria-hidden="true">
+          <span class="brand-dot b1"></span>
+          <span class="brand-dot b2"></span>
+          <span class="brand-dot b3"></span>
+          <span class="brand-dot b4"></span>
+        </span>
+        <div>
+          <h2>Set Jadwal Harian</h2>
+          <div class="muted">Jalankan automation setiap hari pada jam yang dipilih untuk akun ini.</div>
+        </div>
+      </header>
       <div class="card">
       <form method="post">
         <input type="hidden" name="phone" value="{{ phone_display }}" />

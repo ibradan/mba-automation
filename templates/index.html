@@ -89,8 +89,18 @@
         <div class="brand">
           <div class="logo">MA</div>
           <div>
-            <h1 class="app-title">MBA7 Automation</h1>
-            <div class="lead">Isi akun per baris — nomor, kata sandi, dan pilih level (E1/E2/E3).</div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="brand-dots" aria-hidden="true">
+                <span class="brand-dot b1"></span>
+                <span class="brand-dot b2"></span>
+                <span class="brand-dot b3"></span>
+                <span class="brand-dot b4"></span>
+              </span>
+              <div>
+                <h1 class="app-title">MBA7 Automation</h1>
+                <div class="lead">Isi akun per baris — nomor, kata sandi, dan pilih level (E1/E2/E3).</div>
+              </div>
+            </div>
           </div>
         </div>
         <div class="top-actions muted">Local UI — private</div>
@@ -327,7 +337,6 @@
             input.type = 'password';
             // change label to show
             btn.textContent = 'Tampilkan';
-          }
           }
         });
       }

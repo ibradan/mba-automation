@@ -3,7 +3,12 @@
   --card: #ffffff;
   --accent: #0f1720;
   --muted: #6b7280;
-  --primary: #0ea5a4;
+  /* Google-like colors */
+  --google-blue: #4285F4;
+  --google-red: #DB4437;
+  --google-yellow: #F4B400;
+  --google-green: #0F9D58;
+  --primary: var(--google-blue);
   --accent-2: #7c3aed;
   --danger: #ef4444;
   --glass: rgba(255,255,255,0.8);
@@ -20,7 +25,7 @@ h1.app-title{font-size:1.3rem;margin:0}
 .top-actions{font-size:0.95rem;color:var(--muted)}
 
 .card{background:var(--card);border-radius:14px;padding:14px;box-shadow:0 8px 22px rgba(8,15,23,0.06)}
-.account-card{display:flex;align-items:center;gap:12px;padding:14px;border-radius:12px;margin-bottom:12px;background:linear-gradient(90deg, rgba(14,165,164,0.02), rgba(124,58,237,0.02));border:1px solid rgba(2,6,23,0.03)}
+.account-card{display:flex;align-items:center;gap:12px;padding:14px;border-radius:12px;margin-bottom:12px;background:linear-gradient(90deg, rgba(66,133,244,0.02), rgba(124,58,237,0.02));border:1px solid rgba(2,6,23,0.03)}
 .account-card .inputs{display:flex;gap:10px;align-items:center;flex:1;flex-wrap:wrap}
 .phone-prefix{background:#f3f9f9;border-radius:999px;padding:8px 12px;color:var(--muted);font-weight:700;border:1px solid #ecf8f8}
 .form-control, input[type=text], input[type=password], select{padding:9px 12px;border-radius:10px;border:1px solid #e6f2f1;background:var(--glass);min-width:120px}
@@ -28,7 +33,7 @@ h1.app-title{font-size:1.3rem;margin:0}
 .pwd-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:transparent;border:0;color:var(--muted);cursor:pointer}
 .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}
 .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;border:0;font-weight:700;cursor:pointer}
-.btn-primary{background:linear-gradient(90deg,var(--primary),var(--accent-2));color:#fff;box-shadow:0 8px 20px rgba(124,58,237,0.08)}
+.btn-primary{background:linear-gradient(90deg,var(--google-blue),var(--google-green));color:#fff;box-shadow:0 8px 28px rgba(66,133,244,0.10);border-radius:12px;padding:10px 16px}
 .btn-ghost{background:#fff;border:1px solid #eef7f7;color:var(--accent)}
 .btn-outline{background:transparent;border:1px dashed #e6f2f1;color:var(--primary)}
 
@@ -56,3 +61,17 @@ h1.app-title{font-size:1.3rem;margin:0}
 
 /* small footer */
 footer{margin-top:22px;color:var(--muted);font-size:0.9rem;text-align:center}
+
+/* header dots like Google apps */
+.brand-dots{display:inline-flex;align-items:center;gap:6px;margin-right:8px}
+.brand-dot{width:10px;height:10px;border-radius:50%}
+.brand-dot.b1{background:var(--google-blue)}
+.brand-dot.b2{background:var(--google-red)}
+.brand-dot.b3{background:var(--google-yellow)}
+.brand-dot.b4{background:var(--google-green)}
+
+/* subtle hover for cards */
+.account-card:hover{transform:translateY(-4px);transition:transform .18s ease}
+
+/* improved focus visuals */
+:focus{outline:2px solid rgba(66,133,244,0.14);outline-offset:2px}
