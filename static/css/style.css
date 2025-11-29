@@ -96,3 +96,16 @@ input[type=time]{padding:10px;border-radius:8px;border:1px solid #e6eef0}
 .btn.cancel{background:#e5e7eb;color:#111}
 
 .top-controls{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+
+.headless-label{display:block;margin-top:0.75rem}
+.info-block{margin-top:0.6rem;font-size:0.9rem;color:var(--muted)}
+.list-muted{margin:0.4rem 0 0 1.1rem;padding:0;color:var(--muted)}
+.status-row{display:flex;gap:10px;align-items:center;margin-top:6px}
+.status-item{display:flex;gap:8px;align-items:center}
+.status-square{width:14px;height:14px;border-radius:4px;display:inline-block}
+.status-text{color:var(--muted)}
+.mt-12{margin-top:12px}
+.mt-6{margin-top:6px}
+.ml-12{margin-left:12px}
+
+.small-muted{color:var(--muted);font-size:0.88rem}

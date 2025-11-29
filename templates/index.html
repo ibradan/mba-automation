@@ -118,7 +118,7 @@
         </div>
       </div>
 
-      <label style="display:block; margin-top:0.75rem"><input type="checkbox" name="headless" /> Jalankan headless</label>
+      <label class="headless-label"><input type="checkbox" name="headless" /> Jalankan headless</label>
 
       <div class="actions">
         <button type="submit" name="action" value="start" class="btn btn-primary">Mulai Automation</button>
@@ -268,30 +268,30 @@
     </script>
 
     <p class="mt-8 muted">Catatan: proses automation dijalankan di background. Periksa <code>runs.log</code> untuk catatan recent runs.</p>
-    <div style="margin-top:0.6rem; font-size:0.9rem; color:var(--muted)">
+    <div class="info-block">
       <strong>Level → Tugas</strong>
-      <ul style="margin:0.4rem 0 0 1.1rem; padding:0; color:var(--muted)">
+      <ul class="list-muted">
         <li><strong>E1</strong> = 15 tugas</li>
         <li><strong>E2</strong> = 30 tugas (default)</li>
         <li><strong>E3</strong> = 60 tugas</li>
       </ul>
-      <div style="margin-top:8px; font-size:0.95rem; color:var(--muted)">
+      <div class="info-block">
         <strong>Status warna</strong>
-        <div style="display:flex;gap:10px;align-items:center;margin-top:6px">
-          <div style="display:flex;gap:8px;align-items:center">
-            <span style="width:14px;height:14px;border-radius:4px;background:#ecfdf5;border:1px solid #bbf7d0;display:inline-block"></span>
-            <span style="color:var(--muted)">Hijau: Sudah dijalankan (selesai)</span>
+        <div class="status-row">
+          <div class="status-item">
+            <span class="status-square status-ran"></span>
+            <span class="status-text">Hijau: Sudah dijalankan (selesai)</span>
           </div>
-          <div style="display:flex;gap:8px;align-items:center">
-            <span style="width:14px;height:14px;border-radius:4px;background:#fffbeb;border:1px solid #fef3c7;display:inline-block"></span>
-            <span style="color:var(--muted)">Kuning: Jadwal terlewat / belum dijalankan</span>
+          <div class="status-item">
+            <span class="status-square status-due"></span>
+            <span class="status-text">Kuning: Jadwal terlewat / belum dijalankan</span>
           </div>
-          <div style="display:flex;gap:8px;align-items:center">
-            <span style="width:14px;height:14px;border-radius:4px;background:#f8fafc;border:1px solid #eef2f3;display:inline-block"></span>
-            <span style="color:var(--muted)">Netral: Jadwal belum tiba</span>
+          <div class="status-item">
+            <span class="status-square status-pending"></span>
+            <span class="status-text">Netral: Jadwal belum tiba</span>
           </div>
         </div>
-        <div style="margin-top:6px;color:var(--muted);font-size:0.88rem">Warna akan otomatis di-reset setiap pukul <strong>00:00</strong> agar status mencerminkan hari ini.</div>
+        <div class="mt-6 small-muted">Warna akan otomatis di-reset setiap pukul <strong>00:00</strong> agar status mencerminkan hari ini.</div>
       </div>
     </div>
       <footer>Built with ❤️ — keep your secrets out of git & use environment variables.</footer>

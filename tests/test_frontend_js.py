@@ -42,6 +42,16 @@ class TestFrontendJS(unittest.TestCase):
         self.assertIn('flex-wrap:nowrap', css)
         self.assertIn('white-space:nowrap', css)
 
+    def test_templates_no_inline_style_attributes(self):
+        # ensure templates don't use inline style attributes anymore
+        import glob
+        from pathlib import Path
+        tmpl_dir = Path(__file__).resolve().parents[1] / 'templates'
+        files = glob.glob(str(tmpl_dir / '*.html'))
+        for f in files:
+            text = Path(f).read_text(encoding='utf-8')
+            self.assertNotIn('style="', text, msg=f"Found inline style in {f}")
+
 
 if __name__ == '__main__':
     unittest.main()
