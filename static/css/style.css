@@ -135,7 +135,8 @@ body {
 }
 
 .row-item.pending {
-  background: linear-gradient(to right, #eff6ff 0%, #ffffff 100%);
+  /* Pending = putih polos, tidak ada gradient */
+  background: #ffffff;
   border-color: #bfdbfe;
 }
 
