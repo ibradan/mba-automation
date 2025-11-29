@@ -236,8 +236,19 @@
       <!-- ===== MAIN ACTION BUTTONS ===== -->
       <div class="actions">
         <div class="actions-main">
-          <button type="submit" name="action" value="start" class="btn btn-primary btn-block">
-            Jalankan Semua Sekarang
+          <button type="submit" name="action" value="start" class="btn btn-primary btn-block" id="run-all-btn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="play-icon">
+              <polygon points="5 3 19 12 5 21 5 3" stroke="currentColor" stroke-width="1.6" fill="currentColor" />
+            </svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="spinner-icon" style="display:none;">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" opacity="0.25" />
+              <path d="M12 2 A10 10 0 0 1 22 12" stroke="currentColor" stroke-width="2" fill="none"
+                stroke-linecap="round">
+                <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s"
+                  repeatCount="indefinite" />
+              </path>
+            </svg>
+            <span id="btn-text">Jalankan Semua Sekarang</span>
           </button>
         </div>
 
@@ -283,6 +294,17 @@
 
       row.remove();
     }
+
+    // Loading state for run-all button
+    document.getElementById('automation-form').addEventListener('submit', function (e) {
+      const btn = document.getElementById('run-all-btn');
+      if (e.submitter && e.submitter.name === 'action' && e.submitter.value === 'start') {
+        btn.disabled = true;
+        btn.querySelector('.play-icon').style.display = 'none';
+        btn.querySelector('.spinner-icon').style.display = 'inline';
+        document.getElementById('btn-text').textContent = 'Menjalankan...';
+      }
+    });
 
     document
       .getElementById('add-row')
