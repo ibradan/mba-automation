@@ -23,6 +23,12 @@ class TestFrontendJS(unittest.TestCase):
         # previously we had an extra stray '}' that broke JS; ensure we don't have two closing braces in a row
         self.assertNotIn('\n          }\n          }\n        });', s)
 
+    def test_remove_buttons_use_minus(self):
+        s = read_index()
+        # ensure visible 'Hapus' button text isn't present and remove buttons use the minimal minus
+        self.assertNotIn('>Hapus</button>', s)
+        self.assertIn('aria-hidden="true">−</span>', s)
+
 
 if __name__ == '__main__':
     unittest.main()

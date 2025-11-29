@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>MBA7 Automation</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
   </head>
   <body>
     <div class="container">
@@ -13,7 +12,7 @@
         <div class="brand">
           <div class="logo">MA</div>
           <div>
-            <div style="display:flex;align-items:center;gap:8px;">
+            <div class="brand-inner">
               <span class="brand-dots" aria-hidden="true">
                 <span class="brand-dot b1"></span>
                 <span class="brand-dot b2"></span>
@@ -63,57 +62,59 @@
                   <button type="button" class="btn btn-danger reset-btn" title="Reset last_run">Reset</button>
                 </div>
               </div>
-              <button type="button" class="remove" onclick="removeRow(this)" title="Hapus akun">Hapus</button>
+              <button type="button" class="remove" onclick="removeRow(this)" title="Hapus akun" aria-label="Hapus akun"><span aria-hidden="true">−</span></button>
             </div>
-          {%- endfor %}
-        {%- else %}
-          <div class="account-card row-item">
+            {%- endfor %}
+          {%- else %}
+            <div class="account-card row-item">
+                <div class="inputs">
+                <div class="phone-group">
+                  <span class="phone-prefix">+62</span>
+                  <input name="phone[]" type="text" placeholder="NO HP" required />
+                </div>
+                <div class="pwd-field">
+                  <input name="password[]" class="pwd" type="password" placeholder="PASSWORD" required />
+                    <button type="button" class="pwd-toggle" aria-label="Toggle password">Tampilkan</button>
+                </div>
+                <select name="level[]" aria-label="Level">
+                  <option value="E1">E1</option>
+                  <option value="E2" selected>E2</option>
+                  <option value="E3">E3</option>
+                </select>
+                <div class="action-group">
+                  <button type="button" class="btn btn-primary review-btn" title="Set Review Harian">Review</button>
+                  <button type="button" class="btn btn-secondary schedule-btn" title="Set Jadwal">Jadwal</button>
+                  <button type="button" class="btn btn-danger reset-btn" title="Reset last_run">Reset</button>
+                </div>
+              </div>
+                <button type="button" class="remove" onclick="removeRow(this)" title="Hapus akun" aria-label="Hapus akun"><span aria-hidden="true">−</span></button>`;
+            </div>
+            <div class="account-card row-item">
               <div class="inputs">
-              <div class="phone-group">
-                <span class="phone-prefix">+62</span>
-                <input name="phone[]" type="text" placeholder="NO HP" required />
-              </div>
-              <div class="pwd-field">
-                <input name="password[]" class="pwd" type="password" placeholder="PASSWORD" required />
+                <div class="phone-group">
+                  <span class="phone-prefix">+62</span>
+                  <input name="phone[]" type="text" placeholder="NO HP" />
+                </div>
+                <div class="pwd-field">
+                  <input name="password[]" class="pwd" type="password" placeholder="PASSWORD" />
                   <button type="button" class="pwd-toggle" aria-label="Toggle password">Tampilkan</button>
+                </div>
+                <select name="level[]" aria-label="Level">
+                  <option value="E1">E1</option>
+                  <option value="E2" selected>E2</option>
+                  <option value="E3">E3</option>
+                </select>
+                <button type="button" class="review-btn" title="Set Review Harian">Set Review Harian</button>
+                <button type="button" class="schedule-btn" title="Set Jadwal">Set Jadwal</button>
               </div>
-              <select name="level[]" aria-label="Level">\
-                <option value="E1">E1</option>\
-                <option value="E2" selected>E2</option>\
-                <option value="E3">E3</option>\
-              </select>\
-              <div class=\"action-group\">\
-                <button type=\"button\" class=\"btn btn-primary review-btn\" title=\"Set Review Harian\">Review</button>\
-                <button type=\"button\" class=\"btn btn-secondary schedule-btn\" title=\"Set Jadwal\">Jadwal</button>\
-                <button type=\"button\" class=\"btn btn-danger reset-btn\" title=\"Reset last_run\">Reset</button>\
-              </div>\
+              <button type="button" class="remove" onclick="removeRow(this)" title="Hapus akun" aria-label="Hapus akun">
+                <span aria-hidden="true">−</span>
+              </button>
             </div>
-              <button type="button" class="remove" onclick="removeRow(this)" title="Hapus akun">Hapus</button>
-          </div>
-          <div class="account-card row-item">
-            <div class="inputs">
-              <div class="phone-group">
-                <span class="phone-prefix">+62</span>
-                <input name="phone[]" type="text" placeholder="NO HP" />
-              </div>
-              <div class="pwd-field">
-                <input name="password[]" class="pwd" type="password" placeholder="PASSWORD" />
-                <button type="button" class="pwd-toggle" aria-label="Toggle password">Tampilkan</button>
-              </div>
-              <select name="level[]" aria-label="Level">
-                <option value="E1">E1</option>
-                <option value="E2" selected>E2</option>
-                <option value="E3">E3</option>
-              </select>
-              <button type="button" class="review-btn" title="Set Review Harian">Set Review Harian</button>
-              <button type="button" class="schedule-btn" title="Set Jadwal">Set Jadwal</button>
-            </div>
-            <button type="button" class="remove" onclick="removeRow(this)" title="Hapus akun">Hapus</button>
-          </div>
-        {%- endif %}
+          {%- endif %}
       </div>
 
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+      <div class="top-controls">
         <div>
           <button type="button" id="add-row">Tambah Nomor</button>
         </div>
@@ -122,8 +123,8 @@
       <label style="display:block; margin-top:0.75rem"><input type="checkbox" name="headless" /> Jalankan headless</label>
 
       <div class="actions">
-        <button type="submit" name="action" value="start">Mulai Automation</button>
-        <button type="submit" name="action" value="save" style="margin-right:auto;background:#e5e7eb;color:#111;padding:8px 12px;border-radius:10px;font-weight:600;margin-left:8px">Simpan Akun</button>
+        <button type="submit" name="action" value="start" class="btn btn-primary">Mulai Automation</button>
+        <button type="submit" name="action" value="save" class="btn btn cancel">Simpan Akun</button>
       </div>
     </form>
 

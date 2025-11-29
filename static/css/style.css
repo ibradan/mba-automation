@@ -37,8 +37,12 @@ h1.app-title{font-size:1.3rem;margin:0}
 .btn-ghost{background:#fff;border:1px solid #eef7f7;color:var(--accent)}
 .btn-outline{background:transparent;border:1px dashed #e6f2f1;color:var(--primary)}
 
-.remove{background:transparent;border:0;color:var(--danger);font-weight:700;padding:6px 8px;border-radius:8px;cursor:pointer}
-.remove:hover{background:rgba(239,68,68,0.06)}
+.brand-inner{display:flex;align-items:center;gap:8px}
+
+.remove{width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;border:1px solid rgba(2,6,23,0.06);background:transparent;color:var(--danger);font-weight:600;cursor:pointer;transition:background .12s,transform .12s;padding:0}
+.remove span{font-size:18px;line-height:1;display:block}
+.remove:hover{background:rgba(2,6,23,0.03);transform:translateY(-2px)}
+.remove:focus{outline:2px solid rgba(66,133,244,0.14);outline-offset:2px}
 
 /* add-row styling */
 #add-row{background:transparent;border:0;color:var(--accent-2);font-weight:700;cursor:pointer;padding:8px 10px;border-radius:8px}
@@ -87,3 +91,5 @@ input[type=time]{padding:10px;border-radius:8px;border:1px solid #e6eef0}
 .actions{margin-top:12px;display:flex;gap:8px}
 .btn.save{background:var(--primary);color:#fff}
 .btn.cancel{background:#e5e7eb;color:#111}
+
+.top-controls{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
