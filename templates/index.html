@@ -45,16 +45,6 @@
         {%- if saved and saved|length > 0 %}
         {%- for acc in saved %}
         <div class="account-card row-item {{ acc.status }}">
-          <!-- Status badge di pojok kanan atas -->
-          <span class="status-badge">
-            {% if acc.status == 'ran' %}
-            ✓ Selesai
-            {% elif acc.status == 'due' %}
-            ! Terlewat
-            {% else %}
-            ● Terjadwal
-            {% endif %}
-          </span>
 
           <div class="inputs">
             <!-- Phone -->

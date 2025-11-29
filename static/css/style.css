@@ -84,7 +84,7 @@ body {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 28px 24px 20px 28px;
+  padding: 20px 24px 20px 28px;
   /* Padding atas untuk badge */
   margin-bottom: 16px;
   display: flex;
@@ -123,37 +123,20 @@ body {
   background: var(--blue);
 }
 
-/* Status Badge - Di atas inputs, tidak bentrok dengan tombol hapus! */
-.status-badge {
-  position: absolute;
-  top: -8px;
-  left: 24px;
-  padding: 4px 10px;
-  border-radius: 99px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  z-index: 1;
+/* Card Background Color Based on Status */
+.row-item.ran {
+  background: linear-gradient(to right, #ecfdf5 0%, #ffffff 100%);
+  border-color: #a7f3d0;
 }
 
-.row-item.ran .status-badge {
-  background: #d1fae5;
-  color: #065f46;
-  border: 1px solid #a7f3d0;
+.row-item.due {
+  background: linear-gradient(to right, #fffbeb 0%, #ffffff 100%);
+  border-color: #fde68a;
 }
 
-.row-item.due .status-badge {
-  background: #fef3c7;
-  color: #92400e;
-  border: 1px solid #fde68a;
-}
-
-.row-item.pending .status-badge {
-  background: #dbeafe;
-  color: #1e40af;
-  border: 1px solid #93c5fd;
+.row-item.pending {
+  background: linear-gradient(to right, #eff6ff 0%, #ffffff 100%);
+  border-color: #bfdbfe;
 }
 
 /* Grid Layout - Lebih Rapi dengan Flex */
