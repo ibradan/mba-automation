@@ -1,394 +1,588 @@
 <!doctype html>
 <html lang="id">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>MBA7 Automation</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
-  </head>
-  <body>
-    <div class="container">
-      <header class="site-head">
-        <div class="brand-left">
-          <div class="logo">MA</div>
-          <div>
-            <h1 class="app-title">MBA7 Automation</h1>
-            <div class="lead">Atur akun yang akan dijalankan otomatis.</div>
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MBA7 Automation</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+
+<body>
+  <div class="container">
+    <!-- ================= HEADER ================= -->
+    <header class="site-head">
+      <div class="brand-left">
+        <div class="logo">MA</div>
+        <div>
+          <h1 class="app-title">MBA7 Automation</h1>
+          <div class="lead">
+            Akun akan dijalankan otomatis sesuai jadwal.
+            Atur nomor & level di sini.
           </div>
         </div>
-        <div class="top-actions muted">Local UI — private</div>
-        <!-- Theme toggle -->
-        <div class="theme-toggle" title="Toggle theme" aria-hidden="false">
-          <button id="theme-toggle-btn" aria-label="Toggle dark mode" class="btn btn-ghost">
-            <svg id="theme-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path id="theme-icon-path" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      </div>
+      <div class="top-actions muted">Local UI — private</div>
+    </header>
+
+    <!-- ================= FLASH MESSAGE ================= -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, msg in messages %}
+    <div class="flash {{ category }}">{{ msg }}</div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    <!-- ================= MAIN FORM ================= -->
+    <form method="post" id="automation-form">
+      <!-- Marker untuk test / selector JS -->
+      <span hidden class="review-btn"></span>
+      <span hidden class="schedule-btn"></span>
+
+      <!-- ===== ROWS WRAPPER ===== -->
+      <div id="rows">
+        {%- if saved and saved|length > 0 %}
+        {%- for acc in saved %}
+        <div class="account-card row-item {{ acc.status }}">
+          <!-- Badge status kecil di pojok kanan atas -->
+          <span class="status-pill">
+            {% if acc.status == 'ran' %}
+            Selesai
+            {% elif acc.status == 'due' %}
+            Terlewat
+            {% else %}
+            Terjadwal
+            {% endif %}
+          </span>
+
+          <div class="inputs">
+            <!-- Phone -->
+            <div class="phone-group">
+              <span class="phone-prefix">+62</span>
+              <input name="phone[]" type="text" placeholder="NO HP" value="{{ acc.phone_display }}" required />
+            </div>
+
+            <!-- Password -->
+            <div class="pwd-field">
+              <input name="password[]" class="pwd" type="password" placeholder="PASSWORD" value="{{ acc.password }}"
+                required />
+              <button type="button" class="pwd-toggle" aria-label="Toggle password">
+                Tampilkan
+              </button>
+            </div>
+
+            <!-- Level -->
+            <select name="level[]" aria-label="Level">
+              <option value="E1" {{ 'selected' if acc.level=='E1' else '' }}>E1</option>
+              <option value="E2" {{ 'selected' if acc.level=='E2' else '' }}>E2</option>
+              <option value="E3" {{ 'selected' if acc.level=='E3' else '' }}>E3</option>
+            </select>
+
+            <!-- Action buttons -->
+            <div class="action-group">
+              <button type="button" class="btn btn-primary review-btn" title="Set Review Harian">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M21 15v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4" stroke="currentColor" stroke-width="1.6"
+                    stroke-linecap="round" stroke-linejoin="round" />
+                  <path d="M7 10l5-5 5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                </svg>
+                <span>Review</span>
+              </button>
+
+              <button type="button" class="btn btn-secondary schedule-btn" title="Set Jadwal">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" />
+                  <path d="M12 7v6l4 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                </svg>
+                <span>Jadwal</span>
+              </button>
+
+              <button type="button" class="btn btn-danger reset-btn" title="Reset last_run">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M20 12a8 8 0 1 0-2.5 5.7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                  <path d="M20 7v5h-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                </svg>
+                <span>Reset</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Tombol hapus akun -->
+          <button type="button" class="remove" onclick="removeRow(this)" title="Hapus akun" aria-label="Hapus akun">
+            <span aria-hidden="true">−</span>
           </button>
         </div>
-      </header>
+        {%- endfor %}
+        {%- else %}
+        <!-- ========== BARIS DEFAULT 1 (wajib isi, required) ========== -->
+        <div class="account-card row-item">
+          <div class="inputs">
+            <div class="phone-group">
+              <span class="phone-prefix">+62</span>
+              <input name="phone[]" type="text" placeholder="NO HP" required />
+            </div>
 
-      {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-          {% for category, msg in messages %}
-            <div class="flash {{ category }}">{{ msg }}</div>
-          {% endfor %}
-        {% endif %}
-      {% endwith %}
+            <div class="pwd-field">
+              <input name="password[]" class="pwd" type="password" placeholder="PASSWORD" required />
+              <button type="button" class="pwd-toggle" aria-label="Toggle password">
+                Tampilkan
+              </button>
+            </div>
 
-      <form method="post" id="automation-form">
-        <!-- keep exact marker classes present for tests and future JS selectors -->
-        <span hidden class="review-btn"></span>
-        <span hidden class="schedule-btn"></span>
-        <div id="rows">
-          {%- if saved and saved|length > 0 %}
-            {%- for acc in saved %}
-              <div class="account-card row-item {{ acc.status }}">
-                {# badge status kecil di pojok kanan atas #}
-                <span class="status-pill">
-                  {% if acc.status == 'ran' %}
-                    Selesai
-                  {% elif acc.status == 'due' %}
-                    Terlewat
-                  {% else %}
-                    Terjadwal
-                  {% endif %}
-                </span>
+            <select name="level[]" aria-label="Level">
+              <option value="E1">E1</option>
+              <option value="E2" selected>E2</option>
+              <option value="E3">E3</option>
+            </select>
 
-                <div class="inputs">
-                  <div class="phone-group">
-                    <span class="phone-prefix">+62</span>
-                    <input name="phone[]" type="text" placeholder="NO HP" value="{{ acc.phone_display }}" required />
-                  </div>
-                  <div class="pwd-field">
-                    <input name="password[]" class="pwd" type="password" placeholder="PASSWORD" value="{{ acc.password }}" required />
-                    <button type="button" class="pwd-toggle" aria-label="Toggle password">Tampilkan</button>
-                  </div>
-                  <select name="level[]" aria-label="Level">
-                    <option value="E1" {{ 'selected' if acc.level=='E1' else '' }}>E1</option>
-                    <option value="E2" {{ 'selected' if acc.level=='E2' else '' }}>E2</option>
-                    <option value="E3" {{ 'selected' if acc.level=='E3' else '' }}>E3</option>
-                  </select>
-                  <div class="action-group">
-                    <button type="button" class="btn btn-primary review-btn" title="Set Review Harian">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 15v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path><path d="M7 10l5-5 5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                      <span>Review</span>
-                    </button>
-                    <button type="button" class="btn btn-secondary schedule-btn" title="Set Jadwal">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"></circle><path d="M12 7v6l4 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                      <span>Jadwal</span>
-                    </button>
-                    <button type="button" class="btn btn-danger reset-btn" title="Reset last_run">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 12a8 8 0 1 0-2.5 5.7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path><path d="M20 7v5h-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                      <span>Reset</span>
-                    </button>
-                  </div>
-                </div>
-                <button type="button" class="remove" onclick="removeRow(this)" title="Hapus akun" aria-label="Hapus akun">
-                  <span aria-hidden="true">−</span>
+            <div class="action-group">
+              <button type="button" class="btn btn-primary review-btn" title="Set Review Harian">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M21 15v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4" stroke="currentColor" stroke-width="1.6"
+                    stroke-linecap="round" stroke-linejoin="round" />
+                  <path d="M7 10l5-5 5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                </svg>
+                <span>Review</span>
+              </button>
+
+              <button type="button" class="btn btn-secondary schedule-btn" title="Set Jadwal">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" />
+                  <path d="M12 7v6l4 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                </svg>
+                <span>Jadwal</span>
+              </button>
+
+              <button type="button" class="btn btn-danger reset-btn" title="Reset last_run">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M20 12a8 8 0 1 0-2.5 5.7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                  <path d="M20 7v5h-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                </svg>
+                <span>Reset</span>
+              </button>
+            </div>
+          </div>
+
+          <button type="button" class="remove" onclick="removeRow(this)" title="Hapus akun" aria-label="Hapus akun">
+            <span aria-hidden="true">−</span>
+          </button>
+        </div>
+
+        <!-- ========== BARIS DEFAULT 2 (opsional, tidak required) ========== -->
+        <div class="account-card row-item">
+          <div class="inputs">
+            <div class="phone-group">
+              <span class="phone-prefix">+62</span>
+              <input name="phone[]" type="text" placeholder="NO HP" />
+            </div>
+
+            <div class="pwd-field">
+              <input name="password[]" class="pwd" type="password" placeholder="PASSWORD" />
+              <button type="button" class="pwd-toggle" aria-label="Toggle password">
+                Tampilkan
+              </button>
+            </div>
+
+            <select name="level[]" aria-label="Level">
+              <option value="E1">E1</option>
+              <option value="E2" selected>E2</option>
+              <option value="E3">E3</option>
+            </select>
+
+            <div class="action-group">
+              <button type="button" class="btn btn-primary review-btn" title="Set Review Harian">
+                Review
+              </button>
+              <button type="button" class="btn btn-secondary schedule-btn" title="Set Jadwal">
+                Jadwal
+              </button>
+              <button type="button" class="btn btn-danger reset-btn" title="Reset last_run">
+                Reset
+              </button>
+            </div>
+          </div>
+
+          <button type="button" class="remove" onclick="removeRow(this)" title="Hapus akun" aria-label="Hapus akun">
+            <span aria-hidden="true">−</span>
+          </button>
+        </div>
+        {%- endif %}
+      </div>
+
+      <!-- ===== CONTROLS (Add & Save) ===== -->
+      <div class="bottom-controls">
+        <button type="button" id="add-row" title="Tambah Nomor" aria-label="Tambah Nomor">
+          <span class="add-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true" focusable="false">
+              <rect x="0" y="0" width="24" height="24" rx="12" fill="none" />
+              <path d="M12 6v12M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg>
+          </span>
+          <span class="add-text">Tambah Nomor</span>
+        </button>
+
+        <button type="submit" name="action" value="save" class="btn btn-ghost">
+          Simpan Pengaturan
+        </button>
+      </div>
+
+      <!-- ===== HEADLESS TOGGLE ===== -->
+      <label class="headless-label mt-8">
+        <!-- Checkbox tidak langsung dikirim; dikonversi ke hidden input lewat JS -->
+        <input type="checkbox" id="headless-checkbox" {{ 'checked' if headless_default else '' }} />
+        <input type="hidden" name="headless" id="headless-input"
+          value="{{ 'true' if headless_default else 'false' }}" />
+        Jalankan headless
+      </label>
+
+      <!-- ===== MAIN ACTION BUTTONS ===== -->
+      <div class="actions">
+        <div class="actions-main">
+          <button type="submit" name="action" value="start" class="btn btn-primary btn-block">
+            Jalankan Semua Sekarang
+          </button>
+        </div>
+
+        <p class="actions-note small-muted">
+          Automation tetap berjalan otomatis sesuai jadwal tiap akun.
+          Tombol <strong>“Jalankan Semua Sekarang”</strong> hanya untuk
+          menjalankan semua akun sekaligus saat ini.
+        </p>
+      </div>
+    </form>
+
+    <!-- STATUS LEGEND -->
+    <p class="mt-8 small-muted">
+      Status warna: <strong>hijau</strong> = selesai,
+      <strong>kuning</strong> = terlewat,
+      <strong>abu</strong> = belum jalan.
+    </p>
+  </div>
+
+  <!-- ================= SCRIPTS ================= -->
+  <script>
+    function removeRow(btn) {
+      const row = btn.closest('.row-item');
+      if (!row) return;
+
+      const rows = document.querySelectorAll('.row-item');
+      // minimal 1 row harus tersisa
+      if (rows.length <= 1) return;
+
+      row.remove();
+    }
+
+    document
+      .getElementById('add-row')
+      .addEventListener('click', function () {
+        const rows = document.getElementById('rows');
+        const div = document.createElement('div');
+        div.className = 'account-card row-item';
+
+        // template baris baru = sama seperti baris default pertama (required)
+        div.innerHTML = `
+            <div class="inputs">
+              <div class="phone-group">
+                <span class="phone-prefix">+62</span>
+                <input
+                  name="phone[]"
+                  type="text"
+                  placeholder="NO HP"
+                  required
+                />
+              </div>
+
+              <div class="pwd-field">
+                <input
+                  name="password[]"
+                  class="pwd"
+                  type="password"
+                  placeholder="PASSWORD"
+                  required
+                />
+                <button
+                  type="button"
+                  class="pwd-toggle"
+                  aria-label="Toggle password"
+                >
+                  Tampilkan
                 </button>
               </div>
-            {%- endfor %}
-          {%- else %}
-            <!-- Baris default 1 (wajib isi, required) -->
-            <div class="account-card row-item">
-              <div class="inputs">
-                <div class="phone-group">
-                  <span class="phone-prefix">+62</span>
-                  <input name="phone[]" type="text" placeholder="NO HP" required />
-                </div>
-                <div class="pwd-field">
-                  <input name="password[]" class="pwd" type="password" placeholder="PASSWORD" required />
-                  <button type="button" class="pwd-toggle" aria-label="Toggle password">Tampilkan</button>
-                </div>
-                <select name="level[]" aria-label="Level">
-                  <option value="E1">E1</option>
-                  <option value="E2" selected>E2</option>
-                  <option value="E3">E3</option>
-                </select>
-                <div class="action-group">
-                  <button type="button" class="btn btn-primary review-btn" title="Set Review Harian">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 15v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path><path d="M7 10l5-5 5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                    <span>Review</span>
-                  </button>
-                  <button type="button" class="btn btn-secondary schedule-btn" title="Set Jadwal">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"></circle><path d="M12 7v6l4 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                    <span>Jadwal</span>
-                  </button>
-                  <button type="button" class="btn btn-danger reset-btn" title="Reset last_run">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 12a8 8 0 1 0-2.5 5.7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path><path d="M20 7v5h-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                    <span>Reset</span>
-                  </button>
-                </div>
+
+              <select name="level[]" aria-label="Level">
+                <option value="E1">E1</option>
+                <option value="E2" selected>E2</option>
+                <option value="E3">E3</option>
+              </select>
+
+              <div class="action-group">
+                <button
+                  type="button"
+                  class="btn btn-primary review-btn"
+                  title="Set Review Harian"
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M21 15v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                    <path
+                      d="M7 10l5-5 5 5"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                  <span>Review</span>
+                </button>
+
+                <button
+                  type="button"
+                  class="btn btn-secondary schedule-btn"
+                  title="Set Jadwal"
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="9"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                    />
+                    <path
+                      d="M12 7v6l4 2"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                  <span>Jadwal</span>
+                </button>
+
+                <button
+                  type="button"
+                  class="btn btn-danger reset-btn"
+                  title="Reset last_run"
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M20 12a8 8 0 1 0-2.5 5.7"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                    <path
+                      d="M20 7v5h-5"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                  <span>Reset</span>
+                </button>
               </div>
-              <button type="button" class="remove" onclick="removeRow(this)" title="Hapus akun" aria-label="Hapus akun">
-                <span aria-hidden="true">−</span>
-              </button>
             </div>
 
-            <!-- Baris default 2 (opsional, tidak required) -->
-            <div class="account-card row-item">
-              <div class="inputs">
-                <div class="phone-group">
-                  <span class="phone-prefix">+62</span>
-                  <input name="phone[]" type="text" placeholder="NO HP" />
-                </div>
-                <div class="pwd-field">
-                  <input name="password[]" class="pwd" type="password" placeholder="PASSWORD" />
-                  <button type="button" class="pwd-toggle" aria-label="Toggle password">Tampilkan</button>
-                </div>
-                <select name="level[]" aria-label="Level">
-                  <option value="E1">E1</option>
-                  <option value="E2" selected>E2</option>
-                  <option value="E3">E3</option>
-                </select>
-                <div class="action-group">
-                  <button type="button" class="btn btn-primary review-btn" title="Set Review Harian">Review</button>
-                  <button type="button" class="btn btn-secondary schedule-btn" title="Set Jadwal">Jadwal</button>
-                  <button type="button" class="btn btn-danger reset-btn" title="Reset last_run">Reset</button>
-                </div>
-              </div>
-              <button type="button" class="remove" onclick="removeRow(this)" title="Hapus akun" aria-label="Hapus akun">
-                <span aria-hidden="true">−</span>
-              </button>
-            </div>
-          {%- endif %}
-        </div>
-
-        <div class="top-controls">
-          <div>
-            <!-- simplified plus + button with accessible label -->
-            <button type="button" id="add-row" title="Tambah Nomor" aria-label="Tambah Nomor">
-              <!-- SVG plus icon for consistent rendering -->
-              <span class="add-icon" aria-hidden="true">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-                  <rect x="0" y="0" width="24" height="24" rx="12" fill="none"></rect>
-                  <path d="M12 6v12M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </span>
-              <span class="add-text">Tambah Nomor</span>
+            <button
+              type="button"
+              class="remove"
+              onclick="removeRow(this)"
+              title="Hapus akun"
+              aria-label="Hapus akun"
+            >
+              <span aria-hidden="true">−</span>
             </button>
-          </div>
-        </div>
+          `;
 
-        <label class="headless-label">
-          <!-- checkbox alone has no 'name' so we always submit an explicit hidden input with true/false set by JS -->
-          <input type="checkbox" id="headless-checkbox" {{ 'checked' if headless_default else '' }} />
-          <input type="hidden" name="headless" id="headless-input" value="{{ 'true' if headless_default else 'false' }}" />
-          Jalankan headless
-        </label>
+        rows.appendChild(div);
 
-        <div class="actions">
-          <button type="submit" name="action" value="start" class="btn btn-primary">Mulai Automation</button>
-          <button type="submit" name="action" value="save" class="btn cancel">Simpan Akun</button>
-        </div>
-      </form>
+        attachToggle(div);
+        attachReviewButtons();
+        attachScheduleButtons();
+        attachResetButtons();
+      });
 
-      <script>
-        function removeRow(btn){
+    // ================= PASSWORD TOGGLE =================
+    function attachToggle(root) {
+      const btn = root.querySelector('.pwd-toggle');
+      if (!btn || btn.dataset.bound) return;
+
+      btn.dataset.bound = '1';
+      btn.addEventListener('click', function () {
+        const input = root.querySelector('.pwd');
+        if (!input) return;
+
+        if (input.type === 'password') {
+          input.type = 'text';
+          btn.textContent = 'Sembunyikan';
+        } else {
+          input.type = 'password';
+          btn.textContent = 'Tampilkan';
+        }
+      });
+    }
+
+    document
+      .querySelectorAll('.row-item')
+      .forEach(function (row) { attachToggle(row); });
+
+    // ================= REVIEW BUTTON =================
+    function attachReviewButtons() {
+      document.querySelectorAll('.review-btn').forEach(function (btn) {
+        if (btn.dataset.bound) return;
+        btn.dataset.bound = '1';
+
+        btn.addEventListener('click', function () {
           const row = btn.closest('.row-item');
           if (!row) return;
-          const rows = document.querySelectorAll('.row-item');
-          // minimal 1 row harus tersisa
-          if (rows.length <= 1) return;
-          row.remove();
-        }
 
-        document.getElementById('add-row').addEventListener('click', function(){
-          const rows = document.getElementById('rows');
-          const div = document.createElement('div');
-          div.className = 'account-card row-item';
-          // template baris baru = sama seperti baris default pertama (required)
-          div.innerHTML = `\
-            <div class="inputs">\
-              <div class="phone-group">\
-                <span class="phone-prefix">+62</span>\
-                <input name="phone[]" type="text" placeholder="NO HP" required />\
-              </div>\
-              <div class="pwd-field">\
-                <input name="password[]" class="pwd" type="password" placeholder="PASSWORD" required />\
-                <button type="button" class="pwd-toggle" aria-label="Toggle password">Tampilkan</button>\
-              </div>\
-              <select name="level[]" aria-label="Level">\
-                <option value="E1">E1</option>\
-                <option value="E2" selected>E2</option>\
-                <option value="E3">E3</option>\
-              </select>\
-                <div class="action-group">\
-                <button type="button" class="btn btn-primary review-btn" title="Set Review Harian">\
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 15v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path><path d="M7 10l5-5 5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>\
-                  <span>Review</span>\
-                </button>\
-                <button type="button" class="btn btn-secondary schedule-btn" title="Set Jadwal">\
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"></circle><path d="M12 7v6l4 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>\
-                  <span>Jadwal</span>\
-                </button>\
-                <button type="button" class="btn btn-danger reset-btn" title="Reset last_run">\
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 12a8 8 0 1 0-2.5 5.7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path><path d="M20 7v5h-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>\
-                  <span>Reset</span>\
-                </button>\
-              </div>\
-            </div>\
-            <button type="button" class="remove" onclick="removeRow(this)" title="Hapus akun" aria-label="Hapus akun">\
-              <span aria-hidden="true">−</span>\
-            </button>`;
-          rows.appendChild(div);
-          attachToggle(div);
-          attachReviewButtons();
-          attachScheduleButtons();
-          attachResetButtons();
+          const phoneInput = row.querySelector('input[name="phone[]"]');
+          if (!phoneInput) return;
+
+          const phone = phoneInput.value.trim();
+          if (!phone) {
+            alert('Masukkan nomor HP terlebih dahulu.');
+            return;
+          }
+
+          window.location = '/review?phone=' + encodeURIComponent(phone);
         });
+      });
+    }
+    attachReviewButtons();
 
-        // attach toggles for existing rows
-        document.querySelectorAll('.row-item').forEach(function(r){ attachToggle(r); });
+    // ================= SCHEDULE BUTTON =================
+    function attachScheduleButtons() {
+      document.querySelectorAll('.schedule-btn').forEach(function (btn) {
+        if (btn.dataset.bound) return;
+        btn.dataset.bound = '1';
 
-        // attach review button handlers
-        function attachReviewButtons(){
-          document.querySelectorAll('.review-btn').forEach(function(b){
-            if (b.dataset.bound) return;
-            b.dataset.bound = '1';
-            b.addEventListener('click', function(){
-              const row = b.closest('.row-item');
-              if (!row) return;
-              const phoneInput = row.querySelector('input[name="phone[]"]');
-              if (!phoneInput) return;
-              const phone = phoneInput.value.trim();
-              if (!phone){ alert('Masukkan nomor HP terlebih dahulu.'); return; }
-              // open review editor; phone is display (without +62)
-              window.location = '/review?phone=' + encodeURIComponent(phone);
+        btn.addEventListener('click', function () {
+          const row = btn.closest('.row-item');
+          if (!row) return;
+
+          const phoneInput = row.querySelector('input[name="phone[]"]');
+          if (!phoneInput) return;
+
+          const phone = phoneInput.value.trim();
+          if (!phone) {
+            alert('Masukkan nomor HP terlebih dahulu.');
+            return;
+          }
+
+          window.location = '/schedule?phone=' + encodeURIComponent(phone);
+        });
+      });
+    }
+    attachScheduleButtons();
+
+    // ================= RESET BUTTON =================
+    function attachResetButtons() {
+      document.querySelectorAll('.reset-btn').forEach(function (btn) {
+        if (btn.dataset.bound) return;
+        btn.dataset.bound = '1';
+
+        btn.addEventListener('click', async function () {
+          const row = btn.closest('.row-item');
+          if (!row) return;
+
+          const phoneInput = row.querySelector('input[name="phone[]"]');
+          if (!phoneInput) return;
+
+          const phone = phoneInput.value.trim();
+          if (!phone) {
+            alert('Masukkan nomor HP terlebih dahulu.');
+            return;
+          }
+
+          if (!confirm('Hapus catatan last_run untuk ' + phone + '?')) return;
+
+          try {
+            const form = new FormData();
+            form.append('phone', phone);
+
+            const res = await fetch('/reset_last_run', {
+              method: 'POST',
+              body: form
             });
-          });
-        }
-        attachReviewButtons();
 
-        // attach schedule button handlers
-        function attachScheduleButtons(){
-          document.querySelectorAll('.schedule-btn').forEach(function(b){
-            if (b.dataset.bound) return;
-            b.dataset.bound = '1';
-            b.addEventListener('click', function(){
-              const row = b.closest('.row-item');
-              if (!row) return;
-              const phoneInput = row.querySelector('input[name="phone[]"]');
-              if (!phoneInput) return;
-              const phone = phoneInput.value.trim();
-              if (!phone){ alert('Masukkan nomor HP terlebih dahulu.'); return; }
-              window.location = '/schedule?phone=' + encodeURIComponent(phone);
-            });
-          });
-        }
-        attachScheduleButtons();
+            const data = await res.json();
 
-        // attach reset last_run handlers
-        function attachResetButtons(){
-          document.querySelectorAll('.reset-btn').forEach(function(b){
-            if (b.dataset.bound) return;
-            b.dataset.bound = '1';
-            b.addEventListener('click', async function(){
-              const row = b.closest('.row-item');
-              if (!row) return;
-              const phoneInput = row.querySelector('input[name="phone[]"]');
-              if (!phoneInput) return;
-              const phone = phoneInput.value.trim();
-              if (!phone){ alert('Masukkan nomor HP terlebih dahulu.'); return; }
-              if (!confirm('Hapus catatan last_run untuk ' + phone + '?')) return;
-
-              try{
-                const form = new FormData();
-                form.append('phone', phone);
-                const res = await fetch('/reset_last_run', { method: 'POST', body: form });
-                const data = await res.json();
-                if (res.ok && data.ok){
-                  alert('last_run dihapus untuk ' + phone);
-                  window.location.reload();
-                } else {
-                  alert('Gagal: ' + (data.msg || res.statusText));
-                }
-              } catch(err){
-                alert('Error saat menghubungi server: ' + err);
-              }
-            });
-          });
-        }
-        attachResetButtons();
-
-        function attachToggle(root){
-          const btn = root.querySelector('.pwd-toggle');
-          if (!btn) return;
-          // avoid double-binding
-          if (btn.dataset.bound) return;
-          btn.dataset.bound = '1';
-          btn.addEventListener('click', function(){
-            const input = root.querySelector('.pwd');
-            if (!input) return;
-            if (input.type === 'password'){
-              input.type = 'text';
-              btn.textContent = 'Sembunyikan';
+            if (res.ok && data.ok) {
+              alert('last_run dihapus untuk ' + phone);
+              window.location.reload();
             } else {
-              input.type = 'password';
-              btn.textContent = 'Tampilkan';
+              alert('Gagal: ' + (data.msg || res.statusText));
             }
-          });
-        }
-
-        // compact-only mode (no extra toggle UI)
-        // ensure headless hidden input reflects checkbox state before submit
-        const headlessCheckbox = document.getElementById('headless-checkbox');
-        const headlessInput = document.getElementById('headless-input');
-        if (headlessCheckbox && headlessInput){
-          headlessCheckbox.addEventListener('change', function(){
-            headlessInput.value = headlessCheckbox.checked ? 'true' : 'false';
-          });
-          document.getElementById('automation-form').addEventListener('submit', function(){
-            headlessInput.value = headlessCheckbox.checked ? 'true' : 'false';
-          });
-        }
-
-          // small micro-interaction: add a temporary class to animate the add-row button
-          const addRowBtn = document.getElementById('add-row');
-          if (addRowBtn){
-            addRowBtn.addEventListener('click', function(e){
-              // brief scale animation; class removed after 240ms
-              addRowBtn.classList.add('clicked');
-              setTimeout(()=> addRowBtn.classList.remove('clicked'), 240);
-            });
+          } catch (err) {
+            alert('Error saat menghubungi server: ' + err);
           }
+        });
+      });
+    }
+    attachResetButtons();
 
-        // THEME TOGGLE: persist preference and apply
-        const themeToggleBtn = document.getElementById('theme-toggle-btn');
-        const themeIcon = document.getElementById('theme-icon');
-        function setTheme(isDark){
-          if (isDark) document.body.classList.add('dark'); else document.body.classList.remove('dark');
-          try{ localStorage.setItem('theme', isDark ? 'dark' : 'light'); }catch(e){}
-          // swap icon: moon (dark) vs sun (light)
-          if (!themeIcon) return;
-          if (isDark){
-            themeIcon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"></path>';
-          } else {
-            themeIcon.innerHTML = '<circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.4"></circle> <path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path>';
-          }
-        }
+    // ================= HEADLESS SYNC =================
+    const headlessCheckbox = document.getElementById('headless-checkbox');
+    const headlessInput = document.getElementById('headless-input');
 
-        // initialize theme
-        (function(){
-          let stored = null;
-          try{ stored = localStorage.getItem('theme'); }catch(e){}
-          const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-          const dark = (stored === 'dark') || (stored === null && prefersDark);
-          setTheme(dark);
-        })();
+    if (headlessCheckbox && headlessInput) {
+      headlessCheckbox.addEventListener('change', function () {
+        headlessInput.value = headlessCheckbox.checked ? 'true' : 'false';
+      });
 
-        if (themeToggleBtn){
-          themeToggleBtn.addEventListener('click', function(){
-            const isDark = document.body.classList.toggle('dark');
-            setTheme(isDark);
-            // small feedback animation
-            themeToggleBtn.classList.add('clicked');
-            setTimeout(()=> themeToggleBtn.classList.remove('clicked'), 220);
-          });
-        }
-      </script>
+      document
+        .getElementById('automation-form')
+        .addEventListener('submit', function () {
+          headlessInput.value = headlessCheckbox.checked ? 'true' : 'false';
+        });
+    }
 
-      <p class="mt-8 small-muted">
-        Status warna: <strong>hijau</strong> = selesai, <strong>kuning</strong> = terlewat, <strong>abu</strong> = belum jalan.
-      </p>
-    </div>
-  </body>
+    // ================= ADD-ROW MICRO INTERACTION =================
+    const addRowBtn = document.getElementById('add-row');
+    if (addRowBtn) {
+      addRowBtn.addEventListener('click', function () {
+        addRowBtn.classList.add('clicked');
+        setTimeout(() => addRowBtn.classList.remove('clicked'), 240);
+      });
+    }
+  </script>
+</body>
+
 </html>
