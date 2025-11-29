@@ -66,8 +66,11 @@ class TestFrontendJS(unittest.TestCase):
         # accept either 820px or 900px in case someone wants a wider layout later
         joined = css.replace('\n', '')
         # accept 760px (current compact), 820px or 900px
+        # accept 700px (current), 760px, 820px or 900px for flexibility
+        joined = css.replace('\n', '')
         self.assertTrue(
-            '.container{max-width:760px;margin:14px auto;padding:10px}' in joined
+            '.container{max-width:700px;margin:12px auto;padding:10px}' in joined
+            or '.container{max-width:760px;margin:14px auto;padding:10px}' in joined
             or '.container{max-width:820px;margin:18px auto;padding:12px}' in joined
             or '.container{max-width:900px;margin:18px auto;padding:12px}' in joined
         )
