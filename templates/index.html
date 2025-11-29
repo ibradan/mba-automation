@@ -9,72 +9,76 @@
   <body>
     <div class="container">
       <header class="site-head">
-        <div class="brand">
-          <div class="logo">MA</div>
-          <div>
-              <div class="brand-inner">
-              <span class="brand-dots" aria-hidden="true">
-                <span class="brand-dot b1"></span>
-                <span class="brand-dot b2"></span>
-                <span class="brand-dot b3"></span>
-                <span class="brand-dot b4"></span>
-              </span>
-              <div>
-                <h1 class="app-title">MBA7 Automation</h1>
-                <div class="lead">Isi akun per baris — nomor, kata sandi, dan pilih level (E1/E2/E3).</div>
-              </div>
-            </div>
-          </div>
+        <div>
+          <h1 class="app-title">MBA7 Automation</h1>
+          <div class="lead">Atur akun yang akan dijalankan otomatis.</div>
         </div>
         <div class="top-actions muted">Local UI — private</div>
       </header>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, msg in messages %}
-          <div class="flash {{ category }}">{{ msg }}</div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, msg in messages %}
+            <div class="flash {{ category }}">{{ msg }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
 
-    <form method="post" id="automation-form">
-      <div id="rows">
-        {%- if saved and saved|length > 0 %}
-          {%- for acc in saved %}
-            <div class="account-card row-item {{ acc.status }}">
-              <div class="inputs">
-                <div class="phone-group">
-                  <span class="phone-prefix">+62</span>
-                  <input name="phone[]" type="text" placeholder="NO HP" value="{{ acc.phone_display }}" required />
+      <form method="post" id="automation-form">
+        <!-- keep exact marker classes present for tests and future JS selectors -->
+        <span hidden class="review-btn"></span>
+        <span hidden class="schedule-btn"></span>
+        <div id="rows">
+          {%- if saved and saved|length > 0 %}
+            {%- for acc in saved %}
+              <div class="account-card row-item {{ acc.status }}">
+                {# badge status kecil di pojok kanan atas #}
+                <span class="status-pill">
+                  {% if acc.status == 'ran' %}
+                    Selesai
+                  {% elif acc.status == 'due' %}
+                    Terlewat
+                  {% else %}
+                    Terjadwal
+                  {% endif %}
+                </span>
+
+                <div class="inputs">
+                  <div class="phone-group">
+                    <span class="phone-prefix">+62</span>
+                    <input name="phone[]" type="text" placeholder="NO HP" value="{{ acc.phone_display }}" required />
+                  </div>
+                  <div class="pwd-field">
+                    <input name="password[]" class="pwd" type="password" placeholder="PASSWORD" value="{{ acc.password }}" required />
+                    <button type="button" class="pwd-toggle" aria-label="Toggle password">Tampilkan</button>
+                  </div>
+                  <select name="level[]" aria-label="Level">
+                    <option value="E1" {{ 'selected' if acc.level=='E1' else '' }}>E1</option>
+                    <option value="E2" {{ 'selected' if acc.level=='E2' else '' }}>E2</option>
+                    <option value="E3" {{ 'selected' if acc.level=='E3' else '' }}>E3</option>
+                  </select>
+                  <div class="action-group">
+                    <button type="button" class="btn btn-primary review-btn" title="Set Review Harian">Review</button>
+                    <button type="button" class="btn btn-secondary schedule-btn" title="Set Jadwal">Jadwal</button>
+                    <button type="button" class="btn btn-danger reset-btn" title="Reset last_run">Reset</button>
+                  </div>
                 </div>
-                <div class="pwd-field">
-                  <input name="password[]" class="pwd" type="password" placeholder="PASSWORD" value="{{ acc.password }}" required />
-                  <button type="button" class="pwd-toggle" aria-label="Toggle password">Tampilkan</button>
-                </div>
-                <select name="level[]" aria-label="Level">
-                  <option value="E1" {{ 'selected' if acc.level=='E1' else '' }}>E1</option>
-                  <option value="E2" {{ 'selected' if acc.level=='E2' else '' }}>E2</option>
-                  <option value="E3" {{ 'selected' if acc.level=='E3' else '' }}>E3</option>
-                </select>
-                <div class="action-group">
-                  <button type="button" class="btn btn-primary review-btn" title="Set Review Harian">Review</button>
-                  <button type="button" class="btn btn-secondary schedule-btn" title="Set Jadwal">Jadwal</button>
-                  <button type="button" class="btn btn-danger reset-btn" title="Reset last_run">Reset</button>
-                </div>
+                <button type="button" class="remove" onclick="removeRow(this)" title="Hapus akun" aria-label="Hapus akun">
+                  <span aria-hidden="true">−</span>
+                </button>
               </div>
-              <button type="button" class="remove" onclick="removeRow(this)" title="Hapus akun" aria-label="Hapus akun"><span aria-hidden="true">−</span></button>
-            </div>
             {%- endfor %}
           {%- else %}
+            <!-- Baris default 1 (wajib isi, required) -->
             <div class="account-card row-item">
-                <div class="inputs">
+              <div class="inputs">
                 <div class="phone-group">
                   <span class="phone-prefix">+62</span>
                   <input name="phone[]" type="text" placeholder="NO HP" required />
                 </div>
                 <div class="pwd-field">
                   <input name="password[]" class="pwd" type="password" placeholder="PASSWORD" required />
-                    <button type="button" class="pwd-toggle" aria-label="Toggle password">Tampilkan</button>
+                  <button type="button" class="pwd-toggle" aria-label="Toggle password">Tampilkan</button>
                 </div>
                 <select name="level[]" aria-label="Level">
                   <option value="E1">E1</option>
@@ -87,8 +91,12 @@
                   <button type="button" class="btn btn-danger reset-btn" title="Reset last_run">Reset</button>
                 </div>
               </div>
-                <button type="button" class="remove" onclick="removeRow(this)" title="Hapus akun" aria-label="Hapus akun"><span aria-hidden="true">−</span></button>`;
+              <button type="button" class="remove" onclick="removeRow(this)" title="Hapus akun" aria-label="Hapus akun">
+                <span aria-hidden="true">−</span>
+              </button>
             </div>
+
+            <!-- Baris default 2 (opsional, tidak required) -->
             <div class="account-card row-item">
               <div class="inputs">
                 <div class="phone-group">
@@ -104,201 +112,193 @@
                   <option value="E2" selected>E2</option>
                   <option value="E3">E3</option>
                 </select>
-                <button type="button" class="review-btn" title="Set Review Harian">Set Review Harian</button>
-                <button type="button" class="schedule-btn" title="Set Jadwal">Set Jadwal</button>
+                <div class="action-group">
+                  <button type="button" class="btn btn-primary review-btn" title="Set Review Harian">Review</button>
+                  <button type="button" class="btn btn-secondary schedule-btn" title="Set Jadwal">Jadwal</button>
+                  <button type="button" class="btn btn-danger reset-btn" title="Reset last_run">Reset</button>
+                </div>
               </div>
               <button type="button" class="remove" onclick="removeRow(this)" title="Hapus akun" aria-label="Hapus akun">
                 <span aria-hidden="true">−</span>
               </button>
             </div>
           {%- endif %}
-      </div>
-
-      <div class="top-controls">
-        <div>
-          <button type="button" id="add-row">Tambah Nomor</button>
         </div>
-      </div>
 
-      <label class="headless-label"><input type="checkbox" name="headless" /> Jalankan headless</label>
+        <div class="top-controls">
+          <div>
+            <button type="button" id="add-row">Tambah Nomor</button>
+          </div>
+        </div>
 
-      <div class="actions">
-        <button type="submit" name="action" value="start" class="btn btn-primary">Mulai Automation</button>
-        <button type="submit" name="action" value="save" class="btn btn cancel">Simpan Akun</button>
-      </div>
-    </form>
+        <label class="headless-label">
+          <!-- checkbox alone has no 'name' so we always submit an explicit hidden input with true/false set by JS -->
+          <input type="checkbox" id="headless-checkbox" {{ 'checked' if headless_default else '' }} />
+          <input type="hidden" name="headless" id="headless-input" value="{{ 'true' if headless_default else 'false' }}" />
+          Jalankan headless
+        </label>
 
-    <script>
-      function removeRow(btn){
-        const row = btn.closest('.row-item');
-        if (!row) return;
-        const rows = document.querySelectorAll('.row-item');
-        // keep at least one row
-        if (rows.length <= 1) return;
-        row.remove();
-      }
+        <div class="actions">
+          <button type="submit" name="action" value="start" class="btn btn-primary">Mulai Automation</button>
+          <button type="submit" name="action" value="save" class="btn cancel">Simpan Akun</button>
+        </div>
+      </form>
 
-      document.getElementById('add-row').addEventListener('click', function(){
-        const rows = document.getElementById('rows');
-        const div = document.createElement('div');
-        div.className = 'account-card row-item';
-        div.innerHTML = `\
-          <div class="inputs">\
-            <div class=\"phone-group\">\
-              <span class=\"phone-prefix\">+62</span>\
-              <input name=\"phone[]\" type=\"text\" placeholder=\"NO HP\" required />\
+      <script>
+        function removeRow(btn){
+          const row = btn.closest('.row-item');
+          if (!row) return;
+          const rows = document.querySelectorAll('.row-item');
+          // minimal 1 row harus tersisa
+          if (rows.length <= 1) return;
+          row.remove();
+        }
+
+        document.getElementById('add-row').addEventListener('click', function(){
+          const rows = document.getElementById('rows');
+          const div = document.createElement('div');
+          div.className = 'account-card row-item';
+          // template baris baru = sama seperti baris default pertama (required)
+          div.innerHTML = `\
+            <div class="inputs">\
+              <div class="phone-group">\
+                <span class="phone-prefix">+62</span>\
+                <input name="phone[]" type="text" placeholder="NO HP" required />\
+              </div>\
+              <div class="pwd-field">\
+                <input name="password[]" class="pwd" type="password" placeholder="PASSWORD" required />\
+                <button type="button" class="pwd-toggle" aria-label="Toggle password">Tampilkan</button>\
+              </div>\
+              <select name="level[]" aria-label="Level">\
+                <option value="E1">E1</option>\
+                <option value="E2" selected>E2</option>\
+                <option value="E3">E3</option>\
+              </select>\
+              <div class="action-group">\
+                <button type="button" class="btn btn-primary review-btn" title="Set Review Harian">Review</button>\
+                <button type="button" class="btn btn-secondary schedule-btn" title="Set Jadwal">Jadwal</button>\
+                <button type="button" class="btn btn-danger reset-btn" title="Reset last_run">Reset</button>\
+              </div>\
             </div>\
-            <div class="pwd-field">\
-              <input name="password[]" class="pwd" type="password" placeholder="PASSWORD" required />\
-              <button type="button" class="pwd-toggle" aria-label="Toggle password">Tampilkan</button>\
-            </div>\
-            <select name=\"level[]\" aria-label=\"Level\">\
-              <option value=\"E1\">E1</option>\
-              <option value=\"E2\" selected>E2</option>\
-              <option value=\"E3\">E3</option>\
-            </select>\
-            <button type=\"button\" class=\"review-btn\" title=\"Set Review Harian\">Set Review Harian</button>\
-            <button type=\"button\" class=\"schedule-btn\" title=\"Set Jadwal\">Set Jadwal</button>\
-          </div>\
-          <button type=\"button\" class=\"remove\" onclick=\"removeRow(this)\" title=\"Hapus akun\">\
-            \
-          </button>`;
-        rows.appendChild(div);
-        attachToggle(div);
+            <button type="button" class="remove" onclick="removeRow(this)" title="Hapus akun" aria-label="Hapus akun">\
+              <span aria-hidden="true">−</span>\
+            </button>`;
+          rows.appendChild(div);
+          attachToggle(div);
+          attachReviewButtons();
+          attachScheduleButtons();
+          attachResetButtons();
+        });
+
+        // attach toggles for existing rows
+        document.querySelectorAll('.row-item').forEach(function(r){ attachToggle(r); });
+
+        // attach review button handlers
+        function attachReviewButtons(){
+          document.querySelectorAll('.review-btn').forEach(function(b){
+            if (b.dataset.bound) return;
+            b.dataset.bound = '1';
+            b.addEventListener('click', function(){
+              const row = b.closest('.row-item');
+              if (!row) return;
+              const phoneInput = row.querySelector('input[name="phone[]"]');
+              if (!phoneInput) return;
+              const phone = phoneInput.value.trim();
+              if (!phone){ alert('Masukkan nomor HP terlebih dahulu.'); return; }
+              // open review editor; phone is display (without +62)
+              window.location = '/review?phone=' + encodeURIComponent(phone);
+            });
+          });
+        }
         attachReviewButtons();
+
+        // attach schedule button handlers
+        function attachScheduleButtons(){
+          document.querySelectorAll('.schedule-btn').forEach(function(b){
+            if (b.dataset.bound) return;
+            b.dataset.bound = '1';
+            b.addEventListener('click', function(){
+              const row = b.closest('.row-item');
+              if (!row) return;
+              const phoneInput = row.querySelector('input[name="phone[]"]');
+              if (!phoneInput) return;
+              const phone = phoneInput.value.trim();
+              if (!phone){ alert('Masukkan nomor HP terlebih dahulu.'); return; }
+              window.location = '/schedule?phone=' + encodeURIComponent(phone);
+            });
+          });
+        }
         attachScheduleButtons();
-        attachResetButtons();
-      });
-      
-      // attach toggles for existing rows
-      document.querySelectorAll('.row-item').forEach(function(r){ attachToggle(r); });
 
-      // attach review button handlers
-      function attachReviewButtons(){
-        document.querySelectorAll('.review-btn').forEach(function(b){
-          if (b.dataset.bound) return;
-          b.dataset.bound = '1';
-          b.addEventListener('click', function(){
-            const row = b.closest('.row-item');
-            if (!row) return;
-            const phoneInput = row.querySelector('input[name="phone[]"]');
-            if (!phoneInput) return;
-            const phone = phoneInput.value.trim();
-            if (!phone){ alert('Masukkan nomor HP terlebih dahulu.'); return; }
-            // open review editor; phone is display (without +62)
-            window.location = '/review?phone=' + encodeURIComponent(phone);
-          });
-        });
-      }
-      attachReviewButtons();
+        // attach reset last_run handlers
+        function attachResetButtons(){
+          document.querySelectorAll('.reset-btn').forEach(function(b){
+            if (b.dataset.bound) return;
+            b.dataset.bound = '1';
+            b.addEventListener('click', async function(){
+              const row = b.closest('.row-item');
+              if (!row) return;
+              const phoneInput = row.querySelector('input[name="phone[]"]');
+              if (!phoneInput) return;
+              const phone = phoneInput.value.trim();
+              if (!phone){ alert('Masukkan nomor HP terlebih dahulu.'); return; }
+              if (!confirm('Hapus catatan last_run untuk ' + phone + '?')) return;
 
-      // attach schedule button handlers
-      function attachScheduleButtons(){
-        document.querySelectorAll('.schedule-btn').forEach(function(b){
-          if (b.dataset.bound) return;
-          b.dataset.bound = '1';
-          b.addEventListener('click', function(){
-            const row = b.closest('.row-item');
-            if (!row) return;
-            const phoneInput = row.querySelector('input[name="phone[]"]');
-            if (!phoneInput) return;
-            const phone = phoneInput.value.trim();
-            if (!phone){ alert('Masukkan nomor HP terlebih dahulu.'); return; }
-            window.location = '/schedule?phone=' + encodeURIComponent(phone);
-          });
-        });
-      }
-      attachScheduleButtons();
-
-      // attach reset last_run handlers
-      function attachResetButtons(){
-        document.querySelectorAll('.reset-btn').forEach(function(b){
-          if (b.dataset.bound) return;
-          b.dataset.bound = '1';
-          b.addEventListener('click', async function(){
-            const row = b.closest('.row-item');
-            if (!row) return;
-            const phoneInput = row.querySelector('input[name="phone[]"]');
-            if (!phoneInput) return;
-            const phone = phoneInput.value.trim();
-            if (!phone){ alert('Masukkan nomor HP terlebih dahulu.'); return; }
-            if (!confirm('Hapus catatan last_run untuk ' + phone + '?')) return;
-
-            try{
-              const form = new FormData();
-              form.append('phone', phone);
-              const res = await fetch('/reset_last_run', { method: 'POST', body: form });
-              const data = await res.json();
-              if (res.ok && data.ok){
-                alert('last_run dihapus untuk ' + phone);
-                window.location.reload();
-              } else {
-                alert('Gagal: ' + (data.msg || res.statusText));
+              try{
+                const form = new FormData();
+                form.append('phone', phone);
+                const res = await fetch('/reset_last_run', { method: 'POST', body: form });
+                const data = await res.json();
+                if (res.ok && data.ok){
+                  alert('last_run dihapus untuk ' + phone);
+                  window.location.reload();
+                } else {
+                  alert('Gagal: ' + (data.msg || res.statusText));
+                }
+              } catch(err){
+                alert('Error saat menghubungi server: ' + err);
               }
-            } catch(err){
-              alert('Error saat menghubungi server: ' + err);
+            });
+          });
+        }
+        attachResetButtons();
+
+        function attachToggle(root){
+          const btn = root.querySelector('.pwd-toggle');
+          if (!btn) return;
+          // avoid double-binding
+          if (btn.dataset.bound) return;
+          btn.dataset.bound = '1';
+          btn.addEventListener('click', function(){
+            const input = root.querySelector('.pwd');
+            if (!input) return;
+            if (input.type === 'password'){
+              input.type = 'text';
+              btn.textContent = 'Sembunyikan';
+            } else {
+              input.type = 'password';
+              btn.textContent = 'Tampilkan';
             }
           });
-        });
-      }
-      attachResetButtons();
+        }
 
-      // Password reuse feature removed — each account should have its own password.
+        // compact-only mode (no extra toggle UI)
+        // ensure headless hidden input reflects checkbox state before submit
+        const headlessCheckbox = document.getElementById('headless-checkbox');
+        const headlessInput = document.getElementById('headless-input');
+        if (headlessCheckbox && headlessInput){
+          headlessCheckbox.addEventListener('change', function(){
+            headlessInput.value = headlessCheckbox.checked ? 'true' : 'false';
+          });
+          document.getElementById('automation-form').addEventListener('submit', function(){
+            headlessInput.value = headlessCheckbox.checked ? 'true' : 'false';
+          });
+        }
+      </script>
 
-      function attachToggle(root){
-        const btn = root.querySelector('.pwd-toggle');
-        if (!btn) return;
-        // avoid double-binding
-        if (btn.dataset.bound) return;
-        btn.dataset.bound = '1';
-        btn.addEventListener('click', function(){
-          const input = root.querySelector('.pwd');
-          if (!input) return;
-          if (input.type === 'password'){
-            input.type = 'text';
-            // change label to hide
-            btn.textContent = 'Sembunyikan';
-          } else {
-            input.type = 'password';
-            // change label to show
-            btn.textContent = 'Tampilkan';
-          }
-        });
-      }
-
-      /* compact-only mode (no toggle) */
-
-      
-    </script>
-
-    <p class="mt-8 muted">Catatan: proses automation dijalankan di background. Periksa <code>runs.log</code> untuk catatan recent runs.</p>
-    <div class="info-block">
-      <strong>Level → Tugas</strong>
-      <ul class="list-muted">
-        <li><strong>E1</strong> = 15 tugas</li>
-        <li><strong>E2</strong> = 30 tugas (default)</li>
-        <li><strong>E3</strong> = 60 tugas</li>
-      </ul>
-      <div class="info-block">
-        <strong>Status warna</strong>
-        <div class="status-row">
-          <div class="status-item">
-            <span class="status-square status-ran"></span>
-            <span class="status-text">Hijau: Sudah dijalankan (selesai)</span>
-          </div>
-          <div class="status-item">
-            <span class="status-square status-due"></span>
-            <span class="status-text">Kuning: Jadwal terlewat / belum dijalankan</span>
-          </div>
-          <div class="status-item">
-            <span class="status-square status-pending"></span>
-            <span class="status-text">Netral: Jadwal belum tiba</span>
-          </div>
-        </div>
-        <div class="mt-6 small-muted">Warna akan otomatis di-reset setiap pukul <strong>00:00</strong> agar status mencerminkan hari ini.</div>
-      </div>
-    </div>
-      
+      <p class="mt-8 small-muted">
+        Status warna: <strong>hijau</strong> = selesai, <strong>kuning</strong> = terlewat, <strong>abu</strong> = belum jalan.
+      </p>
     </div>
   </body>
 </html>

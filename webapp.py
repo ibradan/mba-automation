@@ -82,7 +82,21 @@ def index():
         passwords = request.form.getlist('password[]')
         levels = request.form.getlist('level[]')
         action = request.form.get('action', 'start')
-        headless = True if request.form.get("headless") == "on" else False
+        # form headless is submitted by JS as 'true' or 'false' (string). Fall back to env/default.
+        val = request.form.get('headless')
+        def parse_bool(v):
+            if v is None:
+                return None
+            return str(v).strip().lower() in ("1","true","yes","on")
+
+        form_headless = parse_bool(val)
+        if form_headless is None:
+            # No form value provided (older browsers/clients) -> respect env var or default True
+            env_val = os.getenv('MBA_HEADLESS')
+            env_b = parse_bool(env_val)
+            headless = True if env_b is None else env_b
+        else:
+            headless = bool(form_headless)
 
         # normalize lists to same length
         entries = []
@@ -263,7 +277,16 @@ def index():
     except Exception:
         saved_accounts = []
 
-    return render_template("index.html", saved=saved_accounts)
+    # headless checkbox default value for GET UI: env var or True
+    def parse_env_bool(v):
+        if v is None:
+            return None
+        return str(v).strip().lower() in ("1","true","yes","on")
+
+    env_headless = parse_env_bool(os.getenv('MBA_HEADLESS'))
+    headless_default = True if env_headless is None else bool(env_headless)
+
+    return render_template("index.html", saved=saved_accounts, headless_default=headless_default)
 
 
 def _safe_load_accounts():

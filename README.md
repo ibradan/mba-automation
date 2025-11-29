@@ -81,4 +81,10 @@ Level mapping (used by the web UI):
 - `E3` = 60 tugas
 
 Each row's `LEVEL` selects one of the above values; the web UI will pass the mapped tugas count to the CLI.
+
+Headless behavior
+-----------------
+
+- Browsers now run in headless mode by default both for CLI and the Web UI (scheduled runs are always headless).
+- Set environment variable `MBA_HEADLESS=0` (or `false`, `no`) to change default; CLI flags `--headless` and `--no-headless` can override the default.
 ```
