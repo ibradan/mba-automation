@@ -9,9 +9,12 @@
   <body>
     <div class="container">
       <header class="site-head">
-        <div>
-          <h1 class="app-title">MBA7 Automation</h1>
-          <div class="lead">Atur akun yang akan dijalankan otomatis.</div>
+        <div class="brand-left">
+          <div class="logo">MA</div>
+          <div>
+            <h1 class="app-title">MBA7 Automation</h1>
+            <div class="lead">Atur akun yang akan dijalankan otomatis.</div>
+          </div>
         </div>
         <div class="top-actions muted">Local UI — private</div>
       </header>
@@ -58,9 +61,18 @@
                     <option value="E3" {{ 'selected' if acc.level=='E3' else '' }}>E3</option>
                   </select>
                   <div class="action-group">
-                    <button type="button" class="btn btn-primary review-btn" title="Set Review Harian">Review</button>
-                    <button type="button" class="btn btn-secondary schedule-btn" title="Set Jadwal">Jadwal</button>
-                    <button type="button" class="btn btn-danger reset-btn" title="Reset last_run">Reset</button>
+                    <button type="button" class="btn btn-primary review-btn" title="Set Review Harian">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 15v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path><path d="M7 10l5-5 5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                      <span>Review</span>
+                    </button>
+                    <button type="button" class="btn btn-secondary schedule-btn" title="Set Jadwal">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"></circle><path d="M12 7v6l4 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                      <span>Jadwal</span>
+                    </button>
+                    <button type="button" class="btn btn-danger reset-btn" title="Reset last_run">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 12a8 8 0 1 0-2.5 5.7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path><path d="M20 7v5h-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                      <span>Reset</span>
+                    </button>
                   </div>
                 </div>
                 <button type="button" class="remove" onclick="removeRow(this)" title="Hapus akun" aria-label="Hapus akun">
@@ -86,9 +98,18 @@
                   <option value="E3">E3</option>
                 </select>
                 <div class="action-group">
-                  <button type="button" class="btn btn-primary review-btn" title="Set Review Harian">Review</button>
-                  <button type="button" class="btn btn-secondary schedule-btn" title="Set Jadwal">Jadwal</button>
-                  <button type="button" class="btn btn-danger reset-btn" title="Reset last_run">Reset</button>
+                  <button type="button" class="btn btn-primary review-btn" title="Set Review Harian">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 15v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path><path d="M7 10l5-5 5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                    <span>Review</span>
+                  </button>
+                  <button type="button" class="btn btn-secondary schedule-btn" title="Set Jadwal">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"></circle><path d="M12 7v6l4 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                    <span>Jadwal</span>
+                  </button>
+                  <button type="button" class="btn btn-danger reset-btn" title="Reset last_run">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 12a8 8 0 1 0-2.5 5.7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path><path d="M20 7v5h-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                    <span>Reset</span>
+                  </button>
                 </div>
               </div>
               <button type="button" class="remove" onclick="removeRow(this)" title="Hapus akun" aria-label="Hapus akun">
@@ -184,10 +205,19 @@
                 <option value="E2" selected>E2</option>\
                 <option value="E3">E3</option>\
               </select>\
-              <div class="action-group">\
-                <button type="button" class="btn btn-primary review-btn" title="Set Review Harian">Review</button>\
-                <button type="button" class="btn btn-secondary schedule-btn" title="Set Jadwal">Jadwal</button>\
-                <button type="button" class="btn btn-danger reset-btn" title="Reset last_run">Reset</button>\
+                <div class="action-group">\
+                <button type="button" class="btn btn-primary review-btn" title="Set Review Harian">\
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 15v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path><path d="M7 10l5-5 5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>\
+                  <span>Review</span>\
+                </button>\
+                <button type="button" class="btn btn-secondary schedule-btn" title="Set Jadwal">\
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"></circle><path d="M12 7v6l4 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>\
+                  <span>Jadwal</span>\
+                </button>\
+                <button type="button" class="btn btn-danger reset-btn" title="Reset last_run">\
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 12a8 8 0 1 0-2.5 5.7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path><path d="M20 7v5h-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>\
+                  <span>Reset</span>\
+                </button>\
               </div>\
             </div>\
             <button type="button" class="remove" onclick="removeRow(this)" title="Hapus akun" aria-label="Hapus akun">\
