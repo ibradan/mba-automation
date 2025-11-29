@@ -84,8 +84,8 @@ body {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 20px 24px 20px 32px;
-  /* Extra padding kiri untuk text vertikal */
+  padding: 20px 24px 20px 36px;
+  /* Extra padding kiri untuk text vertikal yang lebih besar */
   margin-bottom: 16px;
   display: flex;
   align-items: center;
@@ -99,14 +99,15 @@ body {
   transform: translateY(-2px);
 }
 
-/* Status Indicator */
+/* Status Indicator - Lebih Lebar untuk Text */
 .account-card::before {
   content: '';
   position: absolute;
   left: 0;
   top: 0;
   bottom: 0;
-  width: 3px;
+  width: 5px;
+  /* Lebih lebar */
   background: var(--border);
   border-radius: 12px 0 0 12px;
 }
@@ -123,20 +124,26 @@ body {
   background: var(--blue);
 }
 
-/* Status Text Vertikal */
+/* Status Text Vertikal - Lebih Besar dan Jelas */
 .status-text {
   position: absolute;
-  left: 10px;
+  left: 12px;
   top: 50%;
   transform: translateY(-50%) rotate(-90deg);
   transform-origin: center;
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.15em;
-  color: rgba(255, 255, 255, 0.95);
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  font-size: 0.75rem;
+  /* Lebih besar */
+  font-weight: 800;
+  /* Lebih bold */
+  letter-spacing: 0.2em;
+  /* Lebih lebar */
+  color: rgba(255, 255, 255, 1);
+  /* Putih penuh */
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  /* Shadow lebih kuat */
   white-space: nowrap;
   pointer-events: none;
+  text-transform: uppercase;
 }
 
 .row-item.ran .status-text {
