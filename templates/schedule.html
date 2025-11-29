@@ -19,15 +19,10 @@
           <span class="brand-dot b3"></span>
           <span class="brand-dot b4"></span>
               </span>
-            </div>
-          </div>
-        </div>
-        <div class="top-actions muted">
-          <span class="mode-toggle" aria-hidden="false" title="Tampilan">
-            <button type="button" data-mode="compact" class="mode-btn" aria-pressed="true">Compact</button>
-            <button type="button" data-mode="comfortable" class="mode-btn">Comfortable</button>
-          </span>
-        </div>
+                  </div>
+                </div>
+              </div>
+              <div class="top-actions muted">&nbsp;</div>
         <div>
           <h2>Set Jadwal Harian</h2>
           <div class="muted">Jalankan automation setiap hari pada jam yang dipilih untuk akun ini.</div>
@@ -52,27 +47,7 @@
       <p class="muted mt-12">Kosongkan untuk menghapus jadwal.</p>
       </div>
       <footer class="mt-8 muted">Kembali ke <a href="/">halaman utama</a>.</footer>
-    <script>
-      (function(){
-        function applyTheme(mode){
-          if (mode === 'comfortable') document.documentElement.classList.add('comfortable');
-          else document.documentElement.classList.remove('comfortable');
-          document.querySelectorAll('.mode-btn').forEach(function(b){
-            b.classList.toggle('active', b.dataset.mode === mode);
-            b.setAttribute('aria-pressed', b.dataset.mode === mode ? 'true' : 'false');
-          });
-        }
-        const stored = window.localStorage.getItem('ui-mode') || 'compact';
-        applyTheme(stored);
-        document.querySelectorAll('.mode-btn').forEach(function(b){
-          b.addEventListener('click', function(){
-            const mode = b.dataset.mode;
-            applyTheme(mode);
-            window.localStorage.setItem('ui-mode', mode);
-          });
-        });
-      })();
-    </script>
+    <!-- Compact-only: no theme toggle JS required -->
     </div>
   </body>
 </html>

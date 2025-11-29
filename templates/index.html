@@ -12,7 +12,7 @@
         <div class="brand">
           <div class="logo">MA</div>
           <div>
-            <div class="brand-inner">
+              <div class="brand-inner">
               <span class="brand-dots" aria-hidden="true">
                 <span class="brand-dot b1"></span>
                 <span class="brand-dot b2"></span>
@@ -26,13 +26,7 @@
             </div>
           </div>
         </div>
-        <div class="top-actions muted">
-          Local UI — private
-          <span class="mode-toggle" aria-hidden="false" title="Tampilan">
-            <button type="button" data-mode="compact" class="mode-btn" aria-pressed="true">Compact</button>
-            <button type="button" data-mode="comfortable" class="mode-btn">Comfortable</button>
-          </span>
-        </div>
+        <div class="top-actions muted">Local UI — private</div>
       </header>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -272,32 +266,7 @@
         });
       }
 
-      // --- Theme toggle (Compact / Comfortable) ---
-      function applyTheme(mode){
-        const root = document.documentElement;
-        if (mode === 'comfortable'){
-          root.classList.add('comfortable');
-        } else {
-          root.classList.remove('comfortable');
-        }
-        document.querySelectorAll('.mode-btn').forEach(function(b){
-          b.classList.toggle('active', b.dataset.mode === mode);
-          b.setAttribute('aria-pressed', b.dataset.mode === mode ? 'true' : 'false');
-        });
-      }
-
-      function initThemeToggle(){
-        const stored = window.localStorage.getItem('ui-mode') || 'compact';
-        applyTheme(stored);
-        document.querySelectorAll('.mode-btn').forEach(function(b){
-          b.addEventListener('click', function(){
-            const mode = b.dataset.mode;
-            applyTheme(mode);
-            window.localStorage.setItem('ui-mode', mode);
-          });
-        });
-      }
-      initThemeToggle();
+      /* compact-only mode (no toggle) */
 
       
     </script>

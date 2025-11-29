@@ -42,19 +42,7 @@ h1.app-title{font-size:1.0rem;margin:0}
 
 .brand-inner{display:flex;align-items:center;gap:8px}
 
-/* Comfortable mode overrides (toggle by adding .comfortable on documentElement/body) */
-.comfortable .container{max-width:820px;margin:18px auto;padding:16px}
-.comfortable .logo{width:46px;height:46px;font-size:18px;border-radius:10px}
-.comfortable h1.app-title{font-size:1.25rem}
-.comfortable .account-card{gap:12px;padding:12px;border-radius:12px;margin-bottom:12px}
-.comfortable .form-control, .comfortable input[type=text], .comfortable input[type=password], .comfortable select{padding:9px 12px;border-radius:10px}
-.comfortable .btn{padding:8px 14px;font-size:0.95rem;border-radius:10px}
-.comfortable .pwd-toggle{right:8px}
-
-/* Toggle control */
-.mode-toggle{display:inline-flex;align-items:center;gap:8px;background:transparent;border-radius:999px;padding:4px 6px;border:1px solid transparent}
-.mode-toggle button{background:transparent;border:0;color:var(--muted);padding:6px 8px;border-radius:8px;cursor:pointer;font-weight:700;font-size:0.8rem}
-.mode-toggle button.active{background:var(--primary);color:#fff}
+/* (Compact-only) removed comfortable overrides and toggle styles - compact is default */
 
 .remove{width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid rgba(2,6,23,0.04);background:transparent;color:var(--danger);font-weight:600;cursor:pointer;transition:background .08s,transform .08s;padding:0}
 .remove span{font-size:18px;line-height:1;display:block}
