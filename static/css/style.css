@@ -84,8 +84,8 @@ body {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 20px 24px 20px 28px;
-  /* Padding atas untuk badge */
+  padding: 20px 50px 20px 28px;
+  /* Extra padding kanan untuk tombol hapus */
   margin-bottom: 16px;
   display: flex;
   align-items: center;
@@ -305,10 +305,11 @@ select:focus {
   flex-wrap: wrap;
 }
 
-/* Remove Button - Lebih Terlihat & Tidak Bentrok */
+/* Remove Button - Tidak Bentrok Lagi */
 .remove {
   width: 34px;
   height: 34px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -320,17 +321,12 @@ select:focus {
   font-size: 1.2rem;
   font-weight: 700;
   transition: all 0.2s;
-  flex-shrink: 0;
-  position: absolute;
-  top: 50%;
-  right: 10px;
-  transform: translateY(-50%);
 }
 
 .remove:hover {
   background: var(--danger);
   color: white;
-  transform: translateY(-50%) scale(1.05);
+  transform: scale(1.05);
 }
 
 /* Add Button */
