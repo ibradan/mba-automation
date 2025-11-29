@@ -84,8 +84,8 @@ body {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 20px 24px 20px 36px;
-  /* Extra padding kiri untuk text vertikal yang lebih besar */
+  padding: 20px 24px 20px 28px;
+  /* Padding kiri dikurangi karena pakai badge */
   margin-bottom: 16px;
   display: flex;
   align-items: center;
@@ -99,15 +99,14 @@ body {
   transform: translateY(-2px);
 }
 
-/* Status Indicator - Lebih Lebar untuk Text */
+/* Status Indicator Strip - Tetap ada tapi lebih tipis */
 .account-card::before {
   content: '';
   position: absolute;
   left: 0;
   top: 0;
   bottom: 0;
-  width: 5px;
-  /* Lebih lebar */
+  width: 4px;
   background: var(--border);
   border-radius: 12px 0 0 12px;
 }
@@ -124,47 +123,37 @@ body {
   background: var(--blue);
 }
 
-/* Status Text Vertikal - Lebih Besar dan Jelas */
-.status-text {
+/* Status Badge - Badge berwarna di pojok kanan atas (lebih mudah dibaca!) */
+.status-badge {
   position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%) rotate(-90deg);
-  transform-origin: center;
-  font-size: 0.75rem;
-  /* Lebih besar */
-  font-weight: 800;
-  /* Lebih bold */
-  letter-spacing: 0.2em;
-  /* Lebih lebar */
-  color: rgba(255, 255, 255, 0.95);
-  /* Default putih untuk pending */
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-  /* Shadow lebih kuat */
-  white-space: nowrap;
-  pointer-events: none;
-  text-transform: uppercase;
+  top: 10px;
+  right: 10px;
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
-/* Warna text khusus per status untuk kontras lebih baik */
-.row-item.ran .status-text {
-  color: rgba(255, 255, 255, 1);
-  /* Putih untuk hijau - kontras bagus */
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+.row-item.ran .status-badge {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
 }
 
-.row-item.due .status-text {
-  color: rgba(0, 0, 0, 0.9);
-  /* HITAM untuk kuning - kontras bagus! */
-  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
+.row-item.due .status-badge {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
 }
 
-.row-item.pending .status-text {
-  color: rgba(255, 255, 255, 1);
-  /* Putih untuk biru - kontras bagus */
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+.row-item.pending .status-badge {
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #93c5fd;
 }
-
 
 /* Grid Layout - Lebih Rapi dengan Flex */
 .account-card .inputs {
