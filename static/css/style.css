@@ -151,13 +151,11 @@ body {
   color: rgba(255, 255, 255, 0.9);
 }
 
-/* Grid Layout - Lebih Rapi */
+/* Grid Layout - Lebih Rapi dengan Flex */
 .account-card .inputs {
-  display: grid;
-  grid-template-columns: 170px 1fr 75px 1fr;
-  /* Phone | Password | Level | Actions */
-  gap: 12px;
+  display: flex;
   align-items: center;
+  gap: 12px;
   flex: 1;
 }
 
@@ -165,17 +163,33 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
+  min-width: 180px;
+  flex-shrink: 0;
+}
+
+.phone-group input {
+  width: 130px;
 }
 
 .pwd-field {
   position: relative;
+  flex: 1;
+  min-width: 150px;
 }
 
 /* Level dropdown - lebih kecil */
 select[name="level[]"] {
-  width: 75px;
-  max-width: 75px;
+  width: 70px;
+  min-width: 70px;
+  flex-shrink: 0;
 }
+
+.action-group {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
 
 /* Inputs */
 input[type="text"],
@@ -232,15 +246,25 @@ select:focus {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 9px 14px;
+  gap: 4px;
+  padding: 8px 12px;
   border-radius: 6px;
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   cursor: pointer;
   border: none;
   transition: all 0.2s;
+  white-space: nowrap;
 }
+
+.btn svg {
+  flex-shrink: 0;
+}
+
+.btn span {
+  display: inline-block;
+}
+
 
 .btn-primary {
   background: var(--blue);
@@ -451,29 +475,26 @@ select:focus {
   }
 
   .account-card .inputs {
-    grid-template-columns: 1fr 1fr;
-    grid-template-areas:
-      "phone password"
-      "level level"
-      "actions actions";
-    gap: 12px;
+    flex-direction: column;
+    align-items: stretch;
   }
 
-  .phone-group {
-    grid-area: phone;
-  }
-
-  .pwd-field {
-    grid-area: password;
-  }
-
+  .phone-group,
+  .pwd-field,
   select[name="level[]"] {
-    grid-area: level;
     width: 100%;
+    min-width: unset;
+    max-width: unset;
+  }
+
+  .phone-group input {
+    width: 100%;
+    flex: 1;
   }
 
   .action-group {
-    grid-area: actions;
+    flex-direction: row;
+    justify-content: stretch;
   }
 
   .action-group .btn {
@@ -489,4 +510,10 @@ select:focus {
   .status-pill {
     right: 48px;
   }
+
+  .status-text {
+    font-size: 0.6rem;
+  }
 }
+
+```
