@@ -4,6 +4,8 @@
   --accent: #0f1720;
   --muted: #6b7280;
   --primary: #0ea5a4;
+  --accent-2: #7c3aed;
+  --danger: #ef4444;
   --glass: rgba(255,255,255,0.8);
 }
 *{box-sizing:border-box}
@@ -18,17 +20,24 @@ h1.app-title{font-size:1.3rem;margin:0}
 .top-actions{font-size:0.95rem;color:var(--muted)}
 
 .card{background:var(--card);border-radius:14px;padding:14px;box-shadow:0 8px 22px rgba(8,15,23,0.06)}
-.account-card{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;margin-bottom:10px}
+.account-card{display:flex;align-items:center;gap:12px;padding:14px;border-radius:12px;margin-bottom:12px;background:linear-gradient(90deg, rgba(14,165,164,0.02), rgba(124,58,237,0.02));border:1px solid rgba(2,6,23,0.03)}
 .account-card .inputs{display:flex;gap:10px;align-items:center;flex:1;flex-wrap:wrap}
 .phone-prefix{background:#f3f9f9;border-radius:999px;padding:8px 12px;color:var(--muted);font-weight:700;border:1px solid #ecf8f8}
-input[type=text], input[type=password], select{padding:9px 12px;border-radius:10px;border:1px solid #e6f2f1;background:var(--glass);min-width:120px}
+.form-control, input[type=text], input[type=password], select{padding:9px 12px;border-radius:10px;border:1px solid #e6f2f1;background:var(--glass);min-width:120px}
 .pwd-field{position:relative}
 .pwd-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:transparent;border:0;color:var(--muted);cursor:pointer}
 .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}
 .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;border:0;font-weight:700;cursor:pointer}
-.btn-primary{background:var(--primary);color:#fff;box-shadow:0 8px 20px rgba(14,165,164,0.12)}
+.btn-primary{background:linear-gradient(90deg,var(--primary),var(--accent-2));color:#fff;box-shadow:0 8px 20px rgba(124,58,237,0.08)}
 .btn-ghost{background:#fff;border:1px solid #eef7f7;color:var(--accent)}
 .btn-outline{background:transparent;border:1px dashed #e6f2f1;color:var(--primary)}
+
+.remove{background:transparent;border:0;color:var(--danger);font-weight:700;padding:6px 8px;border-radius:8px;cursor:pointer}
+.remove:hover{background:rgba(239,68,68,0.06)}
+
+/* add-row styling */
+#add-row{background:transparent;border:0;color:var(--accent-2);font-weight:700;cursor:pointer;padding:8px 10px;border-radius:8px}
+#add-row:hover{background:rgba(124,58,237,0.06)}
 .mt-8{margin-top:8px}
 .muted{color:var(--muted)}
 

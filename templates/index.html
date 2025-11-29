@@ -116,9 +116,7 @@
                 </div>
                 <div class="pwd-field">
                   <input name="password[]" class="pwd" type="password" placeholder="PASSWORD" value="{{ acc.password }}" required />
-                  <button type="button" class="pwd-toggle" aria-label="Toggle password">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 12s4-7.5 9.5-7.5S21.5 12 21.5 12s-4 7.5-9.5 7.5S2.5 12 2.5 12z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                  </button>
+                  <button type="button" class="pwd-toggle" aria-label="Toggle password">Tampilkan</button>
                 </div>
                 <select name="level[]" aria-label="Level">
                   <option value="E1" {{ 'selected' if acc.level=='E1' else '' }}>E1</option>
@@ -131,9 +129,7 @@
                   <button type="button" class="btn btn-danger reset-btn" title="Reset last_run">Reset</button>
                 </div>
               </div>
-              <button type="button" class="remove" onclick="removeRow(this)" title="Hapus akun">
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 12h12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              </button>
+              <button type="button" class="remove" onclick="removeRow(this)" title="Hapus akun">Hapus</button>
             </div>
           {%- endfor %}
         {%- else %}
@@ -145,9 +141,7 @@
               </div>
               <div class="pwd-field">
                 <input name="password[]" class="pwd" type="password" placeholder="PASSWORD" required />
-                <button type="button" class="pwd-toggle" aria-label="Toggle password">
-                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 12s4-7.5 9.5-7.5S21.5 12 21.5 12s-4 7.5-9.5 7.5S2.5 12 2.5 12z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </button>
+                  <button type="button" class="pwd-toggle" aria-label="Toggle password">Tampilkan</button>
               </div>
               <select name="level[]" aria-label="Level">\
                 <option value="E1">E1</option>\
@@ -160,9 +154,7 @@
                 <button type=\"button\" class=\"btn btn-danger reset-btn\" title=\"Reset last_run\">Reset</button>\
               </div>\
             </div>
-            <button type="button" class="remove" onclick="removeRow(this)" title="Hapus akun">
-              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 12h12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
+              <button type="button" class="remove" onclick="removeRow(this)" title="Hapus akun">Hapus</button>
           </div>
           <div class="account-card row-item">
             <div class="inputs">
@@ -172,9 +164,7 @@
               </div>
               <div class="pwd-field">
                 <input name="password[]" class="pwd" type="password" placeholder="PASSWORD" />
-                <button type="button" class="pwd-toggle" aria-label="Toggle password">
-                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 12s4-7.5 9.5-7.5S21.5 12 21.5 12s-4 7.5-9.5 7.5S2.5 12 2.5 12z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </button>
+                <button type="button" class="pwd-toggle" aria-label="Toggle password">Tampilkan</button>
               </div>
               <select name="level[]" aria-label="Level">
                 <option value="E1">E1</option>
@@ -184,16 +174,14 @@
               <button type="button" class="review-btn" title="Set Review Harian">Set Review Harian</button>
               <button type="button" class="schedule-btn" title="Set Jadwal">Set Jadwal</button>
             </div>
-            <button type="button" class="remove" onclick="removeRow(this)" title="Hapus akun">
-              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 12h12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
+            <button type="button" class="remove" onclick="removeRow(this)" title="Hapus akun">Hapus</button>
           </div>
         {%- endif %}
       </div>
 
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
         <div>
-          <button type="button" id="add-row"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> Tambah Nomor</button>
+          <button type="button" id="add-row">Tambah Nomor</button>
         </div>
       </div>
 
@@ -227,9 +215,7 @@
             </div>\
             <div class="pwd-field">\
               <input name="password[]" class="pwd" type="password" placeholder="PASSWORD" required />\
-              <button type="button" class="pwd-toggle" aria-label="Toggle password">\
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d=\"M2.5 12s4-7.5 9.5-7.5S21.5 12 21.5 12s-4 7.5-9.5 7.5S2.5 12 2.5 12z\" stroke=\"currentColor\" stroke-width=\"1.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><circle cx=\"12\" cy=\"12\" r=\"3\" stroke=\"currentColor\" stroke-width=\"1.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>\
-              </button>\
+              <button type="button" class="pwd-toggle" aria-label="Toggle password">Tampilkan</button>\
             </div>\
             <select name=\"level[]\" aria-label=\"Level\">\
               <option value=\"E1\">E1</option>\
@@ -240,7 +226,7 @@
             <button type=\"button\" class=\"schedule-btn\" title=\"Set Jadwal\">Set Jadwal</button>\
           </div>\
           <button type=\"button\" class=\"remove\" onclick=\"removeRow(this)\" title=\"Hapus akun\">\
-            <svg viewBox=\"0 0 24 24\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M6 12h12\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>\
+            \
           </button>`;
         rows.appendChild(div);
         attachToggle(div);
@@ -335,11 +321,13 @@
           if (!input) return;
           if (input.type === 'password'){
             input.type = 'text';
-            // change icon to closed-eye (simple swap using text)
-            btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 3l18 18" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+            // change label to hide
+            btn.textContent = 'Sembunyikan';
           } else {
             input.type = 'password';
-            btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 12s4-7.5 9.5-7.5S21.5 12 21.5 12s-4 7.5-9.5 7.5S2.5 12 2.5 12z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+            // change label to show
+            btn.textContent = 'Tampilkan';
+          }
           }
         });
       }
