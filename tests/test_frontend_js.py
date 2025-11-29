@@ -79,6 +79,21 @@ class TestFrontendJS(unittest.TestCase):
         s = read_index()
         self.assertNotIn('<footer></footer>', s)
 
+    def test_theme_toggle_present(self):
+        import glob
+        from pathlib import Path
+        tmpl_dir = Path(__file__).resolve().parents[1] / 'templates'
+        pages = ['index.html', 'review.html', 'schedule.html']
+        for p in pages:
+            t = (tmpl_dir / p).read_text(encoding='utf-8')
+            self.assertIn('class="mode-toggle"', t, msg=f"Missing theme toggle in {p}")
+            self.assertIn('data-mode="compact"', t)
+            self.assertIn('data-mode="comfortable"', t)
+
+    def test_css_has_comfortable(self):
+        css = read_css()
+        self.assertIn('.comfortable .container', css)
+
 
 if __name__ == '__main__':
     unittest.main()
