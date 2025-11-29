@@ -84,8 +84,8 @@ body {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 20px 24px 20px 28px;
-  /* Padding kiri dikurangi karena pakai badge */
+  padding: 28px 24px 20px 28px;
+  /* Padding atas untuk badge */
   margin-bottom: 16px;
   display: flex;
   align-items: center;
@@ -123,11 +123,11 @@ body {
   background: var(--blue);
 }
 
-/* Status Badge - Badge berwarna di pojok kanan atas (lebih mudah dibaca!) */
+/* Status Badge - Di atas inputs, tidak bentrok dengan tombol hapus! */
 .status-badge {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: -8px;
+  left: 24px;
   padding: 4px 10px;
   border-radius: 99px;
   font-size: 0.7rem;
@@ -135,6 +135,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  z-index: 1;
 }
 
 .row-item.ran .status-badge {
@@ -337,12 +338,16 @@ select:focus {
   font-weight: 700;
   transition: all 0.2s;
   flex-shrink: 0;
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
 }
 
 .remove:hover {
   background: var(--danger);
   color: white;
-  transform: scale(1.05);
+  transform: translateY(-50%) scale(1.05);
 }
 
 /* Add Button */
