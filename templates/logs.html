@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="id">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Automation Logs - MBA7</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+    <style>
+        .log-container {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .log-controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .log-entry {
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+            font-size: 0.85rem;
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border);
+            display: grid;
+            grid-template-columns: 160px 80px 1fr;
+            gap: 12px;
+            align-items: start;
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-timestamp {
+            color: var(--muted);
+            font-weight: 600;
+        }
+
+        .log-level {
+            font-weight: 700;
+            text-align: center;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+        }
+
+        .log-level.INFO {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .log-level.ERROR {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .log-level.WARNING {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .log-message {
+            color: var(--text);
+            word-break: break-word;
+        }
+
+        .log-stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+        }
+
+        .stat-item {
+            color: var(--muted);
+        }
+
+        .stat-value {
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .auto-refresh {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--muted);
+            font-size: 0.85rem;
+        }
+
+        .refresh-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .filter-btns {
+            display: flex;
+            gap: 8px;
+        }
+
+        .filter-btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: white;
+            color: var(--text);
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .filter-btn.active {
+            background: var(--blue);
+            color: white;
+            border-color: var(--blue);
+        }
+
+        .no-logs {
+            text-align: center;
+            padding: 40px;
+            color: var(--muted);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="site-head">
+            <div class="brand-left">
+                <div class="logo">MA</div>
+                <div>
+                    <h1 class="app-title">Automation Logs</h1>
+                    <p class="lead">Monitor automation progress dan troubleshoot errors</p>
+                </div>
+            </div>
+        </header>
+
+        <!-- Log Stats -->
+        <div class="log-stats">
+            <div class="stat-item">
+                Total: <span class="stat-value">{{ total }}</span> entries
+            </div>
+            <div class="stat-item">
+                Showing last <span class="stat-value">1000</span> lines
+            </div>
+        </div>
+
+        <!-- Log Controls -->
+        <div class="log-controls">
+            <div class="filter-btns">
+                <button class="filter-btn active" data-level="ALL" onclick="filterLogs('ALL')">All</button>
+                <button class="filter-btn" data-level="INFO" onclick="filterLogs('INFO')">INFO</button>
+                <button class="filter-btn" data-level="WARNING" onclick="filterLogs('WARNING')">WARNING</button>
+                <button class="filter-btn" data-level="ERROR" onclick="filterLogs('ERROR')">ERROR</button>
+            </div>
+
+            <div class="auto-refresh">
+                <div class="refresh-indicator"></div>
+                Auto-refresh: <span id="countdown">5</span>s
+            </div>
+
+            <a href="/" class="btn btn-secondary">← Kembali</a>
+        </div>
+
+        <!-- Log Entries -->
+        <div class="log-container">
+            {% if logs %}
+            <div id="log-entries">
+                {% for log in logs %}
+                <div class="log-entry" data-level="{{ log.level }}">
+                    <div class="log-timestamp">{{ log.timestamp }}</div>
+                    <div class="log-level {{ log.level }}">{{ log.level}}</div>
+                    <div class="log-message">{{ log.message }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="no-logs">
+                📝 No logs yet. Logs akan muncul saat automation dijalankan.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        let currentFilter = 'ALL';
+        let countdown = 5;
+        let countdownInterval;
+
+        // Filter logs by level
+        function filterLogs(level) {
+            currentFilter = level;
+
+            // Update button states
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.level === level) {
+                    btn.classList.add('active');
+                }
+            });
+
+            // Show/hide log entries
+            document.querySelectorAll('.log-entry').forEach(entry => {
+                if (level === 'ALL' || entry.dataset.level === level) {
+                    entry.style.display = 'grid';
+                } else {
+                    entry.style.display = 'none';
+                }
+            });
+        }
+
+        // Auto-refresh logs every 5 seconds
+        function startCountdown() {
+            countdown = 5;
+            document.getElementById('countdown').textContent = countdown;
+
+            if (countdownInterval) clearInterval(countdownInterval);
+
+            countdownInterval = setInterval(() => {
+                countdown--;
+                document.getElementById('countdown').textContent = countdown;
+
+                if (countdown <= 0) {
+                    refreshLogs();
+                }
+            }, 1000);
+        }
+
+        // Refresh logs from server
+        function refreshLogs() {
+            window.location.reload();
+        }
+
+        // Start countdown on page load
+        startCountdown();
+    </script>
+</body>
+
+</html>

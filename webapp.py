@@ -584,34 +584,126 @@ def schedule():
     return render_template('schedule.html', phone_display=display_phone, schedule=existing_schedule)
 
 
-@app.route('/reset_last_run', methods=['POST'])
+@app.route("/reset_last_run", methods=["POST"])
 def reset_last_run():
-    # Accept form-encoded 'phone' (display format, without +62)
-    display_phone = request.form.get('phone', '').strip()
-    if not display_phone:
-        return jsonify({'ok': False, 'msg': 'Nomor HP tidak disertakan.'}), 400
+    """Remove the last_run timestamp for a given phone number so it can run again."""
+    phone = request.form.get("phone", "").strip()
+    if not phone:
+        return jsonify({"ok": False, "msg": "phone is required"}), 400
 
-    norm = normalize_phone(display_phone)
+    normalized = normalize_phone(phone)
+    if not normalized:
+        return jsonify({"ok": False, "msg": "invalid phone format"}), 400
 
-    accounts = _safe_load_accounts()
-    found = False
-    for a in accounts:
-        if a.get('phone') == norm:
-            a.pop('last_run', None)
-            a.pop('last_run_ts', None)
-            found = True
-            break
-
-    if not found:
-        return jsonify({'ok': False, 'msg': 'Akun tidak ditemukan.'}), 404
-
-    try:
+    with SCHED_LOCK:
+        accounts = _safe_load_accounts()
+        found = False
+        for acc in accounts:
+            if acc.get("phone") == normalized:
+                if "last_run" in acc:
+                    del acc["last_run"]
+                if "last_run_ts" in acc: # Added this line back to match original behavior
+                    del acc["last_run_ts"]
+                found = True
+                break
+        if not found:
+            return jsonify({"ok": False, "msg": "akun tidak ditemukan"}), 404
         _safe_write_accounts(accounts)
-        return jsonify({'ok': True, 'msg': 'Cleared last_run.'})
-    except Exception as e:
-        return jsonify({'ok': False, 'msg': str(e)}), 500
+
+    return jsonify({"ok": True, "msg": "last_run dihapus"})
 
 
+@app.route("/logs")
+def view_logs():
+    """Display automation logs from runs.log file."""
+    lines = []
+    if os.path.exists(LOG_FILE):
+        try:
+            # Read last 1000 lines
+            with open(LOG_FILE, 'r', encoding='utf-8', errors='ignore') as f:
+                all_lines = f.readlines()
+                lines = all_lines[-1000:]  # Last 1000 lines
+        except Exception as e:
+            flash(f"Error reading log file: {e}", "error")
+    
+    # Parse lines into structured format
+    parsed_logs = []
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        
+        # Parse format: "2025-11-29 23:00:00 INFO message"
+        parts = line.split(' ', 3)
+        if len(parts) >= 4:
+            date = parts[0]
+            time_str = parts[1]
+            level = parts[2]
+            message = parts[3] if len(parts) > 3 else ''
+            parsed_logs.append({
+                'timestamp': f"{date} {time_str}",
+                'level': level,
+                'message': message
+            })
+        else:
+            # Fallback for unparsed lines
+            parsed_logs.append({
+                'timestamp': '',
+                'level': 'UNKNOWN',
+                'message': line
+            })
+    
+    # Reverse for newest first
+    parsed_logs.reverse()
+    
+    return render_template('logs.html', logs=parsed_logs, total=len(parsed_logs))
+
+
+@app.route("/api/logs")
+def api_logs():
+    """API endpoint to fetch logs as JSON."""
+    level_filter = request.args.get('level', '').upper()
+    limit = int(request.args.get('limit', 100))
+    
+    lines = []
+    if os.path.exists(LOG_FILE):
+        try:
+            with open(LOG_FILE, 'r', encoding='utf-8', errors='ignore') as f:
+                lines = f.readlines()[-limit:]
+        except Exception:
+            pass
+    
+    # Parse lines
+    parsed_logs = []
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        
+        parts = line.split(' ', 3)
+        if len(parts) >= 4:
+            date = parts[0]
+            time_str = parts[1]
+            level = parts[2]
+            message = parts[3] if len(parts) > 3 else ''
+            
+            # Filter by level if specified
+            if level_filter and level != level_filter:
+                continue
+            
+            parsed_logs.append({
+                'timestamp': f"{date} {time_str}",
+                'level': level,
+                'message': message
+            })
+    
+    # Reverse for newest first
+    parsed_logs.reverse()
+    
+    return jsonify({'logs': parsed_logs, 'total': len(parsed_logs)})
+
+
+# ================= BACKGROUND SCHEDULER THREAD =================
 if __name__ == "__main__":
     # Development server only. For production, use gunicorn/uWSGI.
     # Start scheduler thread only when running the main process (avoid Werkzeug reloader double-start)
