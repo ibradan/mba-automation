@@ -479,7 +479,7 @@ def review():
                 break
 
         # collect reviews from form
-            days_keys = ['mon','tue','wed','thu','fri','sat']
+        days_keys = ['mon','tue','wed','thu','fri','sat']
         reviews = {}
         for k in days_keys:
             reviews[k] = request.form.get(k, '').strip()
@@ -513,7 +513,7 @@ def review():
             existing = a.get('reviews', {}) or {}
             break
 
-        days = [('mon','Senin'),('tue','Selasa'),('wed','Rabu'),('thu','Kamis'),('fri','Jumat'),('sat','Sabtu')]
+    days = [('mon','Senin'),('tue','Selasa'),('wed','Rabu'),('thu','Kamis'),('fri','Jumat'),('sat','Sabtu')]
     return render_template('review.html', phone_display=display_phone, reviews=existing, days=days)
 
 
