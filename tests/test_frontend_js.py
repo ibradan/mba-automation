@@ -52,6 +52,22 @@ class TestFrontendJS(unittest.TestCase):
             text = Path(f).read_text(encoding='utf-8')
             self.assertNotIn('style="', text, msg=f"Found inline style in {f}")
 
+    def test_footer_removed(self):
+        # ensure no template contains the removed footer text
+        import glob
+        from pathlib import Path
+        tmpl_dir = Path(__file__).resolve().parents[1] / 'templates'
+        for f in glob.glob(str(tmpl_dir / '*.html')):
+            t = Path(f).read_text(encoding='utf-8')
+            self.assertNotIn('keep your secrets out of git', t)
+
+    def test_compact_css_applied(self):
+        css = read_css()
+        self.assertIn('.container{max-width:900px;margin:18px auto;padding:12px}', css.replace('\n', ''))
+        self.assertIn('.logo{width:36px;height:36px', css)
+        self.assertIn('.account-card{display:flex;align-items:center;gap:8px;padding:8px', css)
+        self.assertIn('.btn{display:inline-flex;align-items:center;gap:6px;padding:6px 10px', css)
+
 
 if __name__ == '__main__':
     unittest.main()
