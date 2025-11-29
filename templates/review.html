@@ -5,21 +5,10 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Set Review Harian</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
-    <style>
-      body{padding:0}
-      h1{font-size:1.2rem}
-      table{width:100%;border-collapse:collapse;margin-top:12px}
-      td,th{border:1px solid #e6e6e6;padding:8px;text-align:left}
-      input[type=text]{width:100%;padding:8px;border:1px solid #ddd;border-radius:6px}
-      .actions{margin-top:12px;display:flex;gap:8px}
-      .btn{padding:8px 12px;border-radius:8px;border:0;cursor:pointer}
-      .btn.save{background:#0ea5a4;color:#fff}
-      .btn.cancel{background:#e5e7eb}
-    </style>
   </head>
   <body>
     <div class="container">
-      <header style="display:flex;align-items:center;justify-content:flex-start;gap:12px;margin-bottom:12px">
+      <header class="site-head">
         <span class="brand-dots" aria-hidden="true">
           <span class="brand-dot b1"></span>
           <span class="brand-dot b2"></span>

@@ -75,3 +75,15 @@ footer{margin-top:22px;color:var(--muted);font-size:0.9rem;text-align:center}
 
 /* improved focus visuals */
 :focus{outline:2px solid rgba(66,133,244,0.14);outline-offset:2px}
+
+/* small page-specific styles (formerly inline in templates) */
+table{width:100%;border-collapse:collapse;margin-top:12px}
+td,th{border:1px solid #e6e6e6;padding:8px;text-align:left}
+input[type=text]{width:100%;padding:8px;border:1px solid #e6e6e6;border-radius:8px}
+.card{background:var(--card);padding:18px;border-radius:12px;box-shadow:0 8px 22px rgba(2,6,23,0.06)}
+.row{display:flex;gap:12px;align-items:center;margin-top:12px}
+label{font-weight:600}
+input[type=time]{padding:10px;border-radius:8px;border:1px solid #e6eef0}
+.actions{margin-top:12px;display:flex;gap:8px}
+.btn.save{background:var(--primary);color:#fff}
+.btn.cancel{background:#e5e7eb;color:#111}
