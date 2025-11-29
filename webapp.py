@@ -171,10 +171,15 @@ def index():
                 for a in saved_accounts:
                     if a.get('phone') == norm_phone:
                         r = a.get('reviews', {}) or {}
-                        # weekday mapping: Monday=0 -> mon
-                        wk = ['mon','tue','wed','thu','fri','sat','sun']
-                        key = wk[datetime.datetime.now().weekday()]
-                        review_text = r.get(key) or None
+                        # weekday mapping: Monday=0 -> mon; note: no Sunday
+                        wk = ['mon','tue','wed','thu','fri','sat']
+                        wd = datetime.datetime.now().weekday()
+                        # if today is Sunday (weekday 6) there's no review scheduled
+                        if wd < len(wk):
+                            key = wk[wd]
+                            review_text = r.get(key) or None
+                        else:
+                            review_text = None
                         break
             except Exception:
                 review_text = None
@@ -348,13 +353,17 @@ def _trigger_run_for_account(acc):
         except Exception:
             iterations = 30
 
-    # determine today's review text
+    # determine today's review text — no reviews on Sunday
     review_text = None
     r = acc.get('reviews', {}) or {}
-    wk = ['mon','tue','wed','thu','fri','sat','sun']
+    wk = ['mon','tue','wed','thu','fri','sat']
     try:
-        key = wk[datetime.datetime.now().weekday()]
-        review_text = r.get(key) or None
+        wd = datetime.datetime.now().weekday()
+        if wd < len(wk):
+            key = wk[wd]
+            review_text = r.get(key) or None
+        else:
+            review_text = None
     except Exception:
         review_text = None
 
@@ -379,6 +388,10 @@ def _scheduler_loop():
     # Loop forever checking schedules and triggering runs when needed.
     while True:
         try:
+            # do not run scheduled jobs on Sundays (weekday == 6)
+            if datetime.datetime.now().weekday() == 6:
+                time.sleep(SCHED_CHECK_INTERVAL)
+                continue
             now = datetime.datetime.now()
             now_hm = now.strftime('%H:%M')
             today_str = now.date().isoformat()
@@ -466,7 +479,7 @@ def review():
                 break
 
         # collect reviews from form
-        days_keys = ['mon','tue','wed','thu','fri','sat','sun']
+            days_keys = ['mon','tue','wed','thu','fri','sat']
         reviews = {}
         for k in days_keys:
             reviews[k] = request.form.get(k, '').strip()
@@ -500,7 +513,7 @@ def review():
             existing = a.get('reviews', {}) or {}
             break
 
-    days = [('mon','Senin'),('tue','Selasa'),('wed','Rabu'),('thu','Kamis'),('fri','Jumat'),('sat','Sabtu'),('sun','Minggu')]
+        days = [('mon','Senin'),('tue','Selasa'),('wed','Rabu'),('thu','Kamis'),('fri','Jumat'),('sat','Sabtu')]
     return render_template('review.html', phone_display=display_phone, reviews=existing, days=days)
 
 

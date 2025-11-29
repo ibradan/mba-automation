@@ -78,6 +78,14 @@ class TestFrontendJS(unittest.TestCase):
     def test_no_empty_footer_tag_index(self):
         s = read_index()
         self.assertNotIn('<footer></footer>', s)
+
+    def test_review_template_no_sunday(self):
+        from pathlib import Path
+        p = Path(__file__).resolve().parents[1] / 'templates' / 'review.html'
+        s = p.read_text(encoding='utf-8')
+        # review template should not hardcode Sunday label (we removed Sunday from review UI)
+        self.assertNotIn('Minggu', s)
+        self.assertNotIn('name="sun"', s)
     # Compact-only (no mode toggle) — no tests for toggle or .comfortable
 
 

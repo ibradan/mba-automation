@@ -87,4 +87,9 @@ Headless behavior
 
 - Browsers now run in headless mode by default both for CLI and the Web UI (scheduled runs are always headless).
 - Set environment variable `MBA_HEADLESS=0` (or `false`, `no`) to change default; CLI flags `--headless` and `--no-headless` can override the default.
+
+Weekend / Sunday behaviour
+--------------------------
+
+- Sunday is considered a holiday: scheduled runs will NOT execute on Sundays and the review editor does not include Sunday (Minggu) anymore. Use schedules on Mon–Sat only.
 ```
