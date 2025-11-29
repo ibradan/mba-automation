@@ -214,16 +214,36 @@ select[name="level[]"]{
 
 /* add-row */
 #add-row{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
   background:transparent;
-  border:0;
+  border:1px solid rgba(124,58,237,0.14);
   color:var(--accent-2);
   font-weight:700;
   cursor:pointer;
-  padding:8px 10px;
-  border-radius:8px;
+  padding:6px 10px;
+  border-radius:999px; /* pill */
+  transition:background-color .12s ease, transform .08s ease, box-shadow .12s ease;
 }
 
-#add-row:hover{background:rgba(2,6,23,0.03)}
+#add-row .add-icon{
+  display:inline-flex;
+  width:20px;
+  height:20px;
+  align-items:center;
+  justify-content:center;
+  border-radius:50%;
+  /* simple soft tint for the icon background (no gradients) */
+  background: rgba(124,58,237,0.10);
+  box-shadow:0 1px 0 rgba(0,0,0,0.03) inset;
+  font-weight:700;
+  color:var(--accent-2);
+}
+
+#add-row .add-text{font-size:0.95rem}
+
+#add-row:hover{background:rgba(124,58,237,0.04);transform:translateY(-1px)}
 
 .mt-8{margin-top:8px}
 .mt-12{margin-top:12px}
@@ -419,18 +439,7 @@ select:focus{
   box-shadow:none;
 }
 
-/* Link "Tambah Nomor" lebih keliatan link tapi tetap brand */
-#add-row{
-  font-size:0.9rem;
-  padding:4px 0;
-  border-radius:6px;
-  text-decoration:underline;
-}
-
-#add-row:hover{
-  text-decoration:none;
-  background:rgba(124,58,237,0.04);
-}
+/* previous simple link-like add-row styles removed in favor of the new pill + icon */
 
 /* Checkbox "Jalankan headless" sedikit rapih */
 .headless-label input[type="checkbox"]{

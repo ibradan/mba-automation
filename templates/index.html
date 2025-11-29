@@ -127,7 +127,11 @@
 
         <div class="top-controls">
           <div>
-            <button type="button" id="add-row">Tambah Nomor</button>
+            <!-- simplified plus + button with accessible label -->
+            <button type="button" id="add-row" title="Tambah Nomor" aria-label="Tambah Nomor">
+              <span class="add-icon" aria-hidden="true">+</span>
+              <span class="add-text">Tambah Nomor</span>
+            </button>
           </div>
         </div>
 
