@@ -7,6 +7,11 @@ def read_index():
     return p.read_text(encoding='utf-8')
 
 
+def read_css():
+    p = pathlib.Path(__file__).resolve().parents[1] / 'static' / 'css' / 'style.css'
+    return p.read_text(encoding='utf-8')
+
+
 class TestFrontendJS(unittest.TestCase):
     def test_index_contains_event_handlers(self):
         s = read_index()
@@ -28,6 +33,14 @@ class TestFrontendJS(unittest.TestCase):
         # ensure visible 'Hapus' button text isn't present and remove buttons use the minimal minus
         self.assertNotIn('>Hapus</button>', s)
         self.assertIn('aria-hidden="true">−</span>', s)
+
+    def test_css_no_gradients_and_phone_inline(self):
+        css = read_css()
+        # No linear-gradient usages
+        self.assertNotIn('linear-gradient', css)
+        # inputs should not wrap so +62 stays inline
+        self.assertIn('flex-wrap:nowrap', css)
+        self.assertIn('white-space:nowrap', css)
 
 
 if __name__ == '__main__':
