@@ -245,6 +245,18 @@ select[name="level[]"]{
 
 #add-row:hover{background:rgba(124,58,237,0.04);transform:translateY(-1px)}
 
+/* micro-interaction: brief press animation */
+#add-row{transition:transform .12s ease, box-shadow .12s ease}
+#add-row.clicked{transform:translateY(-2px) scale(0.98); box-shadow:0 6px 18px rgba(124,58,237,0.06) inset}
+
+/* mobile: show only the icon to save space */
+@media (max-width:760px){
+  #add-row{padding:6px}
+  #add-row .add-text{display:none}
+  #add-row .add-icon{width:28px;height:28px;}
+  #add-row .add-icon svg{width:16px;height:16px}
+}
+
 .mt-8{margin-top:8px}
 .mt-12{margin-top:12px}
 .mt-6{margin-top:6px}
