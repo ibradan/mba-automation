@@ -6,73 +6,105 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Set Review Harian</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <style>
+    /* Table styling untuk review page */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+
+    th {
+      background: var(--bg);
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      border-bottom: 2px solid var(--border);
+    }
+
+    td {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    tr:hover {
+      background: var(--bg);
+    }
+
+    td:first-child {
+      font-weight: 600;
+      color: var(--text);
+      width: 120px;
+    }
+
+    td input[type="text"] {
+      width: 100%;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+  </style>
 </head>
 
 <body>
   <div class="container">
+    <!-- Header -->
     <header class="site-head">
-      <div class="brand">
+      <div class="brand-left">
         <div class="logo">MA</div>
         <div>
-          <div class="brand-inner">
-            <span class="brand-dots" aria-hidden="true">
-              <span class="brand-dot b1"></span>
-              <span class="brand-dot b2"></span>
-              <span class="brand-dot b3"></span>
-              <span class="brand-dot b4"></span>
-            </span>
-          </div>
+          <h1 class="app-title">Set Review Harian</h1>
+          <p class="lead">Review untuk +62{{ phone_display }}</p>
         </div>
-      </div>
-      <div class="top-actions muted">&nbsp;</div>
-      <!-- theme removed -->
-      <div>
-        <h1>Set Review Harian untuk <code>+62{{ phone_display }}</code></h1>
-        <div class="lead muted">Ubah teks review yang akan dikirim setiap hari.</div>
       </div>
     </header>
 
-    <form method="post">
-      <input type="hidden" name="phone" value="{{ phone_display }}" />
-      <table>
-        <thead>
-          <tr>
-            <th>Hari</th>
-            <th>Review Text</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for key, label in days %}
-          <tr>
-            <td>{{ label }}</td>
-            <td><input type="text" name="{{ key }}" value="{{ reviews.get(key, '') }}"
-                placeholder="Teks review untuk {{ label }}" /></td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+    <!-- Form Card -->
+    <div class="card">
+      <form method="post">
+        <input type="hidden" name="phone" value="{{ phone_display }}" />
 
-      <div class="actions">
-        <button class="btn btn-primary" type="submit">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
-              stroke-linejoin="round" />
-          </svg>
-          Simpan
-        </button>
-        <a class="btn btn-ghost" href="/">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M10 19l-7-7 7-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
-              stroke-linejoin="round" />
-            <path d="M3 12h18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
-              stroke-linejoin="round" />
-          </svg>
-          Batal
-        </a>
-      </div>
-    </form>
-    <footer class="mt-8 muted">Kembali ke <a href="/">halaman utama</a>.</footer>
-    <!-- theme removed -->
+        <table>
+          <thead>
+            <tr>
+              <th>Hari</th>
+              <th>Review Text</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for key, label in days %}
+            <tr>
+              <td>{{ label }}</td>
+              <td><input type="text" name="{{ key }}" value="{{ reviews.get(key, '') }}"
+                  placeholder="Teks review untuk {{ label }}" /></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+        <div class="actions">
+          <button class="btn btn-primary" type="submit">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" stroke="currentColor"
+                stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+              <polyline points="17 21 17 13 7 13 7 21" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg>
+            Simpan
+          </button>
+          <a class="btn btn-secondary" href="/">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg>
+            Kembali
+          </a>
+        </div>
+      </form>
+    </div>
   </div>
 </body>
 
