@@ -137,8 +137,8 @@ body {
   /* Lebih bold */
   letter-spacing: 0.2em;
   /* Lebih lebar */
-  color: rgba(255, 255, 255, 1);
-  /* Putih penuh */
+  color: rgba(255, 255, 255, 0.95);
+  /* Default putih untuk pending */
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
   /* Shadow lebih kuat */
   white-space: nowrap;
@@ -146,17 +146,25 @@ body {
   text-transform: uppercase;
 }
 
+/* Warna text khusus per status untuk kontras lebih baik */
 .row-item.ran .status-text {
-  color: rgba(255, 255, 255, 0.95);
+  color: rgba(255, 255, 255, 1);
+  /* Putih untuk hijau - kontras bagus */
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
 }
 
 .row-item.due .status-text {
-  color: rgba(255, 255, 255, 0.95);
+  color: rgba(0, 0, 0, 0.9);
+  /* HITAM untuk kuning - kontras bagus! */
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
 }
 
 .row-item.pending .status-text {
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 1);
+  /* Putih untuk biru - kontras bagus */
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
+
 
 /* Grid Layout - Lebih Rapi dengan Flex */
 .account-card .inputs {
