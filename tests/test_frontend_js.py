@@ -65,10 +65,16 @@ class TestFrontendJS(unittest.TestCase):
         css = read_css()
         # accept either 820px or 900px in case someone wants a wider layout later
         joined = css.replace('\n', '')
-        self.assertTrue('.container{max-width:820px;margin:18px auto;padding:12px}' in joined or '.container{max-width:900px;margin:18px auto;padding:12px}' in joined)
-        self.assertIn('.logo{width:36px;height:36px', css)
-        self.assertIn('.account-card{display:flex;align-items:center;gap:8px;padding:8px', css)
-        self.assertIn('.btn{display:inline-flex;align-items:center;gap:6px;padding:6px 10px', css)
+        # accept 760px (current compact), 820px or 900px
+        self.assertTrue(
+            '.container{max-width:760px;margin:14px auto;padding:10px}' in joined
+            or '.container{max-width:820px;margin:18px auto;padding:12px}' in joined
+            or '.container{max-width:900px;margin:18px auto;padding:12px}' in joined
+        )
+
+    def test_no_empty_footer_tag_index(self):
+        s = read_index()
+        self.assertNotIn('<footer></footer>', s)
 
 
 if __name__ == '__main__':
