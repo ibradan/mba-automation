@@ -1,744 +1,359 @@
 :root {
-  /* Yoi theme — brighter, modern accents */
-  --bg: #f8fbff;
-  /* page background */
+  /* Clean Blue Palette */
+  --bg: #f9fafb;
   --card: #ffffff;
-  /* panels */
-  --accent: #0b1220;
-  /* main text / dark */
-  --muted: #64748b;
-  /* secondary text */
-  --google-blue: #4285F4;
-  --google-red: #DB4437;
-  --google-yellow: #F4B400;
-  --google-green: #0F9D58;
-  --primary: #4f46e5;
-  /* indigo for accents */
-  --accent-2: #06b6d4;
-  /* cyan/teal as main call-to-action */
-  --danger: #ff5c7c;
-  /* warm coral for alerts */
-  --glass: rgba(255, 255, 255, 0.85);
-}
-
-/* Deep dark mode variables triggered by adding `dark` to the body */
-body.dark {
-  --bg: #030409;
-  /* near-black page */
-  --card: #0b0f14;
-  /* card background */
-  --accent: #e6eef9;
-  /* main text */
-  --muted: #9aa6b2;
-  /* muted text */
-  --primary: #0ea5a0;
-  /* teal accent */
-  --accent-2: #06b6d4;
-  /* cyan accent */
-  --danger: #ff7b8a;
-  /* coral notice on dark */
-  --glass: rgba(255, 255, 255, 0.03);
+  --text: #111827;
+  --text-light: #6b7280;
+  --blue: #2563eb;
+  --blue-dark: #1e40af;
+  --blue-light: #dbeafe;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --border: #e5e7eb;
 }
 
 * {
-  box-sizing: border-box
-}
-
-html,
-body {
-  height: 100%
-}
-
-body {
-  font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
-  background: var(--bg);
-  color: var(--accent);
+  box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-/* when dark mode is active the variables (above) are switched on body.dark */
-body.dark {
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: var(--bg);
-  color: var(--accent)
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.6;
 }
 
-/* dark-mode card pop: slightly lighter border and subtle glow */
-body.dark .card {
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55), 0 1px 4px rgba(255, 255, 255, 0.02) inset;
-}
-
-body.dark .account-card {
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7)
-}
-
-/* container compact */
 .container {
-  max-width: 700px;
-  margin: 12px auto;
-  padding: 10px
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 24px;
 }
 
-/* header minimal */
+/* Header */
 .site-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
-}
-
-/* logo & dots disembunyikan */
-.logo {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
-  background: rgba(6, 182, 212, 0.10);
-  color: var(--accent-2);
-  font-weight: 800;
-  margin-right: 10px
+  margin-bottom: 32px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid var(--border);
 }
 
 .brand-left {
   display: flex;
   align-items: center;
-  gap: 8px
+  gap: 12px;
 }
 
-.brand-dots {
-  display: none
+.logo {
+  width: 40px;
+  height: 40px;
+  background: var(--blue);
+  color: white;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.app-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text);
 }
 
 .lead {
-  font-size: 0.9rem
-}
-
-h1.app-title {
-  font-size: 1.0rem;
-  margin: 0
+  font-size: 0.9rem;
+  color: var(--text-light);
+  margin-top: 2px;
 }
 
 .top-actions {
   font-size: 0.85rem;
-  color: var(--muted)
+  color: var(--text-light);
 }
 
-/* kartu umum */
-.card {
-  background: var(--card);
-  padding: 20px;
-  border-radius: 16px;
-  /* softer elevation */
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-/* account card */
+/* Account Cards */
 .account-card {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 16px;
-  border-radius: 14px;
-  margin-bottom: 14px;
   background: var(--card);
-  /* subtle border using primary tint for a soft lift */
-  border: 1px solid rgba(6, 182, 212, 0.06);
-  box-shadow: none;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  position: relative;
+  transition: all 0.2s;
 }
 
-/* GRID LAYOUT DESKTOP */
+.account-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+/* Status Indicator */
+.account-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--border);
+  border-radius: 12px 0 0 12px;
+}
+
+.row-item.ran::before {
+  background: var(--success);
+}
+
+.row-item.due::before {
+  background: var(--warning);
+}
+
+.row-item.pending::before {
+  background: var(--blue);
+}
+
+.status-pill {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.row-item.ran .status-pill {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.row-item.due .status-pill {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+/* Grid Layout */
 .account-card .inputs {
   display: grid;
-  grid-template-columns: 1.3fr 1.3fr min-content auto;
-  grid-template-areas:
-    "phone password level actions";
-  column-gap: 10px;
-  row-gap: 8px;
+  grid-template-columns: 160px 1fr 90px auto;
+  gap: 16px;
   align-items: center;
   flex: 1;
 }
 
-/* mapping area grid */
 .phone-group {
-  grid-area: phone
-}
-
-.pwd-field {
-  grid-area: password
-}
-
-select[name="level[]"] {
-  grid-area: level
-}
-
-.action-group {
-  grid-area: actions
-}
-
-/* phone row */
-.phone-group {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 8px;
-  white-space: nowrap;
-  /* ensure elements don't wrap so +62 chip stays inline */
-  flex-wrap: nowrap;
+  gap: 6px;
 }
 
-.phone-group input[type="text"] {
-  flex: 0 0 140px;
-  min-width: 100px;
-}
-
-/* phone prefix */
-.phone-prefix {
-  background: var(--card);
-  border-radius: 10px;
-  padding: 8px 10px;
-  color: #6b7280;
-  font-weight: 600;
-  border: 1px solid #e6eef0;
-}
-
-/* input & select flat */
-.form-control,
-input[type=text],
-input[type=password],
-select {
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(10, 14, 18, 0.06);
-  background: var(--card);
-  min-width: 96px;
-  transition: box-shadow .14s ease, border-color .14s ease, transform .14s ease;
-}
-
-/* LEVEL: selalu kecil */
-select[name="level[]"] {
-  width: 84px;
-  min-width: 72px;
-  justify-self: flex-start;
-}
-
-/* password */
 .pwd-field {
-  position: relative
+  position: relative;
+}
+
+/* Inputs */
+input[type="text"],
+input[type="password"],
+select {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  font-size: 0.95rem;
+  color: var(--text);
+  transition: all 0.2s;
+}
+
+input:focus,
+select:focus {
+  outline: none;
+  border-color: var(--blue);
+  background: white;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.phone-prefix {
+  padding: 9px 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-light);
+  font-weight: 600;
+  font-size: 0.9rem;
 }
 
 .pwd-toggle {
   position: absolute;
-  right: 6px;
+  right: 8px;
   top: 50%;
   transform: translateY(-50%);
-  background: transparent;
-  border: 0;
-  color: var(--muted);
+  background: none;
+  border: none;
+  color: var(--text-light);
+  font-size: 0.75rem;
+  font-weight: 600;
   cursor: pointer;
-  font-size: 0.85rem;
-  padding: 4px;
+  padding: 4px 6px;
 }
 
-/* action row global (bawah form) */
-.actions {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-  margin-top: 12px;
+.pwd-toggle:hover {
+  color: var(--blue);
 }
 
-/* tombol flat */
+/* Buttons */
 .btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 0;
-  font-weight: 700;
+  padding: 9px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.9rem;
   cursor: pointer;
-  font-size: 0.95rem;
+  border: none;
+  transition: all 0.2s;
 }
 
 .btn-primary {
-  background: var(--accent-2);
-  color: #fff;
-  box-shadow: 0 8px 30px rgba(6, 182, 212, 0.08)
-}
-
-.btn-secondary {
-  background: transparent;
-  border: 1px solid rgba(10, 14, 18, 0.06);
-  color: var(--accent-2)
-}
-
-.btn-danger {
-  background: var(--danger);
-  color: #fff;
-  box-shadow: 0 8px 30px rgba(255, 92, 124, 0.06)
-}
-
-.btn-ghost {
-  background: var(--card);
-  border: 1px solid rgba(238, 242, 247, 0.6);
-  color: var(--accent)
-}
-
-.btn-outline {
-  background: transparent;
-  border: 1px dashed #e6f2f1;
-  color: var(--primary)
-}
-
-.btn.save {
-  background: var(--primary);
-  color: #fff
-}
-
-.btn.cancel {
-  background: #e5e7eb;
-  color: #111
-}
-
-/* grup tombol aksi di baris akun */
-.action-group {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-.action-group .btn svg {
-  margin-right: 6px;
-  opacity: 0.95;
-  vertical-align: middle
-}
-
-.action-group .btn span {
-  line-height: 1
-}
-
-/* tombol hapus */
-.remove {
-  width: 28px;
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  border: 1px solid rgba(2, 6, 23, 0.08);
-  background: var(--card);
-  color: var(--danger);
-  font-weight: 600;
-  cursor: pointer;
-  padding: 0;
-}
-
-.remove span {
-  font-size: 18px;
-  line-height: 1;
-  display: block;
-}
-
-.remove:hover {
-  background: rgba(2, 6, 23, 0.03);
-  transform: translateY(-2px);
-}
-
-.remove:focus {
-  outline: 2px solid rgba(66, 133, 244, 0.14);
-  outline-offset: 2px;
-}
-
-/* add-row */
-#add-row {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: transparent;
-  border: 1px solid rgba(6, 182, 212, 0.14);
-  color: var(--accent-2);
-  font-weight: 700;
-  cursor: pointer;
-  padding: 6px 10px;
-  border-radius: 999px;
-  /* pill */
-  transition: background-color .12s ease, transform .08s ease, box-shadow .12s ease;
-}
-
-#add-row .add-icon {
-  display: inline-flex;
-  width: 20px;
-  height: 20px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  /* simple soft tint for the icon background (no gradients) */
-  background: rgba(6, 182, 212, 0.10);
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.03) inset;
-  font-weight: 700;
-  color: var(--accent-2);
-}
-
-#add-row .add-text {
-  font-size: 0.95rem
-}
-
-#add-row:hover {
-  background: rgba(6, 182, 212, 0.04);
-  transform: translateY(-1px)
-}
-
-/* micro-interaction: brief press animation */
-#add-row {
-  transition: transform .12s ease, box-shadow .12s ease
-}
-
-#add-row.clicked {
-  transform: translateY(-2px) scale(0.98);
-  box-shadow: 0 6px 18px rgba(6, 182, 212, 0.06) inset
-}
-
-/* mobile: show only the icon to save space */
-@media (max-width:760px) {
-  #add-row {
-    padding: 6px
-  }
-
-  #add-row .add-text {
-    display: none
-  }
-
-  #add-row .add-icon {
-    width: 28px;
-    height: 28px;
-  }
-
-  #add-row .add-icon svg {
-    width: 16px;
-    height: 16px
-  }
-}
-
-.mt-8 {
-  margin-top: 8px
-}
-
-.mt-12 {
-  margin-top: 12px
-}
-
-.mt-6 {
-  margin-top: 6px
-}
-
-.ml-12 {
-  margin-left: 12px
-}
-
-.muted {
-  color: var(--muted)
-}
-
-.badge {
-  display: inline-flex;
-  padding: 6px 10px;
-  border-radius: 999px;
-  font-weight: 700;
-  font-size: 0.82rem;
-}
-
-.status-ran {
-  background: #ecfdf5;
-  border: 1px solid #bbf7d0;
-  color: #065f46
-}
-
-.status-due {
-  background: #fffbeb;
-  border: 1px solid #fef3c7;
-  color: #92400e
-}
-
-.status-pending {
-  background: #f8fafc;
-  border: 1px solid #eef2f3;
-  color: var(--muted)
-}
-
-footer {
-  margin-top: 22px;
-  color: var(--muted);
-  font-size: 0.9rem;
-  text-align: center;
-}
-
-:focus {
-  outline: 2px solid rgba(66, 133, 244, 0.14);
-  outline-offset: 2px;
-}
-
-/* flash */
-.flash {
-  padding: 10px 12px;
-  border-radius: 10px;
-  margin: 10px 0;
-  font-weight: 600;
-}
-
-.flash.success {
-  background: #ecfdf5;
-  border: 1px solid #bbf7d0;
-  color: #065f46
-}
-
-.flash.error {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #7f1d1d
-}
-
-/* info bawah */
-.info-block {
-  margin-top: 0.6rem;
-  font-size: 0.9rem;
-  color: var(--muted)
-}
-
-.list-muted {
-  margin: 0.4rem 0 0 1.1rem;
-  padding: 0;
-  color: var(--muted)
-}
-
-.status-row {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  margin-top: 6px;
-}
-
-.status-item {
-  display: flex;
-  gap: 8px;
-  align-items: center
-}
-
-.status-square {
-  width: 14px;
-  height: 14px;
-  border-radius: 4px;
-  display: inline-block
-}
-
-.status-text {
-  color: var(--muted)
-}
-
-.small-muted {
-  color: var(--muted);
-  font-size: 0.85rem
-}
-
-/* ================= MOBILE ================= */
-@media (max-width:760px) {
-  .container {
-    padding: 16px;
-    margin: 18px;
-  }
-
-  .account-card {
-    flex-direction: column;
-    align-items: stretch;
-    margin-bottom: 12px;
-  }
-
-  /* di HP: phone | password | level satu baris, actions di baris bawah */
-  .account-card .inputs {
-    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.2fr) auto;
-    grid-template-areas:
-      "phone password level"
-      "actions actions actions";
-  }
-
-  .phone-group input[type="text"],
-  .pwd-field .pwd {
-    width: 100%;
-    min-width: 0;
-  }
-
-  /* kalau nanti ada select selain level, boleh full width */
-  select:not([name="level[]"]) {
-    width: 100%;
-  }
-
-  /* level tetap kecil & nempel kiri */
-  select[name="level[]"] {
-    width: 84px;
-    min-width: 72px;
-    justify-self: flex-start;
-  }
-
-  .action-group {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
-  }
-
-  .action-group .btn {
-    width: 100%;
-  }
-
-  .btn {
-    padding: 12px 14px;
-    font-size: 1rem;
-  }
-}
-
-/* ====== POLISH / WOW MODE ====== */
-
-/* Header lebih tegas & rapih */
-.site-head {
-  border-bottom: 1px solid #e5e7eb;
-  padding-bottom: 6px;
-}
-
-.app-title {
-  letter-spacing: 0.01em;
-  font-weight: 600;
-}
-
-.top-actions {
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.03);
-  font-weight: 500;
-}
-
-/* theme toggle in header */
-.theme-toggle {
-  display: inline-flex;
-  align-items: center;
-  margin-left: 8px
-}
-
-.theme-toggle .btn {
-  padding: 6px;
-  border-radius: 8px
-}
-
-.theme-toggle .btn.clicked {
-  transform: scale(0.98)
-}
-
-/* dark-mode tweaks for ghost buttons */
-body.dark .btn-ghost {
-  border-color: rgba(255, 255, 255, 0.06);
-  color: var(--accent);
-  background: transparent
-}
-
-
-/* Card sedikit mengambang & interaktif */
-.account-card {
-  border-radius: 14px;
-  border: 1px solid rgba(6, 182, 212, 0.06);
-  box-shadow: 0 18px 38px rgba(8, 14, 24, 0.08), 0 1px 2px rgba(255, 255, 255, 0.6) inset;
-  transition: box-shadow .15s ease, transform .1s ease, border-color .15s ease;
-}
-
-.account-card:hover {
-  box-shadow: 0 26px 48px rgba(6, 18, 28, 0.12);
-  border-color: rgba(6, 182, 212, 0.10);
-  transform: translateY(-6px);
-}
-
-/* Input & select punya focus ring yang enak */
-input[type=text],
-input[type=password],
-select {
-  box-shadow: 0 0 0 1px transparent;
-  transition: border-color .12s ease, box-shadow .12s ease, background-color .12s ease;
-}
-
-input[type=text]:focus,
-input[type=password]:focus,
-select:focus {
-  border-color: rgba(26, 115, 232, 0.85);
-  box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.15);
-  /* Better focus ring */
-  outline: none;
-  background: var(--card);
-}
-
-/* Kelompok +62 jadi kelihatan kaya chip */
-.phone-prefix {
-  font-size: 0.86rem;
-  letter-spacing: 0.03em;
-}
-
-/* Tombol lebih hidup */
-.btn {
-  transition: background-color .12s ease, transform .08s ease, box-shadow .12s ease;
+  background: var(--blue);
+  color: white;
 }
 
 .btn-primary:hover {
-  background: #185ecc;
-  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.35);
-  transform: translateY(-1px);
+  background: var(--blue-dark);
+}
+
+.btn-secondary {
+  background: white;
+  border: 1px solid var(--border);
+  color: var(--text);
 }
 
 .btn-secondary:hover {
-  background: #d4d4d8;
+  background: var(--bg);
+}
+
+.btn-danger {
+  background: white;
+  border: 1px solid #fecaca;
+  color: var(--danger);
 }
 
 .btn-danger:hover {
-  background: #dc2626;
-  box-shadow: 0 2px 6px rgba(248, 113, 113, 0.4);
-  transform: translateY(-1px);
+  background: #fef2f2;
 }
 
-.btn:active {
-  transform: translateY(0);
-  box-shadow: none;
+.btn-ghost {
+  background: transparent;
+  color: var(--text-light);
 }
 
-/* previous simple link-like add-row styles removed in favor of the new pill + icon */
+.btn-ghost:hover {
+  background: var(--bg);
+  color: var(--text);
+}
 
-/* Checkbox "Jalankan headless" jadi Toggle Switch */
+.btn-block {
+  width: 100%;
+  padding: 12px;
+  font-size: 1rem;
+}
+
+.action-group {
+  display: flex;
+  gap: 6px;
+}
+
+/* Remove Button */
+.remove {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-light);
+  cursor: pointer;
+  font-size: 1.2rem;
+  transition: all 0.2s;
+}
+
+.remove:hover {
+  background: #fef2f2;
+  color: var(--danger);
+}
+
+/* Add Button */
+#add-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  color: var(--blue);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+#add-row:hover {
+  background: var(--blue-light);
+  border-color: var(--blue);
+}
+
+.add-icon {
+  width: 18px;
+  height: 18px;
+  background: var(--blue);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Toggle */
 .headless-label {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
-  cursor: pointer;
+  gap: 10px;
   padding: 8px 12px;
-  border-radius: 8px;
-  transition: background-color 0.2s;
+  cursor: pointer;
+  color: var(--text-light);
+  font-weight: 500;
+  font-size: 0.95rem;
 }
 
 .headless-label:hover {
-  background-color: rgba(0, 0, 0, 0.03);
+  color: var(--text);
 }
 
 .headless-label input[type="checkbox"] {
   appearance: none;
-  width: 40px;
-  height: 24px;
-  background: #e0e0e0;
-  border-radius: 20px;
+  width: 36px;
+  height: 20px;
+  background: #cbd5e1;
+  border-radius: 99px;
   position: relative;
   cursor: pointer;
-  outline: none;
-  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.1);
-  transition: background 0.3s;
-  margin: 0;
-  border: none;
-  /* Reset border from generic input style */
 }
 
 .headless-label input[type="checkbox"]::after {
@@ -746,113 +361,113 @@ select:focus {
   position: absolute;
   top: 2px;
   left: 2px;
-  width: 20px;
-  height: 20px;
-  background: #fff;
+  width: 16px;
+  height: 16px;
+  background: white;
   border-radius: 50%;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  transition: transform 0.3s;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .headless-label input[type="checkbox"]:checked {
-  background: var(--accent-2);
+  background: var(--blue);
 }
 
 .headless-label input[type="checkbox"]:checked::after {
   transform: translateX(16px);
 }
 
-/* Info teks bawah dibuat sedikit lebih halus spacing-nya */
-.info-block {
-  line-height: 1.5;
-}
-
-.list-muted li {
-  margin: 2px 0;
-}
-
-/* ===== STATUS STRIP & PILL ===== */
-.account-card {
-  position: relative;
-  overflow: hidden;
-  padding-top: 18px;
-  /* beri ruang untuk pill di atas input */
-}
-
-/* strip warna di kiri card */
-.account-card::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: transparent;
-}
-
-/* badge status di pojok kanan atas, lebih rapi */
-.status-pill {
-  position: absolute;
-  top: 8px;
-  right: 12px;
-  padding: 4px 12px;
-  border-radius: 999px;
-  font-size: 0.72rem;
-  font-weight: 600;
-  background: #f6f7fb;
-  color: #374151;
-  box-shadow: 0 2px 6px rgba(12, 18, 25, 0.04);
-  white-space: nowrap;
-}
-
-
-/* warna strip sesuai status */
-.row-item.ran::before {
-  background: #22c55e;
-}
-
-.row-item.due::before {
-  background: #facc15;
-}
-
-.row-item.pending::before {
-  background: #cbd5f5;
-}
-
-/* sedikit spacing antar elemen dalam card */
-.account-card .inputs>* {
-  margin-top: 2px;
-  margin-bottom: 2px;
-}
-
-/* jarak kecil di atas tombol aksi */
-.action-group {
-  margin-top: 4px;
-}
-
-/* Improved Top Controls Layout - DEPRECATED, replaced by bottom-controls */
-.top-controls {
-  display: none;
-}
-
+/* Bottom Controls */
 .bottom-controls {
   display: flex;
   justify-content: flex-end;
   align-items: center;
   gap: 12px;
-  margin: 24px 0 12px;
+  margin: 24px 0 16px;
 }
 
-.btn-block {
-  width: 100%;
-  justify-content: center;
-  padding: 14px;
-  font-size: 1.05rem;
+.actions-note {
+  text-align: center;
+  margin-top: 16px;
+  color: var(--text-light);
+  font-size: 0.85rem;
 }
 
-/* Ensure inputs have enough padding for text */
-input[type="text"],
-input[type="password"] {
-  padding: 12px 14px;
-  /* Slightly more padding */
+/* Flash */
+.flash {
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin: 16px 0;
+  font-weight: 500;
+}
+
+.flash.success {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.flash.error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* Mobile */
+@media (max-width: 760px) {
+  .container {
+    padding: 16px;
+  }
+
+  .site-head {
+    margin-bottom: 24px;
+  }
+
+  .app-title {
+    font-size: 1.25rem;
+  }
+
+  .account-card {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px;
+  }
+
+  .account-card .inputs {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "phone password"
+      "level level"
+      "actions actions";
+    gap: 12px;
+  }
+
+  .phone-group {
+    grid-area: phone;
+  }
+
+  .pwd-field {
+    grid-area: password;
+  }
+
+  select[name="level[]"] {
+    grid-area: level;
+    width: 100%;
+  }
+
+  .action-group {
+    grid-area: actions;
+  }
+
+  .action-group .btn {
+    flex: 1;
+  }
+
+  .remove {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+  }
+
+  .status-pill {
+    right: 48px;
+  }
 }
