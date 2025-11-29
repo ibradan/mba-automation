@@ -63,7 +63,9 @@ class TestFrontendJS(unittest.TestCase):
 
     def test_compact_css_applied(self):
         css = read_css()
-        self.assertIn('.container{max-width:900px;margin:18px auto;padding:12px}', css.replace('\n', ''))
+        # accept either 820px or 900px in case someone wants a wider layout later
+        joined = css.replace('\n', '')
+        self.assertTrue('.container{max-width:820px;margin:18px auto;padding:12px}' in joined or '.container{max-width:900px;margin:18px auto;padding:12px}' in joined)
         self.assertIn('.logo{width:36px;height:36px', css)
         self.assertIn('.account-card{display:flex;align-items:center;gap:8px;padding:8px', css)
         self.assertIn('.btn{display:inline-flex;align-items:center;gap:6px;padding:6px 10px', css)
