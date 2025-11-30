@@ -131,6 +131,9 @@ def index():
                     # merge schedule if present
                     if norm in existing and existing[norm].get('schedule'):
                         acc['schedule'] = existing[norm].get('schedule')
+                    # CRITICAL FIX: preserve last_run timestamp to maintain status
+                    if norm in existing and existing[norm].get('last_run'):
+                        acc['last_run'] = existing[norm].get('last_run')
                     saved.append(acc)
                 # persist using locked, atomic write
                 _safe_write_accounts(saved)
