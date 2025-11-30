@@ -134,6 +134,9 @@ def index():
                     # CRITICAL FIX: preserve last_run timestamp to maintain status
                     if norm in existing and existing[norm].get('last_run'):
                         acc['last_run'] = existing[norm].get('last_run')
+                    # CRITICAL FIX: preserve daily_progress to maintain tracking data
+                    if norm in existing and existing[norm].get('daily_progress'):
+                        acc['daily_progress'] = existing[norm].get('daily_progress')
                     saved.append(acc)
                 # persist using locked, atomic write
                 _safe_write_accounts(saved)
@@ -228,6 +231,11 @@ def index():
                     acc['reviews'] = existing[norm].get('reviews')
                 if norm in existing and existing[norm].get('schedule'):
                     acc['schedule'] = existing[norm].get('schedule')
+                # CRITICAL FIX: preserve last_run and daily_progress in run block too
+                if norm in existing and existing[norm].get('last_run'):
+                    acc['last_run'] = existing[norm].get('last_run')
+                if norm in existing and existing[norm].get('daily_progress'):
+                    acc['daily_progress'] = existing[norm].get('daily_progress')
                 saved.append(acc)
             _safe_write_accounts(saved)
         except Exception as e:
