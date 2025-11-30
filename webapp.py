@@ -281,7 +281,15 @@ def index():
                         except Exception:
                             status = ''
 
-                    saved_accounts.append({"phone_display": display, "password": pwd, "level": lvl, "schedule": schedule, "last_run_ts": last_run_ts or it.get('last_run'), "status": status})
+                    saved_accounts.append({
+                        "phone_display": display, 
+                        "password": pwd, 
+                        "level": lvl, 
+                        "schedule": schedule, 
+                        "last_run_ts": last_run_ts or it.get('last_run'), 
+                        "status": status,
+                        "daily_progress": it.get('daily_progress', {})
+                    })
     except Exception:
         saved_accounts = []
 
@@ -294,7 +302,7 @@ def index():
     env_headless = parse_env_bool(os.getenv('MBA_HEADLESS'))
     headless_default = True if env_headless is None else bool(env_headless)
 
-    return render_template("index.html", saved=saved_accounts, headless_default=headless_default)
+    return render_template("index.html", saved=saved_accounts, headless_default=headless_default, now=now)
 
 
 def _safe_load_accounts():

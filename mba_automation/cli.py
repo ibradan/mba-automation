@@ -62,7 +62,51 @@ def main():
 
         for phone in phones:
             print(f"Starting automation for {phone} (headless={final_headless})")
-            automation_run(playwright, phone=phone, password=password, headless=final_headless, slow_mo=args.slow_mo, iterations=args.iterations, review_text=args.review)
+            completed = automation_run(playwright, phone=phone, password=password, headless=final_headless, slow_mo=args.slow_mo, iterations=args.iterations, review_text=args.review)
+            
+            # Save progress to accounts.json
+            try:
+                import json
+                import datetime
+                import fcntl
+                
+                accounts_file = os.path.join(os.path.dirname(__file__), '..', 'accounts.json')
+                accounts_file = os.path.abspath(accounts_file)
+                
+                # Normalize phone (add 62 prefix if needed)
+                normalized_phone = phone if phone.startswith('62') else '62' + phone
+                
+                # Calculate percentage
+                percentage = round((completed / args.iterations) * 100) if args.iterations > 0 else 0
+                
+                # Read, update, write with file locking
+                if os.path.exists(accounts_file):
+                    with open(accounts_file, 'r+') as f:
+                        fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+                        try:
+                            accounts = json.load(f)
+                            # Find and update account
+                            for acc in accounts:
+                                if acc.get('phone') == normalized_phone:
+                                    today = datetime.datetime.now().strftime('%Y-%m-%d')
+                                    if 'daily_progress' not in acc:
+                                        acc['daily_progress'] = {}
+                                    acc['daily_progress'][today] = {
+                                        'completed': completed,
+                                        'total': args.iterations,
+                                        'percentage': percentage
+                                    }
+                                    break
+                            # Write back
+                            f.seek(0)
+                            f.truncate()
+                            json.dump(accounts, f, indent=2)
+                        finally:
+                            fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+                
+                print(f"✓ Progress saved: {completed}/{args.iterations} ({percentage}%)")
+            except Exception as e:
+                print(f"Warning: Could not save progress: {e}")
 
 
 if __name__ == "__main__":

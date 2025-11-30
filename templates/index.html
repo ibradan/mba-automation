@@ -8,7 +8,7 @@
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
   <title>MBA7 Automation</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=14" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=15" />
 </head>
 
 <body>
@@ -163,6 +163,27 @@
                 <span>Reset</span>
               </button>
             </div>
+
+            <!-- Daily Progress Indicator -->
+            {% if acc.daily_progress %}
+            {% set today = now.strftime('%Y-%m-%d') %}
+            {% if today in acc.daily_progress %}
+            {% set progress = acc.daily_progress[today] %}
+            {% set pct = progress.percentage %}
+            {% if pct >= 100 %}
+            {% set progress_class = 'progress-complete' %}
+            {% elif pct >= 50 %}
+            {% set progress_class = 'progress-partial' %}
+            {% else %}
+            {% set progress_class = 'progress-low' %}
+            {% endif %}
+            <div class="daily-progress {{ progress_class }}">
+              <span class="progress-label">Today:</span>
+              <span class="progress-value">{{ progress.completed }}/{{ progress.total }}</span>
+              <span class="progress-percent">({{ pct }}%)</span>
+            </div>
+            {% endif %}
+            {% endif %}
           </div>
 
           <!-- Tombol hapus akun -->
