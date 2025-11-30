@@ -226,26 +226,30 @@
         {%- endif %}
       </div>
 
-      <!-- Bottom Controls -->
-      <div class="bottom-card">
-        <hr class="divider">
-        <div class="bottom-controls">
-          <div class="action-buttons">
-            <button type="button" id="add-row" class="btn btn-outline-primary" title="Tambah Nomor"
-              aria-label="Tambah Nomor">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-            </button>
-            <button type="submit" name="action" value="save" class="btn btn-outline-secondary"
-              title="Simpan Pengaturan">
-              Simpan Pengaturan
-            </button>
-          </div>
+      <!-- Tambah Button (Standalone) -->
+      <div style="margin-top: 16px; margin-bottom: 12px;">
+        <button type="button" id="add-row" class="btn btn-outline-primary" title="Tambah Nomor"
+          aria-label="Tambah Nomor">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </button>
+      </div>
 
-          <button type="submit" name="action" value="start" class="btn btn-block btn-primary" id="run-all-btn">
+      <!-- Bottom Controls (All in One Row) -->
+      <div class="bottom-card">
+        <div class="bottom-controls-row">
+          <label class="headless-label">
+            <div class="toggle-switch">
+              <input type="checkbox" id="headless-checkbox" checked />
+              <span class="slider"></span>
+            </div>
+            <span>Jalankan headless</span>
+          </label>
+
+          <button type="submit" name="action" value="start" class="btn btn-primary" id="run-all-btn">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="play-icon">
               <polygon points="5 3 19 12 5 21 5 3" stroke="currentColor" stroke-width="1.6" fill="currentColor" />
             </svg>
@@ -259,14 +263,6 @@
             </svg>
             <span id="btn-text">Jalankan Semua</span>
           </button>
-
-          <label class="headless-label">
-            <div class="toggle-switch">
-              <input type="checkbox" id="headless-checkbox" checked />
-              <span class="slider"></span>
-            </div>
-            <span>Jalankan headless</span>
-          </label>
         </div>
 
         <div class="actions-note">
@@ -278,6 +274,35 @@
 
   <!-- ================= SCRIPTS ================= -->
   <script>
+    // Auto-save functionality
+    let autoSaveTimeout;
+    function autoSave() {
+      clearTimeout(autoSaveTimeout);
+      autoSaveTimeout = setTimeout(() => {
+        const form = document.getElementById('automation-form');
+        const formData = new FormData(form);
+        formData.set('action', 'save');
+
+        fetch(form.action, {
+          method: 'POST',
+          body: formData
+        }).then(response => {
+          if (response.ok) {
+            console.log('Auto-saved successfully');
+          }
+        }).catch(err => {
+          console.error('Auto-save failed:', err);
+        });
+      }, 1000); // Save 1 second after user stops typing
+    }
+
+    // Attach auto-save to all inputs
+    document.addEventListener('DOMContentLoaded', function () {
+      const form = document.getElementById('automation-form');
+      form.addEventListener('input', autoSave);
+      form.addEventListener('change', autoSave);
+    });
+
     function removeRow(btn) {
       const row = btn.closest('.row-item');
       if (!row) return;
@@ -301,6 +326,7 @@
       }
 
       row.remove();
+      autoSave(); // Auto-save after removing
     }
 
     // Loading state for run-all button
