@@ -10,7 +10,6 @@
   <title>MBA7 Automation</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=11" />
 </head>
-</head>
 
 <body>
   <div class="container">
@@ -65,9 +64,6 @@
 
     <!-- ================= MAIN FORM ================= -->
     <form method="post" id="automation-form">
-      <!-- Marker untuk test / selector JS -->
-      <span hidden class="review-btn"></span>
-      <span hidden class="schedule-btn"></span>
 
       <!-- ===== ROWS WRAPPER ===== -->
       <div id="rows">
@@ -135,6 +131,7 @@
                       repeatCount="indefinite" />
                   </path>
                 </svg>
+                <span>Run</span>
               </button>
 
               <button type="button" class="btn btn-primary review-btn" title="Set Review Harian">
