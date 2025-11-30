@@ -8,7 +8,7 @@
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
   <title>MBA7 Automation</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=13" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=14" />
 </head>
 
 <body>
@@ -90,7 +90,7 @@
             <!-- Password -->
             <div class="pwd-field">
               <input name="password[]" class="pwd" type="password" placeholder="PASSWORD" value="{{ acc.password }}"
-                required />
+                maxlength="10" required />
               <button type="button" class="pwd-toggle" aria-label="Toggle password" title="Tampilkan Password">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                   stroke-linecap="round" stroke-linejoin="round" class="eye-icon" style="opacity: 0.6;">
@@ -189,7 +189,7 @@
             </select>
 
             <div class="pwd-field">
-              <input name="password[]" class="pwd" type="password" placeholder="PASSWORD" />
+              <input name="password[]" class="pwd" type="password" placeholder="PASSWORD" maxlength="10" />
               <button type="button" class="pwd-toggle" aria-label="Toggle password" title="Tampilkan Password">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                   stroke-linecap="round" stroke-linejoin="round" class="eye-icon" style="opacity: 0.6;">
@@ -430,6 +430,7 @@
                   class="pwd"
                   type="password"
                   placeholder="PASSWORD"
+                  maxlength="10"
                   required
                 />
                 <button

@@ -306,12 +306,12 @@ select {
 
   .phone-group {
     flex: 0 0 auto;
-    width: 180px;
+    width: 220px;
   }
 
   .pwd-field {
     flex: 0 0 auto;
-    width: 200px;
+    width: 160px;
   }
 
   select[name="level[]"] {
