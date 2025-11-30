@@ -144,50 +144,93 @@ body {
   border-color: #9ca3af;
 }
 
-/* Grid Layout - Lebih Rapi dengan Flex */
+/* ==================== CARD LAYOUT - MOBILE FIRST ==================== */
+
+/* Base mobile styles - all fields stack vertically */
 .account-card .inputs {
   display: flex;
-  gap: 10px;
-  align-items: center;
-  flex: 1;
-}
-
-.phone-group {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-  width: 160px;
-  /* Reduced from auto - just enough for 13 digits */
-}
-
-.phone-group input {
+  flex-direction: column;
+  gap: 0.75rem;
   width: 100%;
 }
 
+/* Phone group - mobile */
+.phone-group {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  width: 100%;
+}
+
+.phone-group input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Password field - mobile */
 .pwd-field {
   position: relative;
-  flex-shrink: 0;
-  width: 180px;
-  /* Reduced from auto */
+  width: 100%;
 }
 
 .pwd-field input {
   width: 100%;
-  padding-right: 36px;
+  padding-right: 2.5rem;
 }
 
-/* Level dropdown - lebih kecil */
+/* Level dropdown - mobile */
 select[name="level[]"] {
-  width: 70px;
-  /* Keep compact */
-  flex-shrink: 0;
+  width: 100%;
 }
 
+/* Action group - mobile */
 .action-group {
   display: flex;
-  gap: 6px;
-  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.action-group .btn {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* ==================== DESKTOP LAYOUT (768px+) ==================== */
+@media (min-width: 768px) {
+  .account-card .inputs {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .phone-group {
+    flex: 0 0 auto;
+    width: 10rem;
+    /* 160px */
+  }
+
+  .pwd-field {
+    flex: 0 0 auto;
+    width: 11.25rem;
+    /* 180px */
+  }
+
+  select[name="level[]"] {
+    flex: 0 0 auto;
+    width: 4.375rem;
+    /* 70px */
+  }
+
+  .action-group {
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+    width: auto;
+  }
+
+  .action-group .btn {
+    flex: 0 0 auto;
+  }
 }
 
 
@@ -510,9 +553,7 @@ select:focus {
   .account-card {
     flex-direction: column;
     align-items: stretch;
-    padding: 16px;
-    padding-top: 44px;
-    /* Extra space for remove button */
+    padding: 1rem;
   }
 
   .account-card .inputs {
@@ -520,29 +561,39 @@ select:focus {
     align-items: stretch;
   }
 
-  /* Mobile field widths */
+  /* Mobile field widths - Force override desktop styles */
   .phone-group {
-    width: 100%;
+    width: 100% !important;
+    min-width: unset !important;
   }
 
   .phone-group input {
     flex: 1;
+    width: 100% !important;
   }
 
   .pwd-field {
-    width: 100%;
+    width: 100% !important;
+    min-width: unset !important;
+  }
+
+  .pwd-field input {
+    width: 100% !important;
   }
 
   select[name="level[]"] {
-    width: 100%;
+    width: 100% !important;
+    min-width: unset !important;
   }
 
   .action-group {
     flex-wrap: wrap;
+    width: 100%;
   }
 
   .action-group .btn {
     flex: 1;
+    min-width: 0;
   }
 
   /* Mobile Bottom Controls */
