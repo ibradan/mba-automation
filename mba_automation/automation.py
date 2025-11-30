@@ -66,8 +66,28 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
             page.locator(
                 ".van-badge__wrapper.van-icon.van-icon-undefined.item-icon.iconfont.icon-ticket"
             ).click()
+            page.wait_for_timeout(1000)  # Wait for page to load
         except PlaywrightTimeoutError:
             pass
+
+        # ========== SCRAPE ACTUAL PROGRESS FROM PAGE ==========
+        tasks_completed = 0
+        tasks_total = iterations  # default to expected iterations
+        try:
+            # Get progress indicator element
+            progress_element = page.locator(".van-progress__pivot").first
+            progress_text = progress_element.text_content(timeout=3000)
+            print(f"Progress from page: {progress_text}")
+            
+            # Parse "60/60" format
+            if progress_text and "/" in progress_text:
+                parts = progress_text.split("/")
+                tasks_completed = int(parts[0].strip())
+                tasks_total = int(parts[1].strip())
+                print(f"Parsed progress: {tasks_completed}/{tasks_total}")
+        except Exception as e:
+            print(f"Could not read progress from page: {e}")
+            # Will use loop counting as fallback
 
         # ========== PERTAMA KALI ISI REVIEW ==========
         try:
@@ -75,7 +95,8 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
             print("Klik Mendapatkan (list) OK")
         except PlaywrightTimeoutError:
             print("Tombol 'Mendapatkan' di halaman list nggak ketemu, stop.")
-            return 0
+            # Return current progress if available
+            return tasks_completed if tasks_completed > 0 else 0
 
         page.wait_for_url("**/work**", timeout=10000)
 
@@ -110,7 +131,7 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
             pass
 
         # ========== LOOP KIRIM ULANG ==========
-        completed_tasks = 0
+        loop_count = 0
         for i in range(iterations):
             print(f"Loop ke-{i+1}")
             page.wait_for_timeout(1250)
@@ -118,7 +139,7 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
             try:
                 page.get_by_text("Sedang Berlangsung").nth(1).click()
                 page.get_by_role("button", name="Kirim").click()
-                completed_tasks += 1  # Count successful submission
+                loop_count += 1  # Count loop iterations
             except PlaywrightTimeoutError:
                 print("Elemen utama nggak ketemu, berhenti loop.")
                 break
@@ -129,8 +150,17 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
                 print("Konfirmasi nggak muncul di loop ini (gapapa).")
                 continue
 
-        print(f"Selesai loop. Completed: {completed_tasks}/{iterations} tasks")
-        return completed_tasks
+        print(f"Selesai loop. {loop_count} iterations completed")
+        
+        # Return initial scraped progress (more accurate than loop count)
+        # If scraped progress was 60/60 before we started, that's the real status
+        if tasks_completed > 0:
+            print(f"Returning scraped progress: {tasks_completed}/{tasks_total}")
+            return tasks_completed
+        else:
+            # Fallback to loop count if scraping failed
+            print(f"Returning loop count: {loop_count}")
+            return loop_count
 
     finally:
         context.close()
