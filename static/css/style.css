@@ -147,33 +147,40 @@ body {
 /* Grid Layout - Lebih Rapi dengan Flex */
 .account-card .inputs {
   display: flex;
+  gap: 10px;
   align-items: center;
-  gap: 12px;
   flex: 1;
 }
 
 .phone-group {
   display: flex;
   align-items: center;
-  gap: 6px;
-  min-width: 180px;
+  gap: 4px;
   flex-shrink: 0;
+  width: 160px;
+  /* Reduced from auto - just enough for 13 digits */
 }
 
 .phone-group input {
-  width: 130px;
+  width: 100%;
 }
 
 .pwd-field {
   position: relative;
-  flex: 1;
-  min-width: 150px;
+  flex-shrink: 0;
+  width: 180px;
+  /* Reduced from auto */
+}
+
+.pwd-field input {
+  width: 100%;
+  padding-right: 36px;
 }
 
 /* Level dropdown - lebih kecil */
 select[name="level[]"] {
   width: 70px;
-  min-width: 70px;
+  /* Keep compact */
   flex-shrink: 0;
 }
 
