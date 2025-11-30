@@ -1,0 +1,7 @@
+{
+    "auto_start": false,
+    "auto_reconnect_wifi": false,
+    "timeout": 30,
+    "viewport": "iPhone 12",
+    "log_level": "INFO"
+}

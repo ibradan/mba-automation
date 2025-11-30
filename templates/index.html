@@ -31,13 +31,68 @@
           </svg>
         </button>
         <div class="settings-menu" id="settings-menu" style="display: none;">
-          <label class="headless-label">
+          <div class="settings-header">Settings</div>
+
+          <!-- Auto Start -->
+          <label class="settings-item">
             <div class="toggle-switch">
-              <input type="checkbox" id="headless-checkbox" checked />
+              <input type="checkbox" id="setting-auto-start" {% if settings.get('auto_start') %}checked{% endif %} />
               <span class="slider"></span>
             </div>
-            <span>Jalankan headless</span>
+            <span>Auto-start on load</span>
           </label>
+
+          <!-- Auto Reconnect WiFi -->
+          <label class="settings-item">
+            <div class="toggle-switch">
+              <input type="checkbox" id="setting-wifi" {% if settings.get('auto_reconnect_wifi') %}checked{% endif %} />
+              <span class="slider"></span>
+            </div>
+            <span>Auto reconnect WiFi</span>
+          </label>
+
+          <!-- Timeout -->
+          <div class="settings-item">
+            <span>Timeout</span>
+            <select id="setting-timeout" class="settings-select">
+              <option value="15" {% if settings.get('timeout')|int==15 %}selected{% endif %}>15s</option>
+              <option value="30" {% if settings.get('timeout')|default(30)|int==30 %}selected{% endif %}>30s</option>
+              <option value="60" {% if settings.get('timeout')|int==60 %}selected{% endif %}>60s</option>
+            </select>
+          </div>
+
+          <!-- Viewport -->
+          <div class="settings-item">
+            <span>Viewport</span>
+            <select id="setting-viewport" class="settings-select">
+              <option value="iPhone 12" {% if settings.get('viewport')=='iPhone 12' %}selected{% endif %}>iPhone 12
+              </option>
+              <option value="Pixel 5" {% if settings.get('viewport')=='Pixel 5' %}selected{% endif %}>Pixel 5</option>
+              <option value="Samsung S21" {% if settings.get('viewport')=='Samsung S21' %}selected{% endif %}>Samsung
+                S21</option>
+            </select>
+          </div>
+
+          <!-- Log Level -->
+          <div class="settings-item">
+            <span>Log Level</span>
+            <select id="setting-loglevel" class="settings-select">
+              <option value="INFO" {% if settings.get('log_level')=='INFO' %}selected{% endif %}>INFO</option>
+              <option value="DEBUG" {% if settings.get('log_level')=='DEBUG' %}selected{% endif %}>DEBUG</option>
+            </select>
+          </div>
+
+          <hr class="settings-divider">
+
+          <!-- Export/Import -->
+          <div class="settings-actions">
+            <button type="button" id="btn-export" class="btn-small">Export JSON</button>
+            <button type="button" id="btn-import-trigger" class="btn-small">Import JSON</button>
+            <input type="file" id="file-import" style="display: none" accept=".json" />
+          </div>
+
+          <hr class="settings-divider">
+
           <a href="/logs" class="settings-link">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round">
@@ -810,19 +865,101 @@
     attachResetButtons();
 
     // ================= HEADLESS SYNC =================
-    const headlessCheckbox = document.getElementById('headless-checkbox');
-    const headlessInput = document.getElementById('headless-input');
+    // ================= SETTINGS LOGIC =================
+    function initSettings() {
+      const settingsInputs = [
+        'setting-auto-start',
+        'setting-wifi',
+        'setting-timeout',
+        'setting-viewport',
+        'setting-loglevel'
+      ];
 
-    if (headlessCheckbox && headlessInput) {
-      headlessCheckbox.addEventListener('change', function () {
-        headlessInput.value = headlessCheckbox.checked ? 'true' : 'false';
+      settingsInputs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.addEventListener('change', saveSettings);
+        }
       });
 
-      document
-        .getElementById('automation-form')
-        .addEventListener('submit', function () {
-          headlessInput.value = headlessCheckbox.checked ? 'true' : 'false';
+      // Export
+      const btnExport = document.getElementById('btn-export');
+      if (btnExport) {
+        btnExport.addEventListener('click', function () {
+          window.location.href = '/export_accounts';
         });
+      }
+
+      // Import
+      const btnImportTrigger = document.getElementById('btn-import-trigger');
+      const fileImport = document.getElementById('file-import');
+      if (btnImportTrigger && fileImport) {
+        btnImportTrigger.addEventListener('click', function () {
+          fileImport.click();
+        });
+
+        fileImport.addEventListener('change', function () {
+          if (this.files && this.files[0]) {
+            const formData = new FormData();
+            formData.append('file', this.files[0]);
+
+            fetch('/import_accounts', {
+              method: 'POST',
+              body: formData
+            })
+              .then(res => res.json())
+              .then(data => {
+                if (data.status === 'success') {
+                  alert('Import berhasil! Halaman akan dimuat ulang.');
+                  window.location.reload();
+                } else {
+                  alert('Import gagal: ' + data.message);
+                }
+              })
+              .catch(err => {
+                console.error(err);
+                alert('Terjadi kesalahan saat import.');
+              });
+          }
+        });
+      }
+    }
+
+    function saveSettings() {
+      const settings = {
+        auto_start: document.getElementById('setting-auto-start').checked,
+        auto_reconnect_wifi: document.getElementById('setting-wifi').checked,
+        timeout: parseInt(document.getElementById('setting-timeout').value),
+        viewport: document.getElementById('setting-viewport').value,
+        log_level: document.getElementById('setting-loglevel').value
+      };
+
+      console.log('Saving settings:', settings);
+      fetch('/settings/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(settings)
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === 'success') {
+            console.log('Settings saved');
+          } else {
+            console.error('Failed to save settings');
+          }
+        })
+        .catch(err => console.error('Error saving settings:', err));
+    }
+
+    // Initialize settings listeners
+    document.addEventListener('DOMContentLoaded', initSettings);
+    // This closing brace `}` is for the `document.addEventListener('DOMContentLoaded', function() { ... });` block
+    // which is implicitly opened at the very beginning of the script.
+    // The original code had an extra `});` here, which was likely a typo or part of a larger context not provided.
+    // Assuming the script starts with `document.addEventListener('DOMContentLoaded', function() {`
+    // and this is the closing brace for that.
     }
 
     // ================= ADD-ROW MICRO INTERACTION =================

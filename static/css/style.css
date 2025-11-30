@@ -63,23 +63,66 @@ body {
   position: absolute;
   top: 100%;
   right: 0;
-  margin-top: 8px;
   background: white;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  padding: 12px;
-  min-width: 220px;
-  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 16px;
+  min-width: 280px;
+  z-index: 100;
+  margin-top: 8px;
 }
 
-.settings-menu .headless-label {
+.settings-header {
+  font-weight: 700;
+  font-size: 1rem;
+  margin-bottom: 12px;
+  color: var(--text);
+}
+
+.settings-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px;
-  margin-bottom: 8px;
+  justify-content: space-between;
+  padding: 8px 0;
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.settings-select {
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  background: #f9fafb;
+  color: var(--text);
+}
+
+.settings-divider {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 12px 0;
+}
+
+.settings-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-small {
+  flex: 1;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: white;
   cursor: pointer;
+  transition: background 0.2s;
+  color: var(--text);
+}
+
+.btn-small:hover {
+  background: #f3f4f6;
 }
 
 .settings-link {
@@ -91,6 +134,7 @@ body {
   text-decoration: none;
   border-radius: 8px;
   transition: background 0.2s;
+  font-size: 0.9rem;
 }
 
 .settings-link:hover {
@@ -896,6 +940,7 @@ select:focus {
     font-size: 0.6rem;
   }
 }
+
 /* Daily Progress Indicator */
 .daily-progress {
   margin-top: 8px;

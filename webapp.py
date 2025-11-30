@@ -16,8 +16,32 @@ app.secret_key = os.getenv("FLASK_SECRET", "please-change-this")
 
 LOG_FILE = os.path.join(os.path.dirname(__file__), "runs.log")
 ACCOUNTS_FILE = os.path.join(os.path.dirname(__file__), "accounts.json")
+SETTINGS_FILE = os.path.join(os.path.dirname(__file__), "settings.json")
 SCHED_LOCK = threading.Lock()
 SCHED_CHECK_INTERVAL = 20  # seconds between schedule checks
+
+
+def _safe_load_settings():
+    """Load settings from JSON file with error handling."""
+    if not os.path.exists(SETTINGS_FILE):
+        return {}
+    try:
+        with open(SETTINGS_FILE, 'r') as f:
+            return json.load(f)
+    except Exception as e:
+        logger.error(f"Failed to load settings: {e}")
+        return {}
+
+
+def _safe_save_settings(settings):
+    """Save settings to JSON file with error handling."""
+    try:
+        with open(SETTINGS_FILE, 'w') as f:
+            json.dump(settings, f, indent=2)
+        return True
+    except Exception as e:
+        logger.error(f"Failed to save settings: {e}")
+        return False
 
 
 def _format_phone_for_cli(raw_phone: str) -> str:
@@ -74,6 +98,57 @@ def phone_display(normalized: str) -> str:
     if normalized.startswith('62'):
         return normalized[2:]
     return normalized
+
+
+@app.route("/settings/get", methods=["GET"])
+def get_settings():
+    return jsonify(_safe_load_settings())
+
+
+@app.route("/settings/save", methods=["POST"])
+def save_settings():
+    try:
+        data = request.get_json()
+        if _safe_save_settings(data):
+            return jsonify({"status": "success"})
+        return jsonify({"status": "error", "message": "Failed to save settings"}), 500
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/export_accounts", methods=["GET"])
+def export_accounts():
+    try:
+        if os.path.exists(ACCOUNTS_FILE):
+            return subprocess.check_output(['cat', ACCOUNTS_FILE]), 200, {
+                'Content-Type': 'application/json',
+                'Content-Disposition': 'attachment; filename=accounts.json'
+            }
+        return jsonify({"status": "error", "message": "No accounts file found"}), 404
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/import_accounts", methods=["POST"])
+def import_accounts():
+    try:
+        if 'file' not in request.files:
+            return jsonify({"status": "error", "message": "No file part"}), 400
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({"status": "error", "message": "No selected file"}), 400
+        if file:
+            # Validate JSON
+            try:
+                data = json.load(file)
+                if not isinstance(data, list):
+                    return jsonify({"status": "error", "message": "Invalid format: expected a list of accounts"}), 400
+                _safe_write_accounts(data)
+                return jsonify({"status": "success", "message": f"Imported {len(data)} accounts"})
+            except json.JSONDecodeError:
+                return jsonify({"status": "error", "message": "Invalid JSON file"}), 400
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -196,7 +271,12 @@ def index():
                 flash(f"Nomor HP tidak valid: {phone}, dilewati.", "error")
                 continue
 
-            cmd = [sys.executable, "-m", "mba_automation.cli", "--phone", phone_for_cli, "--password", pwd, "--iterations", str(iterations)]
+            # Load settings
+            settings = _safe_load_settings()
+            timeout = settings.get('timeout', 30)
+            viewport = settings.get('viewport', 'iPhone 12')
+
+            cmd = [sys.executable, "-m", "mba_automation.cli", "--phone", phone_for_cli, "--password", password, "--iterations", str(iterations), "--timeout", str(timeout), "--viewport", viewport]
             if review_text:
                 cmd.extend(["--review", review_text])
             if headless:
@@ -324,7 +404,15 @@ def index():
     env_headless = parse_env_bool(os.getenv('MBA_HEADLESS'))
     headless_default = True if env_headless is None else bool(env_headless)
 
-    return render_template("index.html", saved=saved_accounts, headless_default=headless_default, now=now)
+    # Load settings to pass to template
+    settings = _safe_load_settings()
+
+    return render_template(
+        "index.html",
+        saved=saved_accounts,
+        now=now,
+        settings=settings
+    )
 
 
 def _safe_load_accounts():

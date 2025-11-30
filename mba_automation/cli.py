@@ -19,6 +19,8 @@ def main():
     parser.add_argument("--slow-mo", type=int, default=200, help="Playwright slowMo in ms")
     parser.add_argument("--iterations", type=int, default=30, help="Number of review loops")
     parser.add_argument("--review", type=str, default=None, help="Optional review text to submit")
+    parser.add_argument("--viewport", type=str, default="iPhone 12", help="Device viewport name (e.g., 'iPhone 12')")
+    parser.add_argument("--timeout", type=int, default=30, help="Navigation timeout in seconds")
     args = parser.parse_args()
 
     # load .env if present
@@ -62,7 +64,7 @@ def main():
 
         for phone in phones:
             print(f"Starting automation for {phone} (headless={final_headless})")
-            completed, total = automation_run(playwright, phone=phone, password=password, headless=final_headless, slow_mo=args.slow_mo, iterations=args.iterations, review_text=args.review)
+            completed, total = automation_run(playwright, phone=phone, password=password, headless=final_headless, slow_mo=args.slow_mo, iterations=args.iterations, review_text=args.review, viewport_name=args.viewport, timeout=args.timeout)
             
             # Save progress to accounts.json
             try:

@@ -2,13 +2,21 @@ from typing import Optional, Tuple
 from playwright.sync_api import Playwright, TimeoutError as PlaywrightTimeoutError
 
 
-def run(playwright: Playwright, phone: str, password: str, headless: bool = False, slow_mo: int = 200, iterations: int = 30, review_text: Optional[str] = None) -> Tuple[int, int]:
+VIEWPORTS = {
+    "iPhone 12": {"width": 390, "height": 844},
+    "Pixel 5": {"width": 393, "height": 851},
+    "Samsung S21": {"width": 360, "height": 800}
+}
+
+def run(playwright: Playwright, phone: str, password: str, headless: bool = False, slow_mo: int = 200, iterations: int = 30, review_text: Optional[str] = None, viewport_name: str = "iPhone 12", timeout: int = 30) -> Tuple[int, int]:
     browser = playwright.chromium.launch(headless=headless, slow_mo=slow_mo)
-    context = browser.new_context(viewport={"width": 375, "height": 812})
+    
+    vp = VIEWPORTS.get(viewport_name, VIEWPORTS["iPhone 12"])
+    context = browser.new_context(viewport=vp)
     page = context.new_page()
 
-    # Reduce default timeout from 30s to something faster for automation
-    page.set_default_timeout(5000)
+    # Set timeout (convert to ms)
+    page.set_default_timeout(timeout * 1000)
 
     try:
         # ========== LOGIN ==========
