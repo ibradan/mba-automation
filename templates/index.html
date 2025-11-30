@@ -8,7 +8,7 @@
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
   <title>MBA7 Automation</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=15" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=16" />
 </head>
 
 <body>
@@ -90,7 +90,7 @@
             <!-- Password -->
             <div class="pwd-field">
               <input name="password[]" class="pwd" type="password" placeholder="PASSWORD" value="{{ acc.password }}"
-                maxlength="10" required />
+                maxlength="15" required />
               <button type="button" class="pwd-toggle" aria-label="Toggle password" title="Tampilkan Password">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                   stroke-linecap="round" stroke-linejoin="round" class="eye-icon" style="opacity: 0.6;">
@@ -165,11 +165,20 @@
             </div>
 
             <!-- Daily Progress Indicator -->
-            {% if acc.daily_progress %}
+            <!-- Daily Progress Indicator -->
             {% set today = now.strftime('%Y-%m-%d') %}
-            {% if today in acc.daily_progress %}
+            {% set level_map = {'E1': 15, 'E2': 30, 'E3': 60} %}
+            {% set target = level_map[acc.level] if acc.level in level_map else 30 %}
+            {% set completed = 0 %}
+            {% set pct = 0 %}
+
+            {% if acc.daily_progress and today in acc.daily_progress %}
             {% set progress = acc.daily_progress[today] %}
+            {% set completed = progress.completed %}
+            {% set target = progress.total %}
             {% set pct = progress.percentage %}
+            {% endif %}
+
             {% if pct >= 100 %}
             {% set progress_class = 'progress-complete' %}
             {% elif pct >= 50 %}
@@ -177,13 +186,12 @@
             {% else %}
             {% set progress_class = 'progress-low' %}
             {% endif %}
+
             <div class="daily-progress {{ progress_class }}">
               <span class="progress-label">Today:</span>
-              <span class="progress-value">{{ progress.completed }}/{{ progress.total }}</span>
+              <span class="progress-value">{{ completed }}/{{ target }}</span>
               <span class="progress-percent">({{ pct }}%)</span>
             </div>
-            {% endif %}
-            {% endif %}
           </div>
 
           <!-- Tombol hapus akun -->
@@ -210,7 +218,7 @@
             </select>
 
             <div class="pwd-field">
-              <input name="password[]" class="pwd" type="password" placeholder="PASSWORD" maxlength="10" />
+              <input name="password[]" class="pwd" type="password" placeholder="PASSWORD" maxlength="15" />
               <button type="button" class="pwd-toggle" aria-label="Toggle password" title="Tampilkan Password">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                   stroke-linecap="round" stroke-linejoin="round" class="eye-icon" style="opacity: 0.6;">
@@ -451,7 +459,7 @@
                   class="pwd"
                   type="password"
                   placeholder="PASSWORD"
-                  maxlength="10"
+                  maxlength="15"
                   required
                 />
                 <button
