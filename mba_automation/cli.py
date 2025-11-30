@@ -1,6 +1,6 @@
 import argparse
 import os
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 from playwright.sync_api import sync_playwright
 from .automation import run as automation_run
 
@@ -22,7 +22,7 @@ def main():
     args = parser.parse_args()
 
     # load .env if present
-    load_dotenv()
+    # load_dotenv()
 
     # assemble phone list from CLI args and environment variables
     phones = []
@@ -62,7 +62,7 @@ def main():
 
         for phone in phones:
             print(f"Starting automation for {phone} (headless={final_headless})")
-            completed = automation_run(playwright, phone=phone, password=password, headless=final_headless, slow_mo=args.slow_mo, iterations=args.iterations, review_text=args.review)
+            completed, total = automation_run(playwright, phone=phone, password=password, headless=final_headless, slow_mo=args.slow_mo, iterations=args.iterations, review_text=args.review)
             
             # Save progress to accounts.json
             try:
@@ -77,7 +77,7 @@ def main():
                 normalized_phone = phone if phone.startswith('62') else '62' + phone
                 
                 # Calculate percentage
-                percentage = round((completed / args.iterations) * 100) if args.iterations > 0 else 0
+                percentage = round((completed / total) * 100) if total > 0 else 0
                 
                 # Read, update, write with file locking
                 if os.path.exists(accounts_file):
@@ -93,7 +93,7 @@ def main():
                                         acc['daily_progress'] = {}
                                     acc['daily_progress'][today] = {
                                         'completed': completed,
-                                        'total': args.iterations,
+                                        'total': total,
                                         'percentage': percentage
                                     }
                                     break
@@ -104,7 +104,7 @@ def main():
                         finally:
                             fcntl.flock(f.fileno(), fcntl.LOCK_UN)
                 
-                print(f"✓ Progress saved: {completed}/{args.iterations} ({percentage}%)")
+                print(f"✓ Progress saved: {completed}/{total} ({percentage}%)")
             except Exception as e:
                 print(f"Warning: Could not save progress: {e}")
 

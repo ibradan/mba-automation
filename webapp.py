@@ -266,20 +266,34 @@ def index():
                                 last_run_dt = None
 
                     # compute status: 'ran' if already run at/after scheduled time today; 'due' if scheduled time passed but not run; 'pending' if scheduled in future or no schedule => ''
+                    # compute status: 'ran' if 100% complete; 'due' if partial or scheduled time passed; 'pending' otherwise
                     status = ''
-                    if schedule:
-                        try:
-                            hh, mm = (int(x) for x in schedule.split(':'))
-                            scheduled_dt = datetime.datetime.combine(now.date(), datetime.time(hour=hh, minute=mm))
-                            if last_run_dt and last_run_dt >= scheduled_dt:
-                                status = 'ran'
-                            else:
-                                if scheduled_dt <= now:
-                                    status = 'due'
+                    
+                    # Check daily progress first
+                    today_str = now.strftime('%Y-%m-%d')
+                    progress = it.get('daily_progress', {}).get(today_str, {})
+                    pct = progress.get('percentage', 0)
+                    
+                    if pct >= 100:
+                        status = 'ran'
+                    elif pct > 0:
+                        status = 'due'  # Partial progress shows as yellow/due
+                    else:
+                        # Fallback to schedule logic if 0% progress
+                        if schedule:
+                            try:
+                                hh, mm = (int(x) for x in schedule.split(':'))
+                                scheduled_dt = datetime.datetime.combine(now.date(), datetime.time(hour=hh, minute=mm))
+                                # If we have legacy last_run_dt but no progress data (rare case now), check it
+                                if last_run_dt and last_run_dt >= scheduled_dt:
+                                    status = 'ran'
                                 else:
-                                    status = 'pending'
-                        except Exception:
-                            status = ''
+                                    if scheduled_dt <= now:
+                                        status = 'due'
+                                    else:
+                                        status = 'pending'
+                            except Exception:
+                                status = ''
 
                     saved_accounts.append({
                         "phone_display": display, 

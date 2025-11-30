@@ -1,8 +1,8 @@
-from typing import Optional
+from typing import Optional, Tuple
 from playwright.sync_api import Playwright, TimeoutError as PlaywrightTimeoutError
 
 
-def run(playwright: Playwright, phone: str, password: str, headless: bool = False, slow_mo: int = 200, iterations: int = 30, review_text: Optional[str] = None) -> int:
+def run(playwright: Playwright, phone: str, password: str, headless: bool = False, slow_mo: int = 200, iterations: int = 30, review_text: Optional[str] = None) -> Tuple[int, int]:
     browser = playwright.chromium.launch(headless=headless, slow_mo=slow_mo)
     context = browser.new_context(viewport={"width": 375, "height": 812})
     page = context.new_page()
@@ -96,7 +96,7 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
         except PlaywrightTimeoutError:
             print("Tombol 'Mendapatkan' di halaman list nggak ketemu, stop.")
             # Return current progress if available
-            return tasks_completed if tasks_completed > 0 else 0
+            return (tasks_completed, tasks_total) if tasks_completed > 0 else (0, iterations)
 
         page.wait_for_url("**/work**", timeout=10000)
 
@@ -105,13 +105,13 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
             print("Klik Mendapatkan (detail) OK")
         except PlaywrightTimeoutError:
             print("Tombol 'Mendapatkan' di halaman detail nggak ketemu.")
-            return 0
+            return (tasks_completed, tasks_total) if tasks_completed > 0 else (0, iterations)
 
         try:
             page.get_by_text("Sedang Berlangsung").nth(1).click()
         except PlaywrightTimeoutError:
             print("'Sedang Berlangsung' ke-2 nggak ketemu, stop.")
-            return 0
+            return (tasks_completed, tasks_total) if tasks_completed > 0 else (0, iterations)
 
         try:
             page.get_by_role("radio", name="").click()
@@ -156,11 +156,11 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
         # If scraped progress was 60/60 before we started, that's the real status
         if tasks_completed > 0:
             print(f"Returning scraped progress: {tasks_completed}/{tasks_total}")
-            return tasks_completed
+            return tasks_completed, tasks_total
         else:
             # Fallback to loop count if scraping failed
             print(f"Returning loop count: {loop_count}")
-            return loop_count
+            return loop_count, iterations
 
     finally:
         context.close()
