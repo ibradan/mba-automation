@@ -8,7 +8,7 @@
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
   <title>MBA7 Automation</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=6" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=7" />
 </head>
 </head>
 
@@ -17,7 +17,6 @@
     <!-- ================= HEADER ================= -->
     <header class="site-head">
       <div class="brand-left">
-        <div class="brand-logo">MA</div>
         <div>
           <h1 class="app-title">MBA7 Automation</h1>
           <p class="app-desc">Kelola akun dan jadwal otomatisasi</p>
@@ -175,8 +174,8 @@
               <button type="button" class="pwd-toggle" aria-label="Toggle password" title="Tampilkan Password">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                   stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.6;">
-                  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-                  <circle cx="12" cy="12" r="3" />
+                  <path d="M10 12a2 2 0 1 0 4 0 2 2 0 0 0-4 0" />
+                  <path d="M21 12c-2.4 4-5.4 6-9 6-3.6 0-6.6-2-9-6 2.4-4 5.4-6 9-6 3.6 0 6.6 2 9 6" />
                 </svg>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                   stroke-linecap="round" stroke-linejoin="round" class="eye-off-icon"
@@ -217,31 +216,19 @@
           </div>
 
           <button type="button" class="remove" onclick="removeRow(this)" title="Hapus akun" aria-label="Hapus akun">
-            <span aria-hidden="true">−</span>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="8" y1="12" x2="16" y2="12"></line>
+            </svg>
           </button>
         </div>
         {%- endif %}
       </div>
 
-      <span class="add-text">Tambah Nomor</span>
-      </button>
-
-      <button type="submit" name="action" value="save" class="btn btn-ghost">
-        Simpan Pengaturan
-      </button>
-
-      <button type="submit" name="action" value="start" class="btn btn-primary" id="run-all-btn">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="play-icon">
-          <polygon points="5 3 19 12 5 21 5 3" stroke="currentColor" stroke-width="1.6" fill="currentColor" />
-        </svg>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="spinner-icon" style="display:none;">
-          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" opacity="0.25" />
-          <path d="M12 2 A10 10 0 0 1 22 12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round">
-            <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s"
-              repeatCount="indefinite" />
-          </path>
-        </svg>
-        <span id="btn-text">Jalankan Semua</span>
+      </path>
+      </svg>
+      <span id="btn-text">Jalankan Semua</span>
       </button>
   </div>
   </div>
@@ -342,8 +329,8 @@
                   title="Tampilkan Password"
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.6;">
-                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
-                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M10 12a2 2 0 1 0 4 0 2 2 0 0 0-4 0"/>
+                    <path d="M21 12c-2.4 4-5.4 6-9 6-3.6 0-6.6-2-9-6 2.4-4 5.4-6 9-6 3.6 0 6.6 2 9 6"/>
                   </svg>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-off-icon" style="display:none; opacity: 0.6;">
                     <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/>
