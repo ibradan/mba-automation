@@ -125,21 +125,23 @@ body {
 
 /* Abu-abu untuk pending */
 
-/* Card Background Color Based on Status */
+/* Card Background Color Based on Status - Warna lebih jelas! */
 .row-item.ran {
-  background: linear-gradient(to right, #ecfdf5 0%, #ffffff 100%);
-  border-color: #a7f3d0;
+  background: #d1fae5;
+  /* Hijau muda jelas */
+  border-color: #10b981;
 }
 
 .row-item.due {
-  background: linear-gradient(to right, #fffbeb 0%, #ffffff 100%);
-  border-color: #fde68a;
+  background: #fef3c7;
+  /* Kuning muda jelas */
+  border-color: #f59e0b;
 }
 
 .row-item.pending {
-  /* Pending = putih polos dengan border abu-abu */
-  background: #ffffff;
-  border-color: #e5e7eb;
+  background: #f3f4f6;
+  /* Abu-abu muda jelas */
+  border-color: #9ca3af;
 }
 
 /* Grid Layout - Lebih Rapi dengan Flex */
