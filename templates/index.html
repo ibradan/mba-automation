@@ -276,31 +276,47 @@
   <script>
     // Auto-save functionality
     let autoSaveTimeout;
+    let isSaving = false;
+
     function autoSave() {
+      if (isSaving) return; // Prevent multiple saves at once
+
       clearTimeout(autoSaveTimeout);
       autoSaveTimeout = setTimeout(() => {
+        isSaving = true;
         const form = document.getElementById('automation-form');
         const formData = new FormData(form);
         formData.set('action', 'save');
 
-        fetch(form.action, {
+        // Show saving indicator (optional)
+        console.log('Auto-saving...');
+
+        fetch(form.action || '/', {
           method: 'POST',
           body: formData
         }).then(response => {
+          isSaving = false;
           if (response.ok) {
-            console.log('Auto-saved successfully');
+            console.log('✓ Auto-saved successfully');
+            // Optional: Show brief success indicator
+          } else {
+            console.error('Auto-save failed with status:', response.status);
           }
         }).catch(err => {
-          console.error('Auto-save failed:', err);
+          isSaving = false;
+          console.error('Auto-save error:', err);
         });
-      }, 1000); // Save 1 second after user stops typing
+      }, 1500); // Save 1.5 seconds after user stops typing
     }
 
     // Attach auto-save to all inputs
     document.addEventListener('DOMContentLoaded', function () {
       const form = document.getElementById('automation-form');
-      form.addEventListener('input', autoSave);
-      form.addEventListener('change', autoSave);
+      if (form) {
+        form.addEventListener('input', autoSave);
+        form.addEventListener('change', autoSave);
+        console.log('Auto-save enabled');
+      }
     });
 
     function removeRow(btn) {
