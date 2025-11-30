@@ -954,7 +954,25 @@
     }
 
     // Initialize settings listeners
-    document.addEventListener('DOMContentLoaded', initSettings);
+    document.addEventListener('DOMContentLoaded', function () {
+      initSettings();
+
+      // Auto-start check
+      const autoStartToggle = document.getElementById('setting-auto-start');
+      if (autoStartToggle && autoStartToggle.checked) {
+        console.log('Auto-start enabled. Triggering automation in 2s...');
+        const runBtn = document.getElementById('run-all-btn');
+        if (runBtn) {
+          setTimeout(() => {
+            // Only click if not already running (check spinner)
+            const spinner = runBtn.querySelector('.spinner-icon');
+            if (spinner && spinner.style.display === 'none') {
+              runBtn.click();
+            }
+          }, 2000);
+        }
+      }
+    });
 
     // ================= ADD-ROW MICRO INTERACTION =================
     const addRowBtn = document.getElementById('add-row');
