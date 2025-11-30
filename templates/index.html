@@ -226,26 +226,54 @@
         {%- endif %}
       </div>
 
-      </path>
-      </svg>
-      <span id="btn-text">Jalankan Semua</span>
-      </button>
-  </div>
-  </div>
+      <!-- Bottom Controls -->
+      <div class="bottom-card">
+        <hr class="divider">
+        <div class="bottom-controls">
+          <div class="action-buttons">
+            <button type="button" id="add-row" class="btn btn-outline-primary" title="Tambah Nomor"
+              aria-label="Tambah Nomor">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            </button>
+            <button type="submit" name="action" value="save" class="btn btn-outline-secondary"
+              title="Simpan Pengaturan">
+              Simpan Pengaturan
+            </button>
+          </div>
 
-  <p class="actions-note small-muted">
-    Automation tetap berjalan otomatis sesuai jadwal tiap akun.
-    Tombol <strong>“Jalankan Semua”</strong> hanya untuk
-    menjalankan semua akun sekaligus saat ini.
-  </p>
-  </form>
+          <button type="submit" name="action" value="start" class="btn btn-block btn-primary" id="run-all-btn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="play-icon">
+              <polygon points="5 3 19 12 5 21 5 3" stroke="currentColor" stroke-width="1.6" fill="currentColor" />
+            </svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="spinner-icon" style="display:none;">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" opacity="0.25" />
+              <path d="M12 2 A10 10 0 0 1 22 12" stroke="currentColor" stroke-width="2" fill="none"
+                stroke-linecap="round">
+                <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s"
+                  repeatCount="indefinite" />
+              </path>
+            </svg>
+            <span id="btn-text">Jalankan Semua</span>
+          </button>
 
-  <!-- STATUS LEGEND -->
-  <p class="mt-8 small-muted">
-    Status warna: <strong>hijau</strong> = selesai,
-    <strong>kuning</strong> = terlewat,
-    <strong>abu</strong> = belum jalan.
-  </p>
+          <label class="headless-label">
+            <div class="toggle-switch">
+              <input type="checkbox" id="headless-checkbox" checked />
+              <span class="slider"></span>
+            </div>
+            <span>Jalankan headless</span>
+          </label>
+        </div>
+
+        <div class="actions-note">
+          🟢 selesai 🟡 terlewat ⚪ belum jalan
+        </div>
+      </div>
+    </form>
   </div>
 
   <!-- ================= SCRIPTS ================= -->
