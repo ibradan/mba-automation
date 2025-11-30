@@ -211,37 +211,35 @@
       </div>
 
       <!-- ===== CONTROLS (Add & Save) ===== -->
+      <!-- ===== BOTTOM ACTIONS ===== -->
       <div class="bottom-controls">
-        <button type="button" id="add-row" title="Tambah Nomor" aria-label="Tambah Nomor">
-          <span class="add-icon" aria-hidden="true">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
-              aria-hidden="true" focusable="false">
-              <rect x="0" y="0" width="24" height="24" rx="12" fill="none" />
-              <path d="M12 6v12M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                stroke-linejoin="round" />
-            </svg>
-          </span>
-          <span class="add-text">Tambah Nomor</span>
-        </button>
+        <!-- Headless Toggle -->
+        <label class="headless-label">
+          <input type="checkbox" id="headless-checkbox" {{ 'checked' if headless_default else '' }} />
+          <input type="hidden" name="headless" id="headless-input"
+            value="{{ 'true' if headless_default else 'false' }}" />
+          Jalankan headless
+        </label>
 
-        <button type="submit" name="action" value="save" class="btn btn-ghost">
-          Simpan Pengaturan
-        </button>
-      </div>
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+          <button type="button" id="add-row" title="Tambah Nomor" aria-label="Tambah Nomor">
+            <span class="add-icon" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true" focusable="false">
+                <rect x="0" y="0" width="24" height="24" rx="12" fill="none" />
+                <path d="M12 6v12M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" />
+              </svg>
+            </span>
+            <span class="add-text">Tambah Nomor</span>
+          </button>
 
-      <!-- ===== HEADLESS TOGGLE ===== -->
-      <label class="headless-label mt-8">
-        <!-- Checkbox tidak langsung dikirim; dikonversi ke hidden input lewat JS -->
-        <input type="checkbox" id="headless-checkbox" {{ 'checked' if headless_default else '' }} />
-        <input type="hidden" name="headless" id="headless-input"
-          value="{{ 'true' if headless_default else 'false' }}" />
-        Jalankan headless
-      </label>
+          <button type="submit" name="action" value="save" class="btn btn-ghost">
+            Simpan Pengaturan
+          </button>
 
-      <!-- ===== MAIN ACTION BUTTONS ===== -->
-      <div class="actions">
-        <div class="actions-main">
-          <button type="submit" name="action" value="start" class="btn btn-primary btn-block" id="run-all-btn">
+          <button type="submit" name="action" value="start" class="btn btn-primary" id="run-all-btn">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="play-icon">
               <polygon points="5 3 19 12 5 21 5 3" stroke="currentColor" stroke-width="1.6" fill="currentColor" />
             </svg>
@@ -253,16 +251,16 @@
                   repeatCount="indefinite" />
               </path>
             </svg>
-            <span id="btn-text">Jalankan Semua Sekarang</span>
+            <span id="btn-text">Jalankan Semua</span>
           </button>
         </div>
-
-        <p class="actions-note small-muted">
-          Automation tetap berjalan otomatis sesuai jadwal tiap akun.
-          Tombol <strong>“Jalankan Semua Sekarang”</strong> hanya untuk
-          menjalankan semua akun sekaligus saat ini.
-        </p>
       </div>
+
+      <p class="actions-note small-muted">
+        Automation tetap berjalan otomatis sesuai jadwal tiap akun.
+        Tombol <strong>“Jalankan Semua”</strong> hanya untuk
+        menjalankan semua akun sekaligus saat ini.
+      </p>
     </form>
 
     <!-- STATUS LEGEND -->
