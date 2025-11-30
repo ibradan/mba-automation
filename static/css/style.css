@@ -152,7 +152,7 @@ body {
   left: 0;
   top: 0;
   bottom: 0;
-  width: 4px;
+  width: 6px;
   background: var(--border);
   border-radius: 12px 0 0 12px;
 }
@@ -182,17 +182,28 @@ body {
   box-shadow: 0 0 0 2px rgba(156, 163, 175, 0.2);
 }
 
-.row-item.ran,
-.row-item.due,
+/* Status Card Backgrounds */
+.row-item.ran {
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+
+.row-item.ran::before {
+  background: #10b981;
+}
+
+.row-item.due {
+  background: #fffbeb;
+  border-color: #fcd34d;
+}
+
+.row-item.due::before {
+  background: #f59e0b;
+}
+
 .row-item.pending {
   background: #ffffff;
   border-color: #e2e8f0;
-}
-
-.row-item.ran::before,
-.row-item.due::before,
-.row-item.pending::before {
-  display: none;
 }
 
 /* Card Grid Layout */
