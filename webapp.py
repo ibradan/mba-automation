@@ -276,7 +276,7 @@ def index():
             timeout = settings.get('timeout', 30)
             viewport = settings.get('viewport', 'iPhone 12')
 
-            cmd = [sys.executable, "-m", "mba_automation.cli", "--phone", phone_for_cli, "--password", password, "--iterations", str(iterations), "--timeout", str(timeout), "--viewport", viewport]
+            cmd = [sys.executable, "-m", "mba_automation.cli", "--phone", phone_for_cli, "--password", pwd, "--iterations", str(iterations), "--timeout", str(timeout), "--viewport", viewport]
             if review_text:
                 cmd.extend(["--review", review_text])
             if headless:
