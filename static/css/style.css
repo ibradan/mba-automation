@@ -298,6 +298,16 @@ select:focus {
   color: var(--text);
 }
 
+.btn-success {
+  background: #10b981;
+  color: white;
+  border: 1px solid #059669;
+}
+
+.btn-success:hover {
+  background: #059669;
+}
+
 .btn-block {
   width: 100%;
   padding: 12px;

@@ -613,6 +613,41 @@ def reset_last_run():
     return jsonify({"ok": True, "msg": "last_run dihapus"})
 
 
+@app.route("/run_single", methods=["POST"])
+def run_single():
+    """Run automation for a single account immediately."""
+    phone = request.form.get("phone", "").strip()
+    if not phone:
+        return jsonify({"ok": False, "msg": "phone is required"}), 400
+
+    normalized = normalize_phone(phone)
+    if not normalized:
+        return jsonify({"ok": False, "msg": "invalid phone format"}), 400
+
+    # Find account details
+    accounts = _safe_load_accounts()
+    target_acc = None
+    for acc in accounts:
+        if acc.get("phone") == normalized:
+            target_acc = acc
+            break
+    
+    if not target_acc:
+        return jsonify({"ok": False, "msg": "akun tidak ditemukan"}), 404
+
+    # Trigger run in background
+    def run_bg():
+        try:
+            _trigger_run_for_account(target_acc)
+        except Exception as e:
+            logger.exception("Failed manual single run for %s: %s", normalized, e)
+
+    t = threading.Thread(target=run_bg, daemon=True)
+    t.start()
+
+    return jsonify({"ok": True, "msg": f"Automation started for {phone}"})
+
+
 @app.route("/logs")
 def view_logs():
     """Display automation logs from runs.log file."""

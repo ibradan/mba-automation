@@ -73,6 +73,22 @@
 
             <!-- Action buttons -->
             <div class="action-group">
+              <!-- Play Button (Run Single) -->
+              <button type="button" class="btn btn-success play-btn" title="Jalankan Akun Ini" data-bound="1">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="play-icon">
+                  <polygon points="5 3 19 12 5 21 5 3" stroke="currentColor" stroke-width="2" fill="currentColor"
+                    stroke-linejoin="round" />
+                </svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="spinner-icon" style="display:none;">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" opacity="0.25" />
+                  <path d="M12 2 A10 10 0 0 1 22 12" stroke="currentColor" stroke-width="2" fill="none"
+                    stroke-linecap="round">
+                    <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s"
+                      repeatCount="indefinite" />
+                  </path>
+                </svg>
+              </button>
+
               <button type="button" class="btn btn-primary review-btn" title="Set Review Harian">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                   <path d="M21 15v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4" stroke="currentColor" stroke-width="1.6"
@@ -191,6 +207,20 @@
             </select>
 
             <div class="action-group">
+              <button type="button" class="btn btn-success play-btn" title="Jalankan Akun Ini">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="play-icon">
+                  <polygon points="5 3 19 12 5 21 5 3" stroke="currentColor" stroke-width="2" fill="currentColor"
+                    stroke-linejoin="round" />
+                </svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="spinner-icon" style="display:none;">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" opacity="0.25" />
+                  <path d="M12 2 A10 10 0 0 1 22 12" stroke="currentColor" stroke-width="2" fill="none"
+                    stroke-linecap="round">
+                    <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s"
+                      repeatCount="indefinite" />
+                  </path>
+                </svg>
+              </button>
               <button type="button" class="btn btn-primary review-btn" title="Set Review Harian">
                 Review
               </button>
@@ -454,14 +484,13 @@
             >
               <span aria-hidden="true">−</span>
             </button>
-          `;
-
         rows.appendChild(div);
 
         attachToggle(div);
         attachReviewButtons();
         attachScheduleButtons();
         attachResetButtons();
+        attachPlayButtons(); // Attach play button listener
       });
 
     // ================= PASSWORD TOGGLE =================
@@ -487,6 +516,69 @@
     document
       .querySelectorAll('.row-item')
       .forEach(function (row) { attachToggle(row); });
+
+    // ================= PLAY BUTTON (RUN SINGLE) =================
+    function attachPlayButtons() {
+      document.querySelectorAll('.play-btn').forEach(function (btn) {
+        if (btn.dataset.bound) return;
+        btn.dataset.bound = '1';
+
+        btn.addEventListener('click', async function () {
+          const row = btn.closest('.row-item');
+          if (!row) return;
+
+          const phoneInput = row.querySelector('input[name="phone[]"]');
+          if (!phoneInput) return;
+
+          const phone = phoneInput.value.trim();
+          if (!phone) {
+            alert('Masukkan nomor HP terlebih dahulu.');
+            return;
+          }
+
+          // Show loading state
+          const originalIcon = btn.querySelector('.play-icon');
+          const spinnerIcon = btn.querySelector('.spinner-icon');
+
+          btn.disabled = true;
+          originalIcon.style.display = 'none';
+          spinnerIcon.style.display = 'inline';
+
+          try {
+            const formData = new FormData();
+            formData.append('phone', phone);
+
+            const res = await fetch('/run_single', {
+              method: 'POST',
+              body: formData
+            });
+            const data = await res.json();
+
+            if (data.ok) {
+              // Show toast or simple alert for now
+              // alert('Automation started for +62' + phone);
+              // Redirect to logs or just stay? Let's stay but maybe show a flash message
+              // For now, just reload to update status or show success
+              window.location.reload();
+            } else {
+              alert('Error: ' + data.msg);
+              // Reset state
+              btn.disabled = false;
+              originalIcon.style.display = 'inline';
+              spinnerIcon.style.display = 'none';
+            }
+          } catch (err) {
+            alert('Gagal menghubungi server.');
+            console.error(err);
+            // Reset state
+            btn.disabled = false;
+            originalIcon.style.display = 'inline';
+            spinnerIcon.style.display = 'none';
+          }
+        });
+      });
+    }
+    attachPlayButtons();
 
     // ================= REVIEW BUTTON =================
     function attachReviewButtons() {
