@@ -896,3 +896,45 @@ select:focus {
     font-size: 0.6rem;
   }
 }
+/* Daily Progress Indicator */
+.daily-progress {
+  margin-top: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.daily-progress.progress-complete {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.daily-progress.progress-partial {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.daily-progress.progress-low {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.progress-label {
+  opacity: 0.9;
+}
+
+.progress-value {
+  font-weight: 700;
+}
+
+.progress-percent {
+  opacity: 0.8;
+  font-size: 0.8rem;
+}
