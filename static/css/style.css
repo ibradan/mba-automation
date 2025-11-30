@@ -31,7 +31,6 @@ body {
   max-width: 960px;
   margin: 0 auto;
   padding: 16px;
-  /* Reduced padding */
 }
 
 /* Header */
@@ -51,7 +50,6 @@ body {
   gap: 12px;
 }
 
-/* Logo removed as per request */
 .brand-logo {
   display: none;
 }
@@ -103,6 +101,7 @@ body {
   flex-shrink: 0;
 }
 
+/* Logo and text styles (used in other templates) */
 .logo {
   width: 40px;
   height: 40px;
@@ -128,18 +127,12 @@ body {
   margin-top: 2px;
 }
 
-.top-actions {
-  font-size: 0.85rem;
-  color: var(--text-light);
-}
-
 /* Account Cards */
 .account-card {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 20px 50px 20px 28px;
-  /* Extra padding kanan untuk tombol hapus */
   margin-bottom: 16px;
   display: flex;
   align-items: center;
@@ -153,7 +146,6 @@ body {
   transform: translateY(-2px);
 }
 
-/* Status Indicator Strip - Tetap ada tapi lebih tipis */
 .account-card::before {
   content: '';
   position: absolute;
@@ -177,23 +169,19 @@ body {
 
 .status-dot.ran {
   background-color: #10b981;
-  /* Green */
   box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
 }
 
 .status-dot.due {
   background-color: #f59e0b;
-  /* Yellow */
   box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
 }
 
 .status-dot.pending {
   background-color: #9ca3af;
-  /* Gray */
   box-shadow: 0 0 0 2px rgba(156, 163, 175, 0.2);
 }
 
-/* Remove old status styles */
 .row-item.ran,
 .row-item.due,
 .row-item.pending {
@@ -207,22 +195,17 @@ body {
   display: none;
 }
 
-/* ==================== CARD LAYOUT - PROFESSIONAL GRID ==================== */
-
-/* MOBILE FIRST: CSS Grid Layout */
+/* Card Grid Layout */
 .account-card .inputs {
   display: grid;
   grid-template-columns: 1fr 80px;
-  /* Phone takes rest, Level takes 80px */
   gap: 12px;
   width: 100%;
   align-items: start;
 }
 
-/* Row 1: Phone (Left) + Level (Right) */
 .phone-group {
   grid-column: 1 / 2;
-  /* First column */
   grid-row: 1;
   display: flex;
   align-items: center;
@@ -232,35 +215,28 @@ body {
 
 select[name="level[]"] {
   grid-column: 2 / 3;
-  /* Second column */
   grid-row: 1;
   width: 100%;
   height: 44px;
-  /* Match input height */
 }
 
-/* Row 2: Password (Full Width) */
 .pwd-field {
   grid-column: 1 / -1;
-  /* Span all columns */
   grid-row: 2;
   position: relative;
   width: 100%;
 }
 
-/* Row 3: Actions (Full Width, Grid 2x2 for big buttons) */
 .action-group {
   grid-column: 1 / -1;
   grid-row: 3;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  /* 2 columns equal width */
   gap: 8px;
   width: 100%;
   margin-top: 4px;
 }
 
-/* Make buttons BIG and TALL on mobile */
 .action-group .btn {
   height: 44px;
   display: flex;
@@ -298,17 +274,15 @@ select {
   color: #4b5563;
 }
 
-/* ==================== DESKTOP LAYOUT (768px+) ==================== */
+/* Desktop Layout */
 @media (min-width: 768px) {
   .account-card .inputs {
     display: flex;
-    /* Switch back to Flex for desktop */
     flex-direction: row;
     align-items: center;
     gap: 12px;
   }
 
-  /* Reset Grid positioning */
   .phone-group,
   select[name="level[]"],
   .pwd-field,
@@ -322,24 +296,20 @@ select {
   .phone-group {
     flex: 0 0 auto;
     width: 180px;
-    /* Fixed width */
   }
 
   .pwd-field {
     flex: 0 0 auto;
     width: 200px;
-    /* Fixed width */
   }
 
   select[name="level[]"] {
     flex: 0 0 auto;
     width: 80px;
-    /* Fixed width */
   }
 
   .action-group {
     display: flex;
-    /* Back to flex row */
     flex-wrap: nowrap;
     gap: 6px;
     flex: 0 0 auto;
@@ -348,7 +318,6 @@ select {
   .action-group .btn {
     width: auto;
     height: 38px;
-    /* Compact on desktop */
     padding: 0 16px;
     font-size: 14px;
   }
