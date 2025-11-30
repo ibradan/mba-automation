@@ -224,14 +224,18 @@ select:focus {
   background: none;
   border: none;
   color: var(--text-light);
-  font-size: 0.75rem;
-  font-weight: 600;
   cursor: pointer;
-  padding: 4px 6px;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
 }
 
 .pwd-toggle:hover {
   color: var(--blue);
+  background: rgba(37, 99, 235, 0.1);
 }
 
 /* Buttons */

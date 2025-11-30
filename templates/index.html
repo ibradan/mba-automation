@@ -190,13 +190,25 @@
           <div class="inputs">
             <div class="phone-group">
               <span class="phone-prefix">+62</span>
-              <input name="phone[]" type="text" placeholder="NO HP" />
+              <input name="phone[]" type="text" placeholder="NO HP" maxlength="13" />
             </div>
 
             <div class="pwd-field">
               <input name="password[]" class="pwd" type="password" placeholder="PASSWORD" />
-              <button type="button" class="pwd-toggle" aria-label="Toggle password">
-                Tampilkan
+              <button type="button" class="pwd-toggle" aria-label="Toggle password" title="Tampilkan Password">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" class="eye-icon">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" />
+                  <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                </svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" class="eye-off-icon" style="display:none;">
+                  <path
+                    d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  <line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                </svg>
               </button>
             </div>
 
@@ -355,6 +367,7 @@
                   name="phone[]"
                   type="text"
                   placeholder="NO HP"
+                  maxlength="13"
                   required
                 />
               </div>
@@ -371,8 +384,16 @@
                   type="button"
                   class="pwd-toggle"
                   aria-label="Toggle password"
+                  title="Tampilkan Password"
                 >
-                  Tampilkan
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" class="eye-icon">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" class="eye-off-icon" style="display:none;">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
                 </button>
               </div>
 
@@ -383,6 +404,18 @@
               </select>
 
               <div class="action-group">
+                <button type="button" class="btn btn-success play-btn" title="Jalankan Akun Ini">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="play-icon">
+                    <polygon points="5 3 19 12 5 21 5 3" stroke="currentColor" stroke-width="2" fill="currentColor" stroke-linejoin="round"/>
+                  </svg>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="spinner-icon" style="display:none;">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" opacity="0.25"/>
+                    <path d="M12 2 A10 10 0 0 1 22 12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round">
+                      <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s" repeatCount="indefinite"/>
+                    </path>
+                  </svg>
+                </button>
+
                 <button
                   type="button"
                   class="btn btn-primary review-btn"
@@ -484,6 +517,8 @@
             >
               <span aria-hidden="true">−</span>
             </button>
+        `;
+
         rows.appendChild(div);
 
         attachToggle(div);
@@ -503,12 +538,19 @@
         const input = root.querySelector('.pwd');
         if (!input) return;
 
+        const eyeIcon = btn.querySelector('.eye-icon');
+        const eyeOffIcon = btn.querySelector('.eye-off-icon');
+
         if (input.type === 'password') {
           input.type = 'text';
-          btn.textContent = 'Sembunyikan';
+          btn.title = 'Sembunyikan Password';
+          if (eyeIcon) eyeIcon.style.display = 'none';
+          if (eyeOffIcon) eyeOffIcon.style.display = 'block';
         } else {
           input.type = 'password';
-          btn.textContent = 'Tampilkan';
+          btn.title = 'Tampilkan Password';
+          if (eyeIcon) eyeIcon.style.display = 'block';
+          if (eyeOffIcon) eyeOffIcon.style.display = 'none';
         }
       });
     }
