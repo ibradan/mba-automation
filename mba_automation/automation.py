@@ -2,7 +2,7 @@ from typing import Optional
 from playwright.sync_api import Playwright, TimeoutError as PlaywrightTimeoutError
 
 
-def run(playwright: Playwright, phone: str, password: str, headless: bool = False, slow_mo: int = 200, iterations: int = 30, review_text: Optional[str] = None) -> None:
+def run(playwright: Playwright, phone: str, password: str, headless: bool = False, slow_mo: int = 200, iterations: int = 30, review_text: Optional[str] = None) -> int:
     browser = playwright.chromium.launch(headless=headless, slow_mo=slow_mo)
     context = browser.new_context(viewport={"width": 375, "height": 812})
     page = context.new_page()
@@ -75,7 +75,7 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
             print("Klik Mendapatkan (list) OK")
         except PlaywrightTimeoutError:
             print("Tombol 'Mendapatkan' di halaman list nggak ketemu, stop.")
-            return
+            return 0
 
         page.wait_for_url("**/work**", timeout=10000)
 
@@ -84,13 +84,13 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
             print("Klik Mendapatkan (detail) OK")
         except PlaywrightTimeoutError:
             print("Tombol 'Mendapatkan' di halaman detail nggak ketemu.")
-            return
+            return 0
 
         try:
             page.get_by_text("Sedang Berlangsung").nth(1).click()
         except PlaywrightTimeoutError:
             print("'Sedang Berlangsung' ke-2 nggak ketemu, stop.")
-            return
+            return 0
 
         try:
             page.get_by_role("radio", name="").click()
@@ -110,6 +110,7 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
             pass
 
         # ========== LOOP KIRIM ULANG ==========
+        completed_tasks = 0
         for i in range(iterations):
             print(f"Loop ke-{i+1}")
             page.wait_for_timeout(1250)
@@ -117,6 +118,7 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
             try:
                 page.get_by_text("Sedang Berlangsung").nth(1).click()
                 page.get_by_role("button", name="Kirim").click()
+                completed_tasks += 1  # Count successful submission
             except PlaywrightTimeoutError:
                 print("Elemen utama nggak ketemu, berhenti loop.")
                 break
@@ -127,7 +129,8 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
                 print("Konfirmasi nggak muncul di loop ini (gapapa).")
                 continue
 
-        print("Selesai loop.")
+        print(f"Selesai loop. Completed: {completed_tasks}/{iterations} tasks")
+        return completed_tasks
 
     finally:
         context.close()
