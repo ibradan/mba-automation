@@ -405,7 +405,26 @@
       }
 
       row.remove();
-      autoSave(); // Auto-save after removing
+      row.remove();
+      forceSave(); // Save immediately after removing
+    }
+
+    function forceSave() {
+      const form = document.getElementById('automation-form');
+      const formData = new FormData(form);
+      formData.set('action', 'save');
+
+      console.log('Force saving...');
+      fetch(form.action || '/', {
+        method: 'POST',
+        body: formData
+      }).then(response => {
+        if (response.ok) {
+          console.log('✓ Force saved successfully');
+        } else {
+          console.error('Force save failed');
+        }
+      }).catch(err => console.error('Force save error:', err));
     }
 
     // Loading state for run-all button
