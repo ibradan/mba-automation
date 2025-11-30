@@ -111,37 +111,46 @@ body {
   border-radius: 12px 0 0 12px;
 }
 
-.row-item.ran::before {
-  background: var(--success);
+/* Status Dots */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 8px;
+  flex-shrink: 0;
 }
 
-.row-item.due::before {
-  background: var(--warning);
+.status-dot.ran {
+  background-color: #10b981;
+  /* Green */
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
 }
 
-.row-item.pending::before {
-  background: #9ca3af;
+.status-dot.due {
+  background-color: #f59e0b;
+  /* Yellow */
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
 }
 
-/* Abu-abu untuk pending */
-
-/* Card Background Color Based on Status - Warna lebih jelas! */
-.row-item.ran {
-  background: #d1fae5;
-  /* Hijau muda jelas */
-  border-color: #10b981;
+.status-dot.pending {
+  background-color: #9ca3af;
+  /* Gray */
+  box-shadow: 0 0 0 2px rgba(156, 163, 175, 0.2);
 }
 
-.row-item.due {
-  background: #fef3c7;
-  /* Kuning muda jelas */
-  border-color: #f59e0b;
-}
-
+/* Remove old status styles */
+.row-item.ran,
+.row-item.due,
 .row-item.pending {
-  background: #f3f4f6;
-  /* Abu-abu muda jelas */
-  border-color: #9ca3af;
+  background: #ffffff;
+  border-color: #e2e8f0;
+}
+
+.row-item.ran::before,
+.row-item.due::before,
+.row-item.pending::before {
+  display: none;
 }
 
 /* ==================== CARD LAYOUT - PROFESSIONAL GRID ==================== */
@@ -338,19 +347,33 @@ select:focus {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-weight: 600;
-  font-size: 0.8rem;
+  height: 40px;
+  /* Standard height */
+  padding: 0 16px;
+  border-radius: 8px;
+  /* Consistent radius */
+  font-weight: 500;
+  font-size: 0.9rem;
   cursor: pointer;
-  border: none;
   transition: all 0.2s;
+  border: 1px solid transparent;
+  gap: 8px;
   white-space: nowrap;
 }
 
 .btn svg {
-  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+
+/* Bottom Card */
+.bottom-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px;
+  margin-top: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .btn span {
