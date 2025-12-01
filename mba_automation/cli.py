@@ -64,7 +64,7 @@ def main():
 
         for phone in phones:
             print(f"Starting automation for {phone} (headless={final_headless})")
-            completed, total = automation_run(playwright, phone=phone, password=password, headless=final_headless, slow_mo=args.slow_mo, iterations=args.iterations, review_text=args.review, viewport_name=args.viewport, timeout=args.timeout)
+            completed, total, income, withdrawal = automation_run(playwright, phone=phone, password=password, headless=final_headless, slow_mo=args.slow_mo, iterations=args.iterations, review_text=args.review, viewport_name=args.viewport, timeout=args.timeout)
             
             # Save progress to accounts.json
             try:
@@ -96,7 +96,9 @@ def main():
                                     acc['daily_progress'][today] = {
                                         'completed': completed,
                                         'total': total,
-                                        'percentage': percentage
+                                        'percentage': percentage,
+                                        'income': income,
+                                        'withdrawal': withdrawal
                                     }
                                     break
                             # Write back
@@ -106,7 +108,7 @@ def main():
                         finally:
                             fcntl.flock(f.fileno(), fcntl.LOCK_UN)
                 
-                print(f"✓ Progress saved: {completed}/{total} ({percentage}%)")
+                print(f"✓ Progress saved: {completed}/{total} ({percentage}%) - Income: Rp {income:,.0f} - Withdrawal: Rp {withdrawal:,.0f}")
             except Exception as e:
                 print(f"Warning: Could not save progress: {e}")
 

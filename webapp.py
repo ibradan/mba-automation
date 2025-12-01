@@ -156,7 +156,7 @@ def index():
         phones = request.form.getlist('phone[]')
         passwords = request.form.getlist('password[]')
         levels = request.form.getlist('level[]')
-        action = request.form.get('action', 'start')
+        action = request.form.get('action')
         # form headless is submitted by JS as 'true' or 'false' (string). Fall back to env/default.
         val = request.form.get('headless')
         def parse_bool(v):
@@ -220,107 +220,109 @@ def index():
                 flash(f"Gagal menyimpan akun: {e}", "error")
             return redirect(url_for("index"))
 
-        # load saved accounts to read per-account reviews (if any)
-        saved_accounts = _safe_load_accounts()
+        # Only run automation if explicitly requested
+        if action == 'start':
+            # load saved accounts to read per-account reviews (if any)
+            saved_accounts = _safe_load_accounts()
 
-        started = 0
-        for phone, pwd, lvl in entries:
-            if not pwd:
-                flash(f"Password kosong untuk {phone}, dilewati.", "error")
-                continue
-
-            # Map level strings to iterations: E1=15, E2=30, E3=60. If a numeric value was submitted, accept it.
-            iterations = 30
-            lvl_up = (lvl or '').upper()
-            if lvl_up == 'E1':
-                iterations = 15
-            elif lvl_up == 'E2':
-                iterations = 30
-            elif lvl_up == 'E3':
-                iterations = 60
-            else:
-                # fallback: allow numeric strings
-                try:
-                    iterations = int(lvl)
-                except Exception:
-                    iterations = 30
-
-            # determine today's review text (if saved)
-            review_text = None
-            try:
-                norm_phone = normalize_phone(phone)
-                for a in saved_accounts:
-                    if a.get('phone') == norm_phone:
-                        r = a.get('reviews', {}) or {}
-                        # weekday mapping: Monday=0 -> mon; note: no Sunday
-                        wk = ['mon','tue','wed','thu','fri','sat']
-                        wd = datetime.datetime.now().weekday()
-                        # if today is Sunday (weekday 6) there's no review scheduled
-                        if wd < len(wk):
-                            key = wk[wd]
-                            review_text = r.get(key) or None
-                        else:
-                            review_text = None
-                        break
-            except Exception:
-                review_text = None
-
-            # use a consistent CLI phone format (display without leading 62)
-            phone_for_cli = _format_phone_for_cli(phone)
-            if not phone_for_cli:
-                flash(f"Nomor HP tidak valid: {phone}, dilewati.", "error")
-                continue
-
-            # Load settings
-            settings = _safe_load_settings()
-            timeout = settings.get('timeout', 30)
-            viewport = settings.get('viewport', 'iPhone 12')
-
-            cmd = [sys.executable, "-m", "mba_automation.cli", "--phone", phone_for_cli, "--password", pwd, "--iterations", str(iterations), "--timeout", str(timeout), "--viewport", viewport]
-            if review_text:
-                cmd.extend(["--review", review_text])
-            if headless:
-                cmd.append("--headless")
-
-            logger.info("START for %s: %s", phone, ' '.join(shlex.quote(c) for c in cmd))
-
-            try:
-                subprocess.Popen(cmd, cwd=os.path.dirname(__file__), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                started += 1
-            except Exception as e:
-                # don't crash the request; log and show flash
-                logger.exception("FAILED START for %s: %s", phone_for_cli, e)
-                flash(f"Gagal memulai automation untuk {phone}: {e}", "error")
-
-        if started:
-            flash(f"Automation started in background for {started} phone(s).", "success")
-
-        # Persist submitted accounts so they can be reused later (update saved list)
-        try:
-            # load existing accounts to preserve reviews via locked read
-            existing = {}
-            raw_existing = _safe_load_accounts()
-            for a in raw_existing:
-                existing[a.get('phone')] = a
-
-            saved = []
+            started = 0
             for phone, pwd, lvl in entries:
-                norm = normalize_phone(phone)
-                acc = {"phone": norm, "password": pwd, "level": (lvl or "E2")}
-                if norm in existing and isinstance(existing[norm].get('reviews'), dict):
-                    acc['reviews'] = existing[norm].get('reviews')
-                if norm in existing and existing[norm].get('schedule'):
-                    acc['schedule'] = existing[norm].get('schedule')
-                # CRITICAL FIX: preserve last_run and daily_progress in run block too
-                if norm in existing and existing[norm].get('last_run'):
-                    acc['last_run'] = existing[norm].get('last_run')
-                if norm in existing and existing[norm].get('daily_progress'):
-                    acc['daily_progress'] = existing[norm].get('daily_progress')
-                saved.append(acc)
-            _safe_write_accounts(saved)
-        except Exception as e:
-            # don't fail the request if saving fails
-            logger.warning("WARNING saving accounts failed: %s", e)
+                if not pwd:
+                    flash(f"Password kosong untuk {phone}, dilewati.", "error")
+                    continue
+
+                # Map level strings to iterations: E1=15, E2=30, E3=60. If a numeric value was submitted, accept it.
+                iterations = 30
+                lvl_up = (lvl or '').upper()
+                if lvl_up == 'E1':
+                    iterations = 15
+                elif lvl_up == 'E2':
+                    iterations = 30
+                elif lvl_up == 'E3':
+                    iterations = 60
+                else:
+                    # fallback: allow numeric strings
+                    try:
+                        iterations = int(lvl)
+                    except Exception:
+                        iterations = 30
+
+                # determine today's review text (if saved)
+                review_text = None
+                try:
+                    norm_phone = normalize_phone(phone)
+                    for a in saved_accounts:
+                        if a.get('phone') == norm_phone:
+                            r = a.get('reviews', {}) or {}
+                            # weekday mapping: Monday=0 -> mon; note: no Sunday
+                            wk = ['mon','tue','wed','thu','fri','sat']
+                            wd = datetime.datetime.now().weekday()
+                            # if today is Sunday (weekday 6) there's no review scheduled
+                            if wd < len(wk):
+                                key = wk[wd]
+                                review_text = r.get(key) or None
+                            else:
+                                review_text = None
+                            break
+                except Exception:
+                    review_text = None
+
+                # use a consistent CLI phone format (display without leading 62)
+                phone_for_cli = _format_phone_for_cli(phone)
+                if not phone_for_cli:
+                    flash(f"Nomor HP tidak valid: {phone}, dilewati.", "error")
+                    continue
+
+                # Load settings
+                settings = _safe_load_settings()
+                timeout = settings.get('timeout', 30)
+                viewport = settings.get('viewport', 'iPhone 12')
+
+                cmd = [sys.executable, "-m", "mba_automation.cli", "--phone", phone_for_cli, "--password", pwd, "--iterations", str(iterations), "--timeout", str(timeout), "--viewport", viewport]
+                if review_text:
+                    cmd.extend(["--review", review_text])
+                if headless:
+                    cmd.append("--headless")
+
+                logger.info("START for %s: %s", phone, ' '.join(shlex.quote(c) for c in cmd))
+
+                try:
+                    subprocess.Popen(cmd, cwd=os.path.dirname(__file__), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    started += 1
+                except Exception as e:
+                    # don't crash the request; log and show flash
+                    logger.exception("FAILED START for %s: %s", phone_for_cli, e)
+                    flash(f"Gagal memulai automation untuk {phone}: {e}", "error")
+
+            if started:
+                flash(f"Automation started in background for {started} phone(s).", "success")
+
+            # Persist submitted accounts so they can be reused later (update saved list)
+            try:
+                # load existing accounts to preserve reviews via locked read
+                existing = {}
+                raw_existing = _safe_load_accounts()
+                for a in raw_existing:
+                    existing[a.get('phone')] = a
+
+                saved = []
+                for phone, pwd, lvl in entries:
+                    norm = normalize_phone(phone)
+                    acc = {"phone": norm, "password": pwd, "level": (lvl or "E2")}
+                    if norm in existing and isinstance(existing[norm].get('reviews'), dict):
+                        acc['reviews'] = existing[norm].get('reviews')
+                    if norm in existing and existing[norm].get('schedule'):
+                        acc['schedule'] = existing[norm].get('schedule')
+                    # CRITICAL FIX: preserve last_run and daily_progress in run block too
+                    if norm in existing and existing[norm].get('last_run'):
+                        acc['last_run'] = existing[norm].get('last_run')
+                    if norm in existing and existing[norm].get('daily_progress'):
+                        acc['daily_progress'] = existing[norm].get('daily_progress')
+                    saved.append(acc)
+                _safe_write_accounts(saved)
+            except Exception as e:
+                # don't fail the request if saving fails
+                logger.warning("WARNING saving accounts failed: %s", e)
 
         return redirect(url_for("index"))
 
@@ -703,35 +705,6 @@ def schedule():
             break
 
     return render_template('schedule.html', phone_display=display_phone, schedule=existing_schedule)
-
-
-@app.route("/reset_last_run", methods=["POST"])
-def reset_last_run():
-    """Remove the last_run timestamp for a given phone number so it can run again."""
-    phone = request.form.get("phone", "").strip()
-    if not phone:
-        return jsonify({"ok": False, "msg": "phone is required"}), 400
-
-    normalized = normalize_phone(phone)
-    if not normalized:
-        return jsonify({"ok": False, "msg": "invalid phone format"}), 400
-
-    with SCHED_LOCK:
-        accounts = _safe_load_accounts()
-        found = False
-        for acc in accounts:
-            if acc.get("phone") == normalized:
-                if "last_run" in acc:
-                    del acc["last_run"]
-                if "last_run_ts" in acc: # Added this line back to match original behavior
-                    del acc["last_run_ts"]
-                found = True
-                break
-        if not found:
-            return jsonify({"ok": False, "msg": "akun tidak ditemukan"}), 404
-        _safe_write_accounts(accounts)
-
-    return jsonify({"ok": True, "msg": "last_run dihapus"})
 
 
 @app.route("/run_single", methods=["POST"])

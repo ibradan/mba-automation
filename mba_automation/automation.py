@@ -8,7 +8,144 @@ VIEWPORTS = {
     "Samsung S21": {"width": 360, "height": 800}
 }
 
-def run(playwright: Playwright, phone: str, password: str, headless: bool = False, slow_mo: int = 200, iterations: int = 30, review_text: Optional[str] = None, viewport_name: str = "iPhone 12", timeout: int = 30) -> Tuple[int, int]:
+
+def scrape_income(page, timeout: int = 30) -> float:
+    """Scrape total income from deposit record page."""
+    try:
+        # Navigate to deposit record page
+        page.goto("https://mba7.com/#/amount/deposit/record", wait_until="domcontentloaded", timeout=timeout * 1000)
+        
+        # Wait longer for dynamic content to load
+        page.wait_for_timeout(5000)
+        
+        # Try to wait for at least one record cell to appear
+        try:
+            page.wait_for_selector(".details-record-cell", timeout=5000)
+        except Exception:
+            print("  No deposit records found on page")
+            return 0.0
+        
+        # Find all deposit record cells
+        deposit_cells = page.locator(".details-record-cell").all()
+        print(f"  Found {len(deposit_cells)} total records")
+        total_income = 0.0
+        paid_count = 0
+        
+        for idx, cell in enumerate(deposit_cells, 1):
+            try:
+                # Debug: print all text content in cell
+                cell_text = cell.text_content(timeout=2000)
+                print(f"\n  === Record {idx} ===")
+                print(f"  Full text: {cell_text[:200]}")
+                
+                # Try to get status - try different selectors
+                status = None
+                try:
+                    status_element = cell.locator(".record-status span")
+                    status = status_element.text_content(timeout=1000)
+                    print(f"  Status (method 1): '{status}'")
+                except Exception as e1:
+                    print(f"  Status method 1 failed: {e1}")
+                    try:
+                        status_element = cell.locator(".record-status")
+                        status = status_element.text_content(timeout=1000)
+                        print(f"  Status (method 2): '{status}'")
+                    except Exception as e2:
+                        print(f"  Status method 2 failed: {e2}")
+                
+                if status and "Dibayar" in status:
+                    paid_count += 1
+                    # Extract amount
+                    amount_element = cell.locator(".amount-change")
+                    amount_text = amount_element.text_content(timeout=1000)
+                    
+                    if amount_text:
+                        # Parse "+4.500.000,00" -> 4500000.00
+                        cleaned = amount_text.strip().replace('+', '').replace(' ', '').replace('.', '').replace(',', '.')
+                        try:
+                            amount = float(cleaned)
+                            total_income += amount
+                            print(f"  ✓ Deposit: {amount_text} -> Rp {amount:,.0f}")
+                        except ValueError:
+                            print(f"  ✗ Failed to parse: {amount_text}")
+                else:
+                    print(f"  -> SKIPPED (not Dibayar)")
+            except Exception as e:
+                print(f"  Error processing record {idx}: {e}")
+                continue
+        
+        print(f"  Total paid records: {paid_count}")
+        print(f"  Total income: Rp {total_income:,.2f}")
+        return total_income
+    except Exception as e:
+        print(f"Error scraping income: {e}")
+        return 0.0
+
+
+def scrape_withdrawal(page, timeout: int = 30) -> float:
+    """Scrape total withdrawals from withdrawal record page."""
+    try:
+        # Navigate to withdrawal record page  
+        page.goto("https://mba7.com/#/amount/withdrawal/record", wait_until="domcontentloaded", timeout=timeout * 1000)
+        
+        # Wait for dynamic content
+        page.wait_for_timeout(5000)
+        
+        # Try to wait for records
+        try:
+            page.wait_for_selector(".details-record-cell", timeout=5000)
+        except Exception:
+            print("  No withdrawal records found")
+            return 0.0
+        
+        # Find all withdrawal records
+        withdrawal_cells = page.locator(".details-record-cell").all()
+        print(f"  Found {len(withdrawal_cells)} withdrawal records")
+        total_withdrawal = 0.0
+        success_count = 0
+        
+        for idx, cell in enumerate(withdrawal_cells, 1):
+            try:
+                # Get status
+                status = None
+                try:
+                    status_element = cell.locator(".record-status span")
+                    status = status_element.text_content(timeout=1000)
+                except Exception:
+                    try:
+                        status_element = cell.locator(".record-status")
+                        status = status_element.text_content(timeout=1000)
+                    except Exception:
+                        pass
+                
+                if status and "Kesuksesan" in status:
+                    success_count += 1
+                    # Extract amount (no + sign for withdrawals)
+                    amount_element = cell.locator(".amount-change")
+                    amount_text = amount_element.text_content(timeout=1000)
+                    
+                    if amount_text:
+                        # Parse "200.000,00" -> 200000.00
+                        cleaned = amount_text.strip().replace('.', '').replace(',', '.')
+                        try:
+                            amount = float(cleaned)
+                            total_withdrawal += amount
+                            print(f"  ✓ Withdrawal: {amount_text} -> Rp {amount:,.0f}")
+                        except ValueError:
+                            print(f"  ✗ Failed to parse: {amount_text}")
+            except Exception as e:
+                continue
+        
+        print(f"  Total successful withdrawals: {success_count}")
+        print(f"  Total withdrawal: Rp {total_withdrawal:,.2f}")
+        return total_withdrawal
+    except Exception as e:
+        print(f"Error scraping withdrawal: {e}")
+        return 0.0
+
+
+
+def run(playwright: Playwright, phone: str, password: str, headless: bool = False, slow_mo: int = 200, iterations: int = 30, review_text: Optional[str] = None, viewport_name: str = "iPhone 12", timeout: int = 30) -> Tuple[int, int, float, float]:
     browser = playwright.chromium.launch(headless=headless, slow_mo=slow_mo)
     
     vp = VIEWPORTS.get(viewport_name, VIEWPORTS["iPhone 12"])
@@ -103,8 +240,7 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
             print("Klik Mendapatkan (list) OK")
         except PlaywrightTimeoutError:
             print("Tombol 'Mendapatkan' di halaman list nggak ketemu, stop.")
-            # Return current progress if available
-            return (tasks_completed, tasks_total) if tasks_completed > 0 else (0, iterations)
+            return (tasks_completed, tasks_total, 0.0, 0.0) if tasks_completed > 0 else (0, iterations, 0.0, 0.0)
 
         page.wait_for_url("**/work**", timeout=10000)
 
@@ -113,13 +249,13 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
             print("Klik Mendapatkan (detail) OK")
         except PlaywrightTimeoutError:
             print("Tombol 'Mendapatkan' di halaman detail nggak ketemu.")
-            return (tasks_completed, tasks_total) if tasks_completed > 0 else (0, iterations)
+            return (tasks_completed, tasks_total, 0.0, 0.0) if tasks_completed > 0 else (0, iterations, 0.0, 0.0)
 
         try:
             page.get_by_text("Sedang Berlangsung").nth(1).click()
         except PlaywrightTimeoutError:
             print("'Sedang Berlangsung' ke-2 nggak ketemu, stop.")
-            return (tasks_completed, tasks_total) if tasks_completed > 0 else (0, iterations)
+            return (tasks_completed, tasks_total, 0.0, 0.0) if tasks_completed > 0 else (0, iterations, 0.0, 0.0)
 
         try:
             page.get_by_role("radio", name="").click()
@@ -160,15 +296,20 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
 
         print(f"Selesai loop. {loop_count} iterations completed")
         
-        # Return initial scraped progress (more accurate than loop count)
-        # If scraped progress was 60/60 before we started, that's the real status
+        # Scrape income and withdrawal before returning
+        print("Scraping income from deposit records...")
+        income = scrape_income(page, timeout)
+        
+        print("Scraping withdrawal from withdrawal records...")
+        withdrawal = scrape_withdrawal(page, timeout)
+        
+        # Return progress with income and withdrawal
         if tasks_completed > 0:
             print(f"Returning scraped progress: {tasks_completed}/{tasks_total}")
-            return tasks_completed, tasks_total
+            return tasks_completed, tasks_total, income, withdrawal
         else:
-            # Fallback to loop count if scraping failed
             print(f"Returning loop count: {loop_count}")
-            return loop_count, iterations
+            return loop_count, iterations, income, withdrawal
 
     finally:
         context.close()

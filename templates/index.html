@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>MBA7 Automation</title>
+  <title>TERNAK UANG</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=16" />
 </head>
 
@@ -17,8 +17,8 @@
     <header class="site-head">
       <div class="brand-left">
         <div>
-          <h1 class="app-title">MBA7 Automation</h1>
-          <p class="app-desc">Kelola akun dan jadwal otomatisasi</p>
+          <h1 class="app-title">TERNAK UANG</h1>
+          <p class="app-desc">Automasi cuan maksimal 💰</p>
         </div>
       </div>
       <div class="settings-dropdown">
@@ -33,14 +33,7 @@
         <div class="settings-menu" id="settings-menu" style="display: none;">
           <div class="settings-header">Settings</div>
 
-          <!-- Auto Start -->
-          <label class="settings-item">
-            <div class="toggle-switch">
-              <input type="checkbox" id="setting-auto-start" {% if settings.get('auto_start') %}checked{% endif %} />
-              <span class="slider"></span>
-            </div>
-            <span>Auto-start on load</span>
-          </label>
+
 
           <!-- Auto Reconnect WiFi -->
           <label class="settings-item">
@@ -202,15 +195,6 @@
                 <span>{% if acc.schedule %}{{ acc.schedule }}{% else %}Jadwal{% endif %}</span>
               </button>
 
-              <button type="button" class="btn btn-danger reset-btn" title="Reset last_run">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M20 12a8 8 0 1 0-2.5 5.7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
-                    stroke-linejoin="round" />
-                  <path d="M20 7v5h-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
-                    stroke-linejoin="round" />
-                </svg>
-                <span>Reset</span>
-              </button>
             </div>
 
             <!-- Daily Progress Indicator -->
@@ -241,6 +225,27 @@
               <span class="progress-value">{{ completed }}/{{ target }}</span>
               <span class="progress-percent">({{ pct }}%)</span>
             </div>
+
+            {# Stats Display (Modal & Pendapatan) #}
+            {% if acc.daily_progress and today in acc.daily_progress %}
+            <div class="stats-container">
+              {% if acc.daily_progress[today].get('income') %}
+              {% set income = acc.daily_progress[today].income %}
+              <div class="stat-row income-display">
+                <span class="stat-label">Modal</span>
+                <span class="stat-value">Rp {{ "{:,.0f}".format(income) }}</span>
+              </div>
+              {% endif %}
+
+              {% if acc.daily_progress[today].get('withdrawal') %}
+              {% set withdrawal = acc.daily_progress[today].withdrawal %}
+              <div class="stat-row withdrawal-display">
+                <span class="stat-label">Pendapatan</span>
+                <span class="stat-value">Rp {{ "{:,.0f}".format(withdrawal) }}</span>
+              </div>
+              {% endif %}
+            </div>
+            {% endif %}
           </div>
 
           <!-- Tombol hapus akun -->
@@ -307,9 +312,7 @@
               <button type="button" class="btn btn-secondary schedule-btn" title="Set Jadwal">
                 Jadwal
               </button>
-              <button type="button" class="btn btn-danger reset-btn" title="Reset last_run">
-                Reset
-              </button>
+
             </div>
           </div>
 
@@ -622,35 +625,6 @@
                   <span>Jadwal</span>
                 </button>
 
-                <button
-                  type="button"
-                  class="btn btn-danger reset-btn"
-                  title="Reset last_run"
-                >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M20 12a8 8 0 1 0-2.5 5.7"
-                      stroke="currentColor"
-                      stroke-width="1.6"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                    <path
-                      d="M20 7v5h-5"
-                      stroke="currentColor"
-                      stroke-width="1.6"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                  <span>Reset</span>
-                </button>
               </div>
             </div>
 
@@ -670,7 +644,6 @@
         attachToggle(div);
         attachReviewButtons();
         attachScheduleButtons();
-        attachResetButtons();
         attachPlayButtons(); // Attach play button listener
       });
 
@@ -818,57 +791,11 @@
     }
     attachScheduleButtons();
 
-    // ================= RESET BUTTON =================
-    function attachResetButtons() {
-      document.querySelectorAll('.reset-btn').forEach(function (btn) {
-        if (btn.dataset.bound) return;
-        btn.dataset.bound = '1';
-
-        btn.addEventListener('click', async function () {
-          const row = btn.closest('.row-item');
-          if (!row) return;
-
-          const phoneInput = row.querySelector('input[name="phone[]"]');
-          if (!phoneInput) return;
-
-          const phone = phoneInput.value.trim();
-          if (!phone) {
-            alert('Masukkan nomor HP terlebih dahulu.');
-            return;
-          }
-
-          if (!confirm('Hapus catatan last_run untuk ' + phone + '?')) return;
-
-          try {
-            const form = new FormData();
-            form.append('phone', phone);
-
-            const res = await fetch('/reset_last_run', {
-              method: 'POST',
-              body: form
-            });
-
-            const data = await res.json();
-
-            if (res.ok && data.ok) {
-              alert('last_run dihapus untuk ' + phone);
-              window.location.reload();
-            } else {
-              alert('Gagal: ' + (data.msg || res.statusText));
-            }
-          } catch (err) {
-            alert('Error saat menghubungi server: ' + err);
-          }
-        });
-      });
-    }
-    attachResetButtons();
 
     // ================= HEADLESS SYNC =================
     // ================= SETTINGS LOGIC =================
     function initSettings() {
       const settingsInputs = [
-        'setting-auto-start',
         'setting-wifi',
         'setting-timeout',
         'setting-viewport',
@@ -927,7 +854,6 @@
 
     function saveSettings() {
       const settings = {
-        auto_start: document.getElementById('setting-auto-start').checked,
         auto_reconnect_wifi: document.getElementById('setting-wifi').checked,
         timeout: parseInt(document.getElementById('setting-timeout').value),
         viewport: document.getElementById('setting-viewport').value,
@@ -956,22 +882,6 @@
     // Initialize settings listeners
     document.addEventListener('DOMContentLoaded', function () {
       initSettings();
-
-      // Auto-start check
-      const autoStartToggle = document.getElementById('setting-auto-start');
-      if (autoStartToggle && autoStartToggle.checked) {
-        console.log('Auto-start enabled. Triggering automation in 2s...');
-        const runBtn = document.getElementById('run-all-btn');
-        if (runBtn) {
-          setTimeout(() => {
-            // Only click if not already running (check spinner)
-            const spinner = runBtn.querySelector('.spinner-icon');
-            if (spinner && spinner.style.display === 'none') {
-              runBtn.click();
-            }
-          }, 2000);
-        }
-      }
     });
 
     // ================= ADD-ROW MICRO INTERACTION =================

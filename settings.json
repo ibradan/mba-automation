@@ -1,5 +1,4 @@
 {
-  "auto_start": true,
   "auto_reconnect_wifi": true,
   "timeout": 30,
   "viewport": "iPhone 12",
