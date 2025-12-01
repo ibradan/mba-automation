@@ -1,5 +1,5 @@
 from typing import Optional, Tuple
-from playwright.sync_api import Playwright, TimeoutError as PlaywrightTimeoutError
+from playwright.sync_api import Playwright, Page, TimeoutError as PlaywrightTimeoutError
 
 
 VIEWPORTS = {
@@ -235,82 +235,151 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
             # Will use loop counting as fallback
 
         # ========== PERTAMA KALI ISI REVIEW ==========
-        try:
-            page.get_by_role("button", name="Mendapatkan").click()
-            print("Klik Mendapatkan (list) OK")
-        except PlaywrightTimeoutError:
-            print("Tombol 'Mendapatkan' di halaman list nggak ketemu, stop.")
-            return (tasks_completed, tasks_total, 0.0, 0.0) if tasks_completed > 0 else (0, iterations, 0.0, 0.0)
-
-        page.wait_for_url("**/work**", timeout=10000)
-
-        try:
-            page.get_by_role("button", name="Mendapatkan").click()
-            print("Klik Mendapatkan (detail) OK")
-        except PlaywrightTimeoutError:
-            print("Tombol 'Mendapatkan' di halaman detail nggak ketemu.")
-            return (tasks_completed, tasks_total, 0.0, 0.0) if tasks_completed > 0 else (0, iterations, 0.0, 0.0)
-
-        try:
-            page.get_by_text("Sedang Berlangsung").nth(1).click()
-        except PlaywrightTimeoutError:
-            print("'Sedang Berlangsung' ke-2 nggak ketemu, stop.")
-            return (tasks_completed, tasks_total, 0.0, 0.0) if tasks_completed > 0 else (0, iterations, 0.0, 0.0)
-
-        try:
-            page.get_by_role("radio", name="").click()
-        except PlaywrightTimeoutError:
-            pass
-
-        page.get_by_role("textbox", name="Harap masukkan ulasan Anda di").click()
-        # use provided review_text if given, otherwise default to 'bagus'
-        text_to_fill = review_text if (review_text and len(review_text.strip())>0) else "bagus"
-        page.get_by_role("textbox", name="Harap masukkan ulasan Anda di").fill(text_to_fill)
-
-        page.get_by_role("button", name="Kirim").click()
-
-        try:
-            page.get_by_role("button", name="Mengonfirmasi").click()
-        except PlaywrightTimeoutError:
-            pass
-
-        # ========== LOOP KIRIM ULANG ==========
         loop_count = 0
-        for i in range(iterations):
-            print(f"Loop ke-{i+1}")
-            page.wait_for_timeout(1250)
+        try:
+            if tasks_completed < tasks_total:
+                try:
+                    page.get_by_role("button", name="Mendapatkan").click()
+                    print("Klik Mendapatkan (list) OK")
+                except PlaywrightTimeoutError:
+                    print("Tombol 'Mendapatkan' di halaman list nggak ketemu.")
+                    raise Exception("Button 'Mendapatkan' (list) not found")
 
-            try:
-                page.get_by_text("Sedang Berlangsung").nth(1).click()
+                page.wait_for_url("**/work**", timeout=10000)
+
+                try:
+                    page.get_by_role("button", name="Mendapatkan").click()
+                    print("Klik Mendapatkan (detail) OK")
+                except PlaywrightTimeoutError:
+                    print("Tombol 'Mendapatkan' di halaman detail nggak ketemu.")
+                    raise Exception("Button 'Mendapatkan' (detail) not found")
+
+                try:
+                    page.get_by_text("Sedang Berlangsung").nth(1).click()
+                except PlaywrightTimeoutError:
+                    print("'Sedang Berlangsung' ke-2 nggak ketemu.")
+                    raise Exception("'Sedang Berlangsung' 2 not found")
+
+                try:
+                    page.get_by_role("radio", name="").click()
+                except PlaywrightTimeoutError:
+                    pass
+
+                page.get_by_role("textbox", name="Harap masukkan ulasan Anda di").click()
+                # use provided review_text if given, otherwise default to 'bagus'
+                text_to_fill = review_text if (review_text and len(review_text.strip())>0) else "bagus"
+                page.get_by_role("textbox", name="Harap masukkan ulasan Anda di").fill(text_to_fill)
+
                 page.get_by_role("button", name="Kirim").click()
-                loop_count += 1  # Count loop iterations
-            except PlaywrightTimeoutError:
-                print("Elemen utama nggak ketemu, berhenti loop.")
-                break
 
-            try:
-                page.get_by_role("button", name="Mengonfirmasi").click()
-            except PlaywrightTimeoutError:
-                print("Konfirmasi nggak muncul di loop ini (gapapa).")
-                continue
+                try:
+                    page.get_by_role("button", name="Mengonfirmasi").click()
+                except PlaywrightTimeoutError:
+                    pass
+
+                # ========== LOOP KIRIM ULANG ==========
+                # Calculate remaining iterations
+                # We just did 1, so subtract 1 more
+                remaining_iterations = max(0, tasks_total - tasks_completed - 1)
+                print(f"Tasks completed: {tasks_completed + 1}/{tasks_total}. Remaining loops: {remaining_iterations}")
+                
+                loop_count = 1 # We already did one
+                for i in range(remaining_iterations):
+                    print(f"Loop ke-{i+1} (Total progress: {tasks_completed + i + 2}/{tasks_total})")
+                    page.wait_for_timeout(1250)
+
+                    try:
+                        page.get_by_text("Sedang Berlangsung").nth(1).click()
+                        page.get_by_role("button", name="Kirim").click()
+                        loop_count += 1  # Count loop iterations
+                    except PlaywrightTimeoutError:
+                        print("Elemen utama nggak ketemu, berhenti loop.")
+                        break
+
+                    try:
+                        page.get_by_role("button", name="Mengonfirmasi").click()
+                    except PlaywrightTimeoutError:
+                        print("Konfirmasi nggak muncul di loop ini (gapapa).")
+                        continue
+            else:
+                print(f"All tasks already completed ({tasks_completed}/{tasks_total}). Skipping automation.")
+                loop_count = 0
+
+            print(f"Selesai loop. {loop_count} iterations completed")
+            
+        except Exception as e:
+            print(f"⚠️ Automation loop interrupted: {e}")
+            print("Proceeding to scrape data anyway...")
 
         print(f"Selesai loop. {loop_count} iterations completed")
         
+        # Re-scrape progress from page to get final count
+        try:
+            # Navigate back to ticket page if needed, or just look for element
+            # Usually we are still on the detail page or list page.
+            # Let's try to find the progress element again.
+            # If we are on detail page, we might need to go back? 
+            # The progress bar is usually on the "Ticket" page (list).
+            
+            # Go to ticket page to be sure
+            page.locator(".van-badge__wrapper.van-icon.van-icon-undefined.item-icon.iconfont.icon-ticket").click()
+            page.wait_for_timeout(2000)
+            
+            progress_element = page.locator(".van-progress__pivot").first
+            progress_text = progress_element.text_content(timeout=3000)
+            print(f"Final progress from page: {progress_text}")
+            
+            if progress_text and "/" in progress_text:
+                parts = progress_text.split("/")
+                tasks_completed = int(parts[0].strip())
+                tasks_total = int(parts[1].strip())
+                print(f"Parsed final progress: {tasks_completed}/{tasks_total}")
+        except Exception as e:
+            print(f"Could not re-scrape progress: {e}")
+            # Fallback: add loop_count to initial tasks_completed (capped at tasks_total)
+            if tasks_completed > 0:
+                tasks_completed = min(tasks_completed + loop_count, tasks_total)
+                print(f"Using fallback progress calculation: {tasks_completed}/{tasks_total}")
+
         # Scrape income and withdrawal before returning
         print("Scraping income from deposit records...")
         income = scrape_income(page, timeout)
         
         print("Scraping withdrawal from withdrawal records...")
         withdrawal = scrape_withdrawal(page, timeout)
+
+        print("Scraping balance from profile...")
+        balance = scrape_balance(page, timeout)
         
-        # Return progress with income and withdrawal
-        if tasks_completed > 0:
-            print(f"Returning scraped progress: {tasks_completed}/{tasks_total}")
-            return tasks_completed, tasks_total, income, withdrawal
-        else:
-            print(f"Returning loop count: {loop_count}")
-            return loop_count, iterations, income, withdrawal
+        # Return progress with income, withdrawal, and balance
+        print(f"Returning final progress: {tasks_completed}/{tasks_total}")
+        return tasks_completed, tasks_total, income, withdrawal, balance
 
     finally:
         context.close()
         browser.close()
+
+def scrape_balance(page: Page, timeout: int) -> float:
+    """
+    Scrapes the user balance from the profile page.
+    Selector: .user-balance
+    """
+    try:
+        # Navigate to profile page
+        page.goto("https://mba7.com/#/me", timeout=timeout*1000)
+        page.wait_for_load_state("networkidle", timeout=timeout*1000)
+        
+        balance_el = page.locator(".user-balance").first
+        balance_text = balance_el.text_content(timeout=5000)
+        
+        if balance_text:
+            # Format: "370.624,00 " -> 370624.0
+            clean_text = balance_text.replace(".", "").replace(",", ".").strip()
+            balance = float(clean_text)
+            print(f"✓ Balance found: {balance_text} -> {balance}")
+            return balance
+            
+    except Exception as e:
+        print(f"Could not scrape balance: {e}")
+    
+    return 0.0

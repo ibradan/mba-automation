@@ -1,8 +1,14 @@
 import argparse
 import os
 # from dotenv import load_dotenv
+import json
+import datetime
+import fcntl
 from playwright.sync_api import sync_playwright
 from .automation import run as automation_run
+
+ACCOUNTS_FILE = os.path.join(os.path.dirname(__file__), '..', 'accounts.json')
+ACCOUNTS_FILE = os.path.abspath(ACCOUNTS_FILE)
 
 
 def main():
@@ -64,54 +70,59 @@ def main():
 
         for phone in phones:
             print(f"Starting automation for {phone} (headless={final_headless})")
-            completed, total, income, withdrawal = automation_run(playwright, phone=phone, password=password, headless=final_headless, slow_mo=args.slow_mo, iterations=args.iterations, review_text=args.review, viewport_name=args.viewport, timeout=args.timeout)
+            completed, total, income, withdrawal, balance = automation_run(playwright, phone=phone, password=password, headless=final_headless, slow_mo=args.slow_mo, iterations=args.iterations, review_text=args.review, viewport_name=args.viewport, timeout=args.timeout)
             
             # Save progress to accounts.json
             try:
-                import json
-                import datetime
-                import fcntl
-                
-                accounts_file = os.path.join(os.path.dirname(__file__), '..', 'accounts.json')
-                accounts_file = os.path.abspath(accounts_file)
-                
-                # Normalize phone (add 62 prefix if needed)
-                normalized_phone = phone if phone.startswith('62') else '62' + phone
-                
-                # Calculate percentage
-                percentage = round((completed / total) * 100) if total > 0 else 0
-                
-                # Read, update, write with file locking
-                if os.path.exists(accounts_file):
-                    with open(accounts_file, 'r+') as f:
-                        fcntl.flock(f.fileno(), fcntl.LOCK_EX)
-                        try:
-                            accounts = json.load(f)
-                            # Find and update account
-                            for acc in accounts:
-                                if acc.get('phone') == normalized_phone:
-                                    today = datetime.datetime.now().strftime('%Y-%m-%d')
-                                    if 'daily_progress' not in acc:
-                                        acc['daily_progress'] = {}
-                                    acc['daily_progress'][today] = {
-                                        'completed': completed,
-                                        'total': total,
-                                        'percentage': percentage,
-                                        'income': income,
-                                        'withdrawal': withdrawal
-                                    }
-                                    break
-                            # Write back
+                with open(ACCOUNTS_FILE, 'r+') as f:
+                    # Use file locking to prevent race conditions
+                    fcntl.flock(f, fcntl.LOCK_EX)
+                    try:
+                        data = json.load(f)
+                        updated = False
+                        today = datetime.datetime.now().strftime('%Y-%m-%d')
+                        
+                        for acc in data:
+                            # Normalize phone (add 62 prefix if needed) for comparison
+                            normalized_phone_in_file = acc.get('phone')
+                            if normalized_phone_in_file and not normalized_phone_in_file.startswith('62'):
+                                normalized_phone_in_file = '62' + normalized_phone_in_file
+                            
+                            normalized_current_phone = phone if phone.startswith('62') else '62' + phone
+
+                            if normalized_phone_in_file == normalized_current_phone:
+                                if 'daily_progress' not in acc:
+                                    acc['daily_progress'] = {}
+                                
+                                acc['daily_progress'][today] = {
+                                    'completed': completed,
+                                    'total': total,
+                                    'percentage': int((completed / total) * 100) if total > 0 else 0,
+                                    'income': income,
+                                    'withdrawal': withdrawal,
+                                    'balance': balance
+                                }
+                                acc['last_run_ts'] = datetime.datetime.now().isoformat()
+                                updated = True
+                                break
+                        
+                        if updated:
                             f.seek(0)
+                            json.dump(data, f, indent=2)
                             f.truncate()
-                            json.dump(accounts, f, indent=2)
-                        finally:
-                            fcntl.flock(f.fileno(), fcntl.LOCK_UN)
-                
-                print(f"✓ Progress saved: {completed}/{total} ({percentage}%) - Income: Rp {income:,.0f} - Withdrawal: Rp {withdrawal:,.0f}")
+                            print(f"✓ Progress saved: {completed}/{total} ({int((completed/total)*100)}%) - Income: Rp {income:,.0f} - Withdrawal: Rp {withdrawal:,.0f} - Balance: Rp {balance:,.0f}")
+                        else:
+                            print(f"Warning: Account {phone} not found in accounts.json")
+                            
+                    finally:
+                        fcntl.flock(f, fcntl.LOCK_UN)
             except Exception as e:
                 print(f"Warning: Could not save progress: {e}")
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception:
+        import traceback
+        traceback.print_exc()

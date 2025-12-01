@@ -247,6 +247,14 @@
               </div>
               {% endif %}
 
+              {% if acc.daily_progress[today].get('balance') %}
+              {% set balance = acc.daily_progress[today].balance %}
+              <div class="stat-box balance-display">
+                <span class="stat-label">Saldo</span>
+                <span class="stat-value">Rp {{ "{:,.0f}".format(balance) }}</span>
+              </div>
+              {% endif %}
+
               {% if acc.daily_progress[today].get('withdrawal') %}
               {% set withdrawal = acc.daily_progress[today].withdrawal %}
               <div class="stat-box withdrawal-display">

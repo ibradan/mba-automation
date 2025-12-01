@@ -1057,3 +1057,69 @@ select:focus {
   opacity: 0.7;
   font-size: 0.8rem;
 }
+
+/* Stats Row */
+.stats-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.stat-box {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+/* Income (Modal) - Yellow/Gold */
+.income-display {
+  background: #fffbeb;
+  border-color: #fcd34d;
+  color: #b45309;
+}
+
+.income-display .stat-label {
+  color: #d97706;
+}
+
+/* Balance (Saldo) - Blue/Cyan */
+.balance-display {
+  background: #ecfeff;
+  border-color: #67e8f9;
+  color: #0e7490;
+}
+
+.balance-display .stat-label {
+  color: #0891b2;
+}
+
+/* Withdrawal (Pendapatan) - Orange/Red */
+.withdrawal-display {
+  background: #fff7ed;
+  border-color: #fdba74;
+  color: #c2410c;
+}
+
+.withdrawal-display .stat-label {
+  color: #ea580c;
+}

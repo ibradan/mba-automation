@@ -287,8 +287,22 @@ def index():
                 logger.info("START for %s: %s", phone, ' '.join(shlex.quote(c) for c in cmd))
 
                 try:
-                    subprocess.Popen(cmd, cwd=os.path.dirname(__file__), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    # Create logs directory if it doesn't exist
+                    log_dir = os.path.join(os.path.dirname(__file__), "logs")
+                    os.makedirs(log_dir, exist_ok=True)
+                    
+                    # Generate log filename with timestamp
+                    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                    log_file = os.path.join(log_dir, f"automation_{phone_for_cli}_{timestamp}.log")
+                    
+                    # Open file for writing - subprocess will inherit the file descriptor
+                    # We can close it in the parent after Popen, the child keeps it open
+                    f = open(log_file, "w")
+                    subprocess.Popen(cmd, cwd=os.path.dirname(__file__), stdout=f, stderr=subprocess.STDOUT)
+                    # Close file handle in parent process to avoid leaking FDs
+                    f.close()
                     started += 1
+                    logger.info("Started logging to %s", log_file)
                 except Exception as e:
                     # don't crash the request; log and show flash
                     logger.exception("FAILED START for %s: %s", phone_for_cli, e)
@@ -499,8 +513,19 @@ def _trigger_run_for_account(acc):
 
     logger.info("SCHEDULED START for %s: %s", phone_display, ' '.join(shlex.quote(c) for c in cmd))
 
+    # Create logs directory if it doesn't exist
+    log_dir = os.path.join(os.path.dirname(__file__), "logs")
+    os.makedirs(log_dir, exist_ok=True)
+    
+    # Generate log filename with timestamp
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_file = os.path.join(log_dir, f"schedule_{phone_display}_{timestamp}.log")
+
     try:
-        subprocess.Popen(cmd, cwd=os.path.dirname(__file__), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        f = open(log_file, "w")
+        subprocess.Popen(cmd, cwd=os.path.dirname(__file__), stdout=f, stderr=subprocess.STDOUT)
+        f.close()
+        logger.info("Started scheduled logging to %s", log_file)
         return True
     except Exception as e:
         logger.exception("FAILED SCHEDULED START for %s: %s", phone_display, e)
