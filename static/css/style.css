@@ -973,14 +973,17 @@ select:focus {
 
 /* Stats Display */
 .stats-container {
-  margin-top: 12px;
+  margin-top: 8px;
   display: flex;
   flex-direction: column;
+  /* Stacked vertically */
   gap: 6px;
 }
 
 .stat-row {
   display: flex;
+  flex-direction: row;
+  /* Label and value side-by-side */
   align-items: center;
   justify-content: space-between;
   padding: 6px 10px;
@@ -1005,12 +1008,17 @@ select:focus {
 .stat-label {
   font-weight: 500;
   opacity: 0.9;
+  font-size: 0.85rem;
+  margin-bottom: 0;
+  text-transform: none;
+  letter-spacing: normal;
 }
 
 .stat-value {
   font-weight: 700;
+  font-size: 0.9rem;
   font-family: 'Roboto Mono', monospace;
-  /* Monospace for numbers alignment */
+  white-space: nowrap;
 }
 
 .progress-label {
