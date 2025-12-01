@@ -121,84 +121,8 @@
 
         <div class="account-card row-item {{ status_class }}">
           <div class="inputs">
-            <!-- Phone -->
-            <div class="phone-group">
-              <div class="status-dot {{ status_class }}"></div>
-              <span class="phone-prefix">+62</span>
-              <input name="phone[]" type="text" placeholder="NO HP" value="{{ acc.phone_display }}" maxlength="13"
-                required />
-            </div>
 
-            <!-- Password -->
-            <div class="pwd-field">
-              <input name="password[]" class="pwd" type="password" placeholder="PASSWORD" value="{{ acc.password }}"
-                maxlength="15" required />
-              <button type="button" class="pwd-toggle" aria-label="Toggle password" title="Tampilkan Password">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round" class="eye-icon" style="opacity: 0.6;">
-                  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-                  <circle cx="12" cy="12" r="3" />
-                </svg>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round" class="eye-off-icon"
-                  style="display:none; opacity: 0.6;">
-                  <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
-                  <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
-                  <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
-                  <line x1="2" x2="22" y1="2" y2="22" />
-                </svg>
-              </button>
-            </div>
-
-            <!-- Level -->
-            <select name="level[]" aria-label="Level">
-              <option value="E1" {{ 'selected' if acc.level=='E1' else '' }}>E1</option>
-              <option value="E2" {{ 'selected' if acc.level=='E2' else '' }}>E2</option>
-              <option value="E3" {{ 'selected' if acc.level=='E3' else '' }}>E3</option>
-            </select>
-
-            <!-- Action buttons -->
-            <div class="action-group">
-              <!-- Play Button (Run Single) -->
-              <button type="button" class="btn btn-success play-btn" title="Jalankan Akun Ini" data-bound="1">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="play-icon">
-                  <polygon points="5 3 19 12 5 21 5 3" stroke="currentColor" stroke-width="2" fill="currentColor"
-                    stroke-linejoin="round" />
-                </svg>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="spinner-icon" style="display:none;">
-                  <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" opacity="0.25" />
-                  <path d="M12 2 A10 10 0 0 1 22 12" stroke="currentColor" stroke-width="2" fill="none"
-                    stroke-linecap="round">
-                    <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s"
-                      repeatCount="indefinite" />
-                  </path>
-                </svg>
-                <span>Run</span>
-              </button>
-
-              <button type="button" class="btn btn-primary review-btn" title="Set Review Harian">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M21 15v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4" stroke="currentColor" stroke-width="1.6"
-                    stroke-linecap="round" stroke-linejoin="round" />
-                  <path d="M7 10l5-5 5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
-                    stroke-linejoin="round" />
-                </svg>
-                <span>Review</span>
-              </button>
-
-              <button type="button" class="btn btn-secondary schedule-btn" title="Set Jadwal">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" />
-                  <path d="M12 7v6l4 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
-                    stroke-linejoin="round" />
-                </svg>
-                <span>{% if acc.schedule %}{{ acc.schedule }}{% else %}Jadwal{% endif %}</span>
-              </button>
-
-            </div>
-
-            <!-- Daily Progress Indicator -->
-            <!-- Daily Progress Indicator -->
+            {# Daily Progress Indicator #}
             {% set today = now.strftime('%Y-%m-%d') %}
             {% set level_map = {'E1': 15, 'E2': 30, 'E3': 60} %}
             {% set target = level_map[acc.level] if acc.level in level_map else 30 %}
@@ -220,18 +144,104 @@
             {% set progress_class = 'progress-low' %}
             {% endif %}
 
-            <div class="daily-progress {{ progress_class }}">
-              <span class="progress-label">Today:</span>
-              <span class="progress-value">{{ completed }}/{{ target }}</span>
-              <span class="progress-percent">({{ pct }}%)</span>
+            {# Progress Bar + Delete Button Row (AT THE TOP) #}
+            <div class="progress-delete-row">
+              <div class="account-number">{{ loop.index }}</div>
+              <div class="daily-progress {{ progress_class }}">
+                <span class="progress-label">Today:</span>
+                <span class="progress-value">{{ completed }}/{{ target }}</span>
+                <span class="progress-percent">({{ pct }}%)</span>
+              </div>
+              <button type="button" class="remove" onclick="removeRow(this)" title="Hapus akun" aria-label="Hapus akun">
+                <span aria-hidden="true">−</span>
+              </button>
             </div>
 
-            {# Stats Display (Modal & Pendapatan) #}
+            <div class="main-inputs">
+              {# Row 1: Phone + Level #}
+              <div class="input-row phone-level-row">
+                <div class="phone-group">
+                  <div class="status-dot {{ status_class }}"></div>
+                  <span class="phone-prefix">+62</span>
+                  <input name="phone[]" type="text" placeholder="NO HP" value="{{ acc.phone_display }}" maxlength="13"
+                    required />
+                </div>
+                <select name="level[]" aria-label="Level">
+                  <option value="E1" {% if acc.level=='E1' %}selected{% endif %}>E1</option>
+                  <option value="E2" {% if acc.level=='E2' %}selected{% endif %}>E2</option>
+                  <option value="E3" {% if acc.level=='E3' %}selected{% endif %}>E3</option>
+                </select>
+              </div>
+
+              {# Row 2: Password + Run Button #}
+              <div class="input-row password-run-row">
+                <div class="pwd-field">
+                  <input name="password[]" class="pwd" type="password" placeholder="Kata Sandi"
+                    value="{{ acc.password }}" maxlength="15" required autocomplete="new-password" />
+                  <button type="button" class="pwd-toggle" aria-label="Toggle password" title="Tampilkan Password">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round" class="eye-icon" style="opacity: 0.6;">
+                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round" class="eye-off-icon"
+                      style="display:none; opacity: 0.6;">
+                      <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+                      <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+                      <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+                      <line x1="2" x2="22" y1="2" y2="22" />
+                    </svg>
+                  </button>
+                </div>
+                <button type="button" class="btn btn-success play-btn" title="Jalankan Akun Ini" data-bound="1">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="play-icon">
+                    <polygon points="5 3 19 12 5 21 5 3" stroke="currentColor" stroke-width="2" fill="currentColor"
+                      stroke-linejoin="round" />
+                  </svg>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="spinner-icon"
+                    style="display:none;">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" opacity="0.25" />
+                    <path d="M12 2 A10 10 0 0 1 22 12" stroke="currentColor" stroke-width="2" fill="none"
+                      stroke-linecap="round">
+                      <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s"
+                        repeatCount="indefinite" />
+                    </path>
+                  </svg>
+                  <span>Run</span>
+                </button>
+              </div>
+
+              {# Row 3: Review + Schedule Buttons #}
+              <div class="action-group">
+                <button type="button" class="btn btn-primary review-btn" title="Set Review Harian">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M21 15v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4" stroke="currentColor" stroke-width="1.6"
+                      stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M7 10l5-5 5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
+                      stroke-linejoin="round" />
+                  </svg>
+                  <span>Review</span>
+                </button>
+
+                <button type="button" class="btn btn-secondary schedule-btn" title="Set Jadwal">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" />
+                    <path d="M12 7v6l4 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
+                      stroke-linejoin="round" />
+                  </svg>
+                  <span>{% if acc.schedule %}{{ acc.schedule }}{% else %}Jadwal{% endif %}</span>
+                </button>
+
+              </div>
+            </div>
+
+            {# Stats Row (Modal & Pendapatan) - AT THE BOTTOM #}
             {% if acc.daily_progress and today in acc.daily_progress %}
-            <div class="stats-container">
+            <div class="stats-row">
               {% if acc.daily_progress[today].get('income') %}
               {% set income = acc.daily_progress[today].income %}
-              <div class="stat-row income-display">
+              <div class="stat-box income-display">
                 <span class="stat-label">Modal</span>
                 <span class="stat-value">Rp {{ "{:,.0f}".format(income) }}</span>
               </div>
@@ -239,7 +249,7 @@
 
               {% if acc.daily_progress[today].get('withdrawal') %}
               {% set withdrawal = acc.daily_progress[today].withdrawal %}
-              <div class="stat-row withdrawal-display">
+              <div class="stat-box withdrawal-display">
                 <span class="stat-label">Pendapatan</span>
                 <span class="stat-value">Rp {{ "{:,.0f}".format(withdrawal) }}</span>
               </div>
@@ -247,11 +257,6 @@
             </div>
             {% endif %}
           </div>
-
-          <!-- Tombol hapus akun -->
-          <button type="button" class="remove" onclick="removeRow(this)" title="Hapus akun" aria-label="Hapus akun">
-            <span aria-hidden="true">−</span>
-          </button>
         </div>
         {%- endfor %}
         {%- else %}
@@ -259,60 +264,92 @@
         <!-- Default row if empty -->
         <div class="account-card row-item pending">
           <div class="inputs">
-            <div class="phone-group">
-              <div class="status-dot pending"></div>
-              <span class="phone-prefix">+62</span>
-              <input name="phone[]" type="text" placeholder="NO HP" maxlength="13" />
-            </div>
-
-            <select name="level[]" aria-label="Level">
-              <option value="E1">E1</option>
-              <option value="E2" selected>E2</option>
-              <option value="E3">E3</option>
-            </select>
-
-            <div class="pwd-field">
-              <input name="password[]" class="pwd" type="password" placeholder="PASSWORD" maxlength="15" />
-              <button type="button" class="pwd-toggle" aria-label="Toggle password" title="Tampilkan Password">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round" class="eye-icon" style="opacity: 0.6;">
-                  <path d="M10 12a2 2 0 1 0 4 0 2 2 0 0 0-4 0" />
-                  <path d="M21 12c-2.4 4-5.4 6-9 6-3.6 0-6.6-2-9-6 2.4-4 5.4-6 9-6 3.6 0 6.6 2 9 6" />
-                </svg>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round" class="eye-off-icon"
-                  style="display:none; opacity: 0.6;">
-                  <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
-                  <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
-                  <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
-                  <line x1="2" x2="22" y1="2" y2="22" />
-                </svg>
+            {# Progress Bar + Delete Button Row (AT THE TOP) #}
+            <div class="progress-delete-row">
+              <div class="account-number">1</div>
+              <div class="daily-progress progress-low">
+                <span class="progress-label">Today:</span>
+                <span class="progress-value">0/30</span>
+                <span class="progress-percent">(0%)</span>
+              </div>
+              <button type="button" class="remove" onclick="removeRow(this)" title="Hapus akun" aria-label="Hapus akun">
+                <span aria-hidden="true">−</span>
               </button>
             </div>
 
-            <div class="action-group">
-              <button type="button" class="btn btn-success play-btn" title="Jalankan Akun Ini">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="play-icon">
-                  <polygon points="5 3 19 12 5 21 5 3" stroke="currentColor" stroke-width="2" fill="currentColor"
-                    stroke-linejoin="round" />
-                </svg>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="spinner-icon" style="display:none;">
-                  <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" opacity="0.25" />
-                  <path d="M12 2 A10 10 0 0 1 22 12" stroke="currentColor" stroke-width="2" fill="none"
-                    stroke-linecap="round">
-                    <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s"
-                      repeatCount="indefinite" />
-                  </path>
-                </svg>
-                <span>Run</span>
-              </button>
-              <button type="button" class="btn btn-primary review-btn" title="Set Review Harian">
-                Review
-              </button>
-              <button type="button" class="btn btn-secondary schedule-btn" title="Set Jadwal">
-                Jadwal
-              </button>
+            <div class="main-inputs">
+              {# Row 1: Phone + Level #}
+              <div class="input-row phone-level-row">
+                <div class="phone-group">
+                  <div class="status-dot pending"></div>
+                  <span class="phone-prefix">+62</span>
+                  <input name="phone[]" type="text" placeholder="NO HP" maxlength="13" />
+                </div>
+                <select name="level[]" aria-label="Level">
+                  <option value="E1">E1</option>
+                  <option value="E2" selected>E2</option>
+                  <option value="E3">E3</option>
+                </select>
+              </div>
 
+              {# Row 2: Password + Run Button #}
+              <div class="input-row password-run-row">
+                <div class="pwd-field">
+                  <input name="password[]" class="pwd" type="password" placeholder="Kata Sandi" maxlength="15" />
+                  <button type="button" class="pwd-toggle" aria-label="Toggle password" title="Tampilkan Password">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round" class="eye-icon" style="opacity: 0.6;">
+                      <path d="M10 12a2 2 0 1 0 4 0 2 2 0 0 0-4 0" />
+                      <path d="M21 12c-2.4 4-5.4 6-9 6-3.6 0-6.6-2-9-6 2.4-4 5.4-6 9-6 3.6 0 6.6 2 9 6" />
+                    </svg>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round" class="eye-off-icon"
+                      style="display:none; opacity: 0.6;">
+                      <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+                      <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+                      <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+                      <line x1="2" x2="22" y1="2" y2="22" />
+                    </svg>
+                  </button>
+                </div>
+                <button type="button" class="btn btn-success play-btn" title="Jalankan Akun Ini">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="play-icon">
+                    <polygon points="5 3 19 12 5 21 5 3" stroke="currentColor" stroke-width="2" fill="currentColor"
+                      stroke-linejoin="round" />
+                  </svg>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="spinner-icon"
+                    style="display:none;">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" opacity="0.25" />
+                    <path d="M12 2 A10 10 0 0 1 22 12" stroke="currentColor" stroke-width="2" fill="none"
+                      stroke-linecap="round">
+                      <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s"
+                        repeatCount="indefinite" />
+                    </path>
+                  </svg>
+                  <span>Run</span>
+                </button>
+              </div>
+
+              {# Row 3: Review + Schedule Buttons #}
+              <div class="action-group">
+                <button type="button" class="btn btn-primary review-btn" title="Set Review Harian">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M21 15v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4" stroke="currentColor" stroke-width="1.6"
+                      stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M7 10l5-5 5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
+                      stroke-linejoin="round" />
+                  </svg>
+                  <span>Review</span>
+                </button>
+                <button type="button" class="btn btn-secondary schedule-btn" title="Set Jadwal">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" />
+                    <path d="M12 7v6l4 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
+                      stroke-linejoin="round" />
+                  </svg>
+                  <span>Jadwal</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -463,8 +500,18 @@
       }
 
       row.remove();
-
+      updateAccountNumbers(); // Re-index after removing
       forceSave(); // Save immediately after removing
+    }
+
+    function updateAccountNumbers() {
+      const rows = document.querySelectorAll('.row-item');
+      rows.forEach((row, index) => {
+        const numDiv = row.querySelector('.account-number');
+        if (numDiv) {
+          numDiv.textContent = index + 1;
+        }
+      });
     }
 
     function forceSave() {
@@ -504,139 +551,83 @@
         div.className = 'account-card row-item';
 
         // template baris baru = sama seperti baris default pertama (required)
+        const count = document.querySelectorAll('.row-item').length + 1;
         div.innerHTML = `
-            <div class="inputs">
-              <div class="phone-group">
-                <div class="status-dot pending"></div>
-                <span class="phone-prefix">+62</span>
-                <input
-                  name="phone[]"
-                  type="text"
-                  placeholder="NO HP"
-                  maxlength="13"
-                  required
-                />
+          <div class="inputs">
+            <div class="progress-delete-row">
+              <div class="account-number">${count}</div>
+              <div class="daily-progress progress-low">
+                <span class="progress-label">Today:</span>
+                <span class="progress-value">0/30</span>
+                <span class="progress-percent">(0%)</span>
+              </div>
+              <button type="button" class="remove" onclick="removeRow(this)" title="Hapus akun" aria-label="Hapus akun">
+                <span aria-hidden="true">−</span>
+              </button>
+            </div>
+
+            <div class="main-inputs">
+              <div class="input-row phone-level-row">
+                <div class="phone-group">
+                  <div class="status-dot pending"></div>
+                  <span class="phone-prefix">+62</span>
+                  <input name="phone[]" type="text" placeholder="NO HP" maxlength="13" required />
+                </div>
+                <select name="level[]" aria-label="Level">
+                  <option value="E1">E1</option>
+                  <option value="E2" selected>E2</option>
+                  <option value="E3">E3</option>
+                </select>
               </div>
 
-              <select name="level[]" aria-label="Level">
-                <option value="E1">E1</option>
-                <option value="E2" selected>E2</option>
-                <option value="E3">E3</option>
-              </select>
-
-              <div class="pwd-field">
-                <input
-                  name="password[]"
-                  class="pwd"
-                  type="password"
-                  placeholder="PASSWORD"
-                  maxlength="15"
-                  required
-                />
-                <button
-                  type="button"
-                  class="pwd-toggle"
-                  aria-label="Toggle password"
-                  title="Tampilkan Password"
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-icon" style="opacity: 0.6;">
-                    <path d="M10 12a2 2 0 1 0 4 0 2 2 0 0 0-4 0"/>
-                    <path d="M21 12c-2.4 4-5.4 6-9 6-3.6 0-6.6-2-9-6 2.4-4 5.4-6 9-6 3.6 0 6.6 2 9 6"/>
+              <div class="input-row password-run-row">
+                <div class="pwd-field">
+                  <input name="password[]" class="pwd" type="password" placeholder="Kata Sandi" maxlength="15" required />
+                  <button type="button" class="pwd-toggle" aria-label="Toggle password" title="Tampilkan Password">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-icon" style="opacity: 0.6;">
+                      <path d="M10 12a2 2 0 1 0 4 0 2 2 0 0 0-4 0" />
+                      <path d="M21 12c-2.4 4-5.4 6-9 6-3.6 0-6.6-2-9-6 2.4-4 5.4-6 9-6 3.6 0 6.6 2 9 6" />
+                    </svg>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-off-icon" style="display:none; opacity: 0.6;">
+                      <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+                      <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+                      <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+                      <line x1="2" x2="22" y1="2" y2="22" />
+                    </svg>
+                  </button>
+                </div>
+                <button type="button" class="btn btn-success play-btn" title="Jalankan Akun Ini">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="play-icon">
+                    <polygon points="5 3 19 12 5 21 5 3" stroke="currentColor" stroke-width="2" fill="currentColor" stroke-linejoin="round" />
                   </svg>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-off-icon" style="display:none; opacity: 0.6;">
-                    <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/>
-                    <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/>
-                    <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/>
-                    <line x1="2" x2="22" y1="2" y2="22"/>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="spinner-icon" style="display:none;">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" opacity="0.25" />
+                    <path d="M12 2 A10 10 0 0 1 22 12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round">
+                      <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s" repeatCount="indefinite" />
+                    </path>
                   </svg>
+                  <span>Run</span>
                 </button>
               </div>
 
               <div class="action-group">
-                <button type="button" class="btn btn-success play-btn" title="Jalankan Akun Ini">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="play-icon">
-                    <polygon points="5 3 19 12 5 21 5 3" stroke="currentColor" stroke-width="2" fill="currentColor" stroke-linejoin="round"/>
-                  </svg>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="spinner-icon" style="display:none;">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" opacity="0.25"/>
-                    <path d="M12 2 A10 10 0 0 1 22 12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round">
-                      <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s" repeatCount="indefinite"/>
-                    </path>
-                  </svg>
-                </button>
-
-                <button
-                  type="button"
-                  class="btn btn-primary review-btn"
-                  title="Set Review Harian"
-                >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M21 15v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4"
-                      stroke="currentColor"
-                      stroke-width="1.6"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                    <path
-                      d="M7 10l5-5 5 5"
-                      stroke="currentColor"
-                      stroke-width="1.6"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
+                <button type="button" class="btn btn-primary review-btn" title="Set Review Harian">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M21 15v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M7 10l5-5 5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
                   </svg>
                   <span>Review</span>
                 </button>
-
-                <button
-                  type="button"
-                  class="btn btn-secondary schedule-btn"
-                  title="Set Jadwal"
-                >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    aria-hidden="true"
-                  >
-                    <circle
-                      cx="12"
-                      cy="12"
-                      r="9"
-                      stroke="currentColor"
-                      stroke-width="1.6"
-                    />
-                    <path
-                      d="M12 7v6l4 2"
-                      stroke="currentColor"
-                      stroke-width="1.6"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
+                <button type="button" class="btn btn-secondary schedule-btn" title="Set Jadwal">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" />
+                    <path d="M12 7v6l4 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
                   </svg>
                   <span>Jadwal</span>
                 </button>
-
               </div>
             </div>
-
-            <button
-              type="button"
-              class="remove"
-              onclick="removeRow(this)"
-              title="Hapus akun"
-              aria-label="Hapus akun"
-            >
-              <span aria-hidden="true">−</span>
-            </button>
+          </div>
         `;
 
         rows.appendChild(div);

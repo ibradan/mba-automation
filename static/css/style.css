@@ -252,44 +252,68 @@ body {
 
 /* Card Grid Layout */
 .account-card .inputs {
-  display: grid;
-  grid-template-columns: 1fr 80px;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
   width: 100%;
-  align-items: start;
 }
 
-.phone-group {
-  grid-column: 1 / 2;
-  grid-row: 1;
+.main-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+/* Input Rows */
+.input-row {
   display: flex;
   align-items: center;
   gap: 8px;
   width: 100%;
 }
 
-select[name="level[]"] {
-  grid-column: 2 / 3;
-  grid-row: 1;
-  width: 100%;
-  height: 44px;
+/* Phone + Level Row */
+.phone-level-row {
+  display: flex;
+  gap: 8px;
 }
 
-.pwd-field {
-  grid-column: 1 / -1;
-  grid-row: 2;
+.phone-level-row .phone-group {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.phone-level-row select[name="level[]"] {
+  width: 70px;
+  flex-shrink: 0;
+}
+
+/* Password + Run Row */
+.password-run-row {
+  display: flex;
+  gap: 8px;
+}
+
+.password-run-row .pwd-field {
+  flex: 1;
   position: relative;
-  width: 100%;
 }
 
+.password-run-row .play-btn {
+  width: auto;
+  flex-shrink: 0;
+  padding: 0 20px;
+}
+
+/* Action Group (Review + Schedule) */
 .action-group {
-  grid-column: 1 / -1;
-  grid-row: 3;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
   width: 100%;
-  margin-top: 4px;
 }
 
 .action-group .btn {
@@ -331,43 +355,32 @@ select {
 
 /* Desktop Layout */
 @media (min-width: 768px) {
-  .account-card .inputs {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 12px;
+  .main-inputs {
+    gap: 8px;
   }
 
-  .phone-group,
-  select[name="level[]"],
-  .pwd-field,
-  .action-group {
-    grid-column: auto;
-    grid-row: auto;
+  .phone-level-row .phone-group {
     width: auto;
-    margin-top: 0;
+    flex: 1;
   }
 
-  .phone-group {
-    flex: 0 0 auto;
-    width: 220px;
+  .phone-level-row select[name="level[]"] {
+    width: 70px;
   }
 
-  .pwd-field {
-    flex: 0 0 auto;
-    width: 160px;
+  .password-run-row .pwd-field {
+    flex: 1;
   }
 
-  select[name="level[]"] {
-    flex: 0 0 auto;
-    width: 80px;
+  .password-run-row .play-btn {
+    height: 38px;
+    padding: 0 20px;
+    font-size: 14px;
   }
 
   .action-group {
     display: flex;
-    flex-wrap: nowrap;
     gap: 6px;
-    flex: 0 0 auto;
   }
 
   .action-group .btn {
@@ -375,6 +388,7 @@ select {
     height: 38px;
     padding: 0 16px;
     font-size: 14px;
+    flex: 1;
   }
 
   /* Compact inputs on desktop */
@@ -478,36 +492,7 @@ select:focus {
   border-color: #5f6368;
 }
 
-/* Remove Button - Modern */
-.remove {
-  position: absolute;
-  top: -10px;
-  right: -10px;
-  background: #fff;
-  color: #ef4444;
-  border: none;
-  border-radius: 50%;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  opacity: 0.8;
-  transition: all 0.2s;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  padding: 0;
-}
 
-.remove:hover {
-  opacity: 1;
-  transform: scale(1.1);
-}
-
-.remove svg {
-  width: 20px;
-  height: 20px;
-}
 
 /* Divider */
 .divider {
@@ -673,16 +658,10 @@ select:focus {
   font-size: 1rem;
 }
 
-.action-group {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-/* Remove Button - Tidak Bentrok Lagi */
+/* Remove Button */
 .remove {
-  width: 34px;
-  height: 34px;
+  width: 28px;
+  height: 28px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -692,7 +671,7 @@ select:focus {
   border: 1px solid #fecaca;
   color: var(--danger);
   cursor: pointer;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 700;
   transition: all 0.2s;
 }
@@ -861,44 +840,50 @@ select:focus {
     padding: 1rem;
   }
 
-  .account-card .inputs {
+  .main-inputs {
+    display: flex;
     flex-direction: column;
     align-items: stretch;
+    gap: 12px;
   }
 
   /* Mobile field widths - Force override desktop styles */
-  .phone-group {
-    width: 100% !important;
-    min-width: unset !important;
+  .input-row {
+    flex-direction: column;
+    gap: 10px;
   }
 
-  .phone-group input {
-    flex: 1;
-    width: 100% !important;
+  .phone-level-row .phone-group {
+    width: 100%;
   }
 
-  .pwd-field {
-    width: 100% !important;
-    min-width: unset !important;
+  .phone-level-row select[name="level[]"] {
+    width: 100%;
   }
 
-  .pwd-field input {
-    width: 100% !important;
+  .password-run-row {
+    flex-direction: column;
   }
 
-  select[name="level[]"] {
-    width: 100% !important;
-    min-width: unset !important;
+  .password-run-row .pwd-field {
+    width: 100%;
   }
+
+  .password-run-row .play-btn {
+    width: 100%;
+  }
+
+
 
   .action-group {
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
     width: 100%;
   }
 
   .action-group .btn {
-    flex: 1;
-    min-width: 0;
+    width: 100%;
   }
 
   /* Mobile Bottom Controls */
@@ -922,15 +907,7 @@ select:focus {
     text-align: center;
   }
 
-  /* Remove button di pojok kanan atas mobile */
-  .remove {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    width: 32px;
-    height: 32px;
-    font-size: 1.1rem;
-  }
+
 
   .status-pill {
     right: 48px;
@@ -941,28 +918,54 @@ select:focus {
   }
 }
 
-/* Daily Progress Indicator */
-.daily-progress {
-  margin-top: 8px;
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  display: inline-flex;
+
+
+/* Progress Bar + Delete Row (at the top) */
+.progress-delete-row {
+  display: flex;
   align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.account-number {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #374151;
+}
+
+.progress-delete-row .daily-progress {
+  flex: 1;
+  margin-top: 0;
+}
+
+.progress-delete-row .remove {
+  flex-shrink: 0;
+}
+
+/* Progress Bar (separate) */
+.daily-progress {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   gap: 4px;
-}
-
-.daily-progress.progress-complete {
-  background: #d1fae5;
-  color: #065f46;
-  border: 1px solid #a7f3d0;
-}
-
-.daily-progress.progress-partial {
-  background: #fef3c7;
-  color: #92400e;
-  border: 1px solid #fde68a;
+  padding: 4px 8px;
+  background: #f0fdf4;
+  border-radius: 4px;
+  margin-top: 8px;
+  font-size: 0.8rem;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+  white-space: nowrap;
 }
 
 .daily-progress.progress-low {
@@ -971,54 +974,75 @@ select:focus {
   border: 1px solid #fecaca;
 }
 
-/* Stats Display */
-.stats-container {
-  margin-top: 8px;
-  display: flex;
-  flex-direction: column;
-  /* Stacked vertically */
-  gap: 6px;
+.daily-progress.progress-partial {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde047;
 }
 
-.stat-row {
+.daily-progress.progress-complete {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+/* Stats Row (Modal & Pendapatan) */
+.stats-row {
   display: flex;
   flex-direction: row;
-  /* Label and value side-by-side */
+  align-items: stretch;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+/* Stat Box (Modal & Pendapatan) */
+.stat-box {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-size: 0.85rem;
+  justify-content: center;
+  padding: 20px 16px;
+  border-radius: 16px;
+  font-size: 1rem;
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  min-height: 70px;
 }
 
 /* Modal (Income) */
 .income-display {
-  background-color: #fefce8;
-  border: 1px solid #fde047;
+  background: #fef08a;
+  /* Solid Yellow-200 */
+  border: 2px solid #eab308;
   color: #854d0e;
 }
 
 /* Pendapatan (Withdrawal) */
 .withdrawal-display {
-  background-color: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #991b1b;
+  background: #fed7aa;
+  /* Solid Orange-200 */
+  border: 2px solid #f97316;
+  color: #7c2d12;
 }
 
 .stat-label {
-  font-weight: 500;
-  opacity: 0.9;
-  font-size: 0.85rem;
-  margin-bottom: 0;
-  text-transform: none;
-  letter-spacing: normal;
+  font-weight: 600;
+  opacity: 0.85;
+  font-size: 0.75rem;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
 }
 
 .stat-value {
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: 1.1rem;
   font-family: 'Roboto Mono', monospace;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .progress-label {
