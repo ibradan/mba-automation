@@ -1,0 +1,92 @@
+Starting automation for 85117678844 (headless=True)
+Mengonfirmasi login ke-1 OK
+Mengonfirmasi login ke-2 OK
+Progress from page: 0/60
+Parsed progress: 0/60
+Klik Mendapatkan (list) OK
+Klik Mendapatkan (detail) OK
+Tasks completed: 1/60. Remaining loops: 59
+Loop ke-1 (Total progress: 2/60)
+Loop ke-2 (Total progress: 3/60)
+Loop ke-3 (Total progress: 4/60)
+Loop ke-4 (Total progress: 5/60)
+Loop ke-5 (Total progress: 6/60)
+Loop ke-6 (Total progress: 7/60)
+Loop ke-7 (Total progress: 8/60)
+Loop ke-8 (Total progress: 9/60)
+Loop ke-9 (Total progress: 10/60)
+Loop ke-10 (Total progress: 11/60)
+Loop ke-11 (Total progress: 12/60)
+Loop ke-12 (Total progress: 13/60)
+Loop ke-13 (Total progress: 14/60)
+Loop ke-14 (Total progress: 15/60)
+Loop ke-15 (Total progress: 16/60)
+Loop ke-16 (Total progress: 17/60)
+Loop ke-17 (Total progress: 18/60)
+Loop ke-18 (Total progress: 19/60)
+Loop ke-19 (Total progress: 20/60)
+Loop ke-20 (Total progress: 21/60)
+Loop ke-21 (Total progress: 22/60)
+Loop ke-22 (Total progress: 23/60)
+Loop ke-23 (Total progress: 24/60)
+Loop ke-24 (Total progress: 25/60)
+Loop ke-25 (Total progress: 26/60)
+Loop ke-26 (Total progress: 27/60)
+Loop ke-27 (Total progress: 28/60)
+Loop ke-28 (Total progress: 29/60)
+Loop ke-29 (Total progress: 30/60)
+Loop ke-30 (Total progress: 31/60)
+Loop ke-31 (Total progress: 32/60)
+Loop ke-32 (Total progress: 33/60)
+Loop ke-33 (Total progress: 34/60)
+Loop ke-34 (Total progress: 35/60)
+Loop ke-35 (Total progress: 36/60)
+Loop ke-36 (Total progress: 37/60)
+Loop ke-37 (Total progress: 38/60)
+Loop ke-38 (Total progress: 39/60)
+Loop ke-39 (Total progress: 40/60)
+Loop ke-40 (Total progress: 41/60)
+Loop ke-41 (Total progress: 42/60)
+Loop ke-42 (Total progress: 43/60)
+Loop ke-43 (Total progress: 44/60)
+Loop ke-44 (Total progress: 45/60)
+Loop ke-45 (Total progress: 46/60)
+Loop ke-46 (Total progress: 47/60)
+Loop ke-47 (Total progress: 48/60)
+Loop ke-48 (Total progress: 49/60)
+Loop ke-49 (Total progress: 50/60)
+Loop ke-50 (Total progress: 51/60)
+Loop ke-51 (Total progress: 52/60)
+Loop ke-52 (Total progress: 53/60)
+Loop ke-53 (Total progress: 54/60)
+Loop ke-54 (Total progress: 55/60)
+Loop ke-55 (Total progress: 56/60)
+Loop ke-56 (Total progress: 57/60)
+Loop ke-57 (Total progress: 58/60)
+Loop ke-58 (Total progress: 59/60)
+Loop ke-59 (Total progress: 60/60)
+Selesai loop. 60 iterations completed
+Selesai loop. 60 iterations completed
+Final progress from page: 60/60
+Parsed final progress: 60/60
+Scraping income from deposit records...
+  Navigating to income page: https://mba7.com/#/amount/deposit/record
+  Found 2 total income records
+  ✓ Income: +4.500.000,00  -> 4,500,000
+  ✓ Income: +1.400.000,00  -> 1,400,000
+  Total valid income records: 2
+  Total income: Rp 5,900,000.00
+Scraping withdrawal from withdrawal records...
+  Navigating to withdrawal page: https://mba7.com/#/amount/withdrawal/record
+  Found 6 total withdrawal records
+  ✓ Withdrawal: 200.000,00  -> 200,000
+  ✓ Withdrawal: 200.000,00  -> 200,000
+  ✓ Withdrawal: 200.000,00  -> 200,000
+  ✓ Withdrawal: 200.000,00  -> 200,000
+  ✓ Withdrawal: 50.000,00  -> 50,000
+  Total valid withdrawal records: 5
+  Total withdrawal: Rp 850,000.00
+Scraping balance from profile...
+✓ Balance found: 0,00  -> 0.0
+Returning final progress: 60/60
+✓ Progress saved: 60/60 (100%) - Income: Rp 5,900,000 - Withdrawal: Rp 850,000 - Balance: Rp 0

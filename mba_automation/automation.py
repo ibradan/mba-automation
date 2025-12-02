@@ -106,23 +106,50 @@ def scrape_withdrawal(page, timeout: int = 30) -> float:
     return scrape_record_page(page, "amount/withdrawal/record", "withdrawal", timeout)
 
 
-
-def run(playwright: Playwright, phone: str, password: str, headless: bool = False, slow_mo: int = 200, iterations: int = 30, review_text: Optional[str] = None, viewport_name: str = "iPhone 12", timeout: int = 30) -> Tuple[int, int, float, float]:
-    browser = playwright.chromium.launch(headless=headless, slow_mo=slow_mo)
-    
-    vp = VIEWPORTS.get(viewport_name, VIEWPORTS["iPhone 12"])
-    context = browser.new_context(viewport=vp)
-    page = context.new_page()
-
-    # Set timeout (convert to ms)
-    page.set_default_timeout(timeout * 1000)
-
+def scrape_balance(page: Page, timeout: int) -> float:
+    """
+    Scrapes the user balance from the profile page.
+    Selector: .user-balance
+    """
     try:
-        # ========== LOGIN ==========
-        page.goto("https://mba7.com/#/login", wait_until="domcontentloaded")
+        # Navigate to profile page
+        print("  Navigating to profile page: https://mba7.com/#/me")
+        page.goto("https://mba7.com/#/me", timeout=timeout*1000)
+        # Use simple timeout instead of networkidle for more reliable loading
+        page.wait_for_timeout(3000)
+        
+        balance_el = page.locator(".user-balance").first
+        balance_text = balance_el.text_content(timeout=5000)
+        
+        if balance_text:
+            # Format: "370.624,00 " -> 370624.0
+            clean_text = balance_text.replace(".", "").replace(",", ".").strip()
+            balance = float(clean_text)
+            print(f"  ✓ Balance found: {balance_text.strip()} -> {balance:,.0f}")
+            return balance
+        else:
+            print("  ✗ Balance element found but no text content")
+            
+    except Exception as e:
+        print(f"  ✗ Could not scrape balance: {e}")
+    
+    return 0.0
+
+
+def login(page: Page, phone: str, password: str, timeout: int = 30) -> bool:
+    """
+    Handles login logic including phone number normalization and popup handling.
+    Returns True if login appears successful, False otherwise.
+    """
+    try:
+        # Normalize phone: strip '62' prefix if present
+        phone_for_login = phone[2:] if phone.startswith('62') else phone
+        print(f"Logging in as {phone} (using: {phone_for_login})...")
+        
+        page.goto("https://mba7.com/#/login", wait_until="domcontentloaded", timeout=timeout*1000)
 
         page.get_by_role("textbox", name="Nomor Telepon").click()
-        page.get_by_role("textbox", name="Nomor Telepon").fill(phone)
+        page.get_by_role("textbox", name="Nomor Telepon").fill(phone_for_login)
 
         page.get_by_role("textbox", name="Kata Sandi").click()
         page.get_by_role("textbox", name="Kata Sandi").fill(password)
@@ -144,6 +171,37 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
             except PlaywrightTimeoutError:
                 print(f"Mengonfirmasi login ke-{i+1} nggak muncul (gapapa, lanjut).")
                 break
+        
+        # Verify login success by waiting for URL change or home element
+        try:
+            page.wait_for_url("**/#/**", timeout=10000)
+            page.wait_for_timeout(2000)
+            print("Login successful.")
+            return True
+        except Exception:
+            print("Warning: Login verification timed out, but proceeding...")
+            return True
+
+    except Exception as e:
+        print(f"Login failed: {e}")
+        return False
+
+
+def run(playwright: Playwright, phone: str, password: str, headless: bool = False, slow_mo: int = 200, iterations: int = 30, review_text: Optional[str] = None, viewport_name: str = "iPhone 12", timeout: int = 30) -> Tuple[int, int, float, float]:
+    browser = playwright.chromium.launch(headless=headless, slow_mo=slow_mo)
+    
+    vp = VIEWPORTS.get(viewport_name, VIEWPORTS["iPhone 12"])
+    context = browser.new_context(viewport=vp)
+    page = context.new_page()
+
+    # Set timeout (convert to ms)
+    page.set_default_timeout(timeout * 1000)
+
+    try:
+        # ========== LOGIN ==========
+        if not login(page, phone, password, timeout):
+            print("Login failed, aborting run.")
+            return 0, iterations, 0.0, 0.0
 
         # Navigate UI (kept as-is from original script)
         try:
@@ -321,27 +379,43 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
         context.close()
         browser.close()
 
-def scrape_balance(page: Page, timeout: int) -> float:
+
+def refresh_stats_only(playwright: Playwright, phone: str, password: str, headless: bool = True, timeout: int = 30) -> Tuple[float, float, float]:
     """
-    Scrapes the user balance from the profile page.
-    Selector: .user-balance
+    Login and scrape stats only (Income, Withdrawal, Balance).
+    Returns: (income, withdrawal, balance)
     """
+    browser = playwright.chromium.launch(headless=headless)
+    context = browser.new_context(viewport={"width": 390, "height": 844})
+    page = context.new_page()
+    page.set_default_timeout(timeout * 1000)
+
     try:
-        # Navigate to profile page
-        page.goto("https://mba7.com/#/me", timeout=timeout*1000)
-        page.wait_for_load_state("networkidle", timeout=timeout*1000)
+        # Login using shared function
+        if not login(page, phone, password, timeout):
+            print(f"Login failed for {phone}, cannot refresh stats.")
+            return 0.0, 0.0, 0.0
+
+        # Scrape Income
+        print("Scraping income...")
+        income = scrape_income(page, timeout)
         
-        balance_el = page.locator(".user-balance").first
-        balance_text = balance_el.text_content(timeout=5000)
+        # Scrape Withdrawal  
+        print("Scraping withdrawal...")
+        withdrawal = scrape_withdrawal(page, timeout)
         
-        if balance_text:
-            # Format: "370.624,00 " -> 370624.0
-            clean_text = balance_text.replace(".", "").replace(",", ".").strip()
-            balance = float(clean_text)
-            print(f"✓ Balance found: {balance_text} -> {balance}")
-            return balance
-            
+        # Scrape Balance
+        print("Scraping balance...")
+        balance = scrape_balance(page, timeout)
+        
+        print(f"✓ Stats refreshed: Income={income:,.0f}, Withdrawal={withdrawal:,.0f}, Balance={balance:,.0f}")
+        return income, withdrawal, balance
+
     except Exception as e:
-        print(f"Could not scrape balance: {e}")
-    
-    return 0.0
+        print(f"✗ Error refreshing stats for {phone}: {e}")
+        import traceback
+        traceback.print_exc()
+        return 0.0, 0.0, 0.0
+    finally:
+        context.close()
+        browser.close()

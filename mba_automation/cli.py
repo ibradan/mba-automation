@@ -5,7 +5,7 @@ import json
 import datetime
 import fcntl
 from playwright.sync_api import sync_playwright
-from .automation import run as automation_run
+from .automation import run as automation_run, refresh_stats_only
 
 ACCOUNTS_FILE = os.path.join(os.path.dirname(__file__), '..', 'accounts.json')
 ACCOUNTS_FILE = os.path.abspath(ACCOUNTS_FILE)

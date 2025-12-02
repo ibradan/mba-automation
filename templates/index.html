@@ -253,7 +253,7 @@
               </div>
               {% endif %}
 
-              {% if acc.daily_progress[today].get('balance') %}
+              {% if 'balance' in acc.daily_progress[today] %}
               {% set balance = acc.daily_progress[today].balance %}
               <div class="stat-box balance-display">
                 <span class="stat-label">Saldo</span>
@@ -388,6 +388,27 @@
                   </svg>
                   <span>Jadwal</span>
                 </button>
+                <button type="button" class="btn btn-secondary refresh-btn"
+                  title="Refresh Data (Modal, Saldo, Pendapatan)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="refresh-icon">
+                    <path d="M23 4v6h-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                      stroke-linejoin="round" />
+                    <path d="M1 20v-6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                      stroke-linejoin="round" />
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor"
+                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="spinner-icon"
+                    style="display:none;">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" opacity="0.25" />
+                    <path d="M12 2 A10 10 0 0 1 22 12" stroke="currentColor" stroke-width="2" fill="none"
+                      stroke-linecap="round">
+                      <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s"
+                        repeatCount="indefinite" />
+                    </path>
+                  </svg>
+                  <span>Refresh</span>
+                </button>
               </div>
             </div>
           </div>
@@ -427,6 +448,25 @@
       <!-- Bottom Controls (All in One Row) -->
       <div class="bottom-card">
         <div class="bottom-controls-row">
+          <button type="button" class="btn btn-secondary" id="refresh-all-btn" style="margin-right: 8px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="refresh-icon">
+              <path d="M23 4v6h-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" />
+              <path d="M1 20v-6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" />
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="spinner-icon" style="display:none;">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" opacity="0.25" />
+              <path d="M12 2 A10 10 0 0 1 22 12" stroke="currentColor" stroke-width="2" fill="none"
+                stroke-linecap="round">
+                <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s"
+                  repeatCount="indefinite" />
+              </path>
+            </svg>
+            <span>Refresh Data</span>
+          </button>
           <button type="submit" name="action" value="start" class="btn btn-success" id="run-all-btn">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="play-icon">
               <polygon points="5 3 19 12 5 21 5 3" stroke="currentColor" stroke-width="1.6" fill="currentColor" />
@@ -680,7 +720,119 @@
         attachReviewButtons();
         attachScheduleButtons();
         attachPlayButtons(); // Attach play button listener
+        attachRefreshButtons(div); // Attach refresh button listener
       });
+
+    // ================= REFRESH BUTTON =================
+    function attachRefreshButtons(root) {
+      const selector = root ? root.querySelectorAll('.refresh-btn') : document.querySelectorAll('.refresh-btn');
+      selector.forEach(function (btn) {
+        if (btn.dataset.bound) return;
+        btn.dataset.bound = '1';
+
+        btn.addEventListener('click', async function () {
+          const row = btn.closest('.row-item');
+          if (!row) return;
+
+          const phoneInput = row.querySelector('input[name="phone[]"]');
+          if (!phoneInput) return;
+
+          const phone = phoneInput.value.trim();
+          if (!phone) {
+            alert('Masukkan nomor HP terlebih dahulu.');
+            return;
+          }
+
+          // Show loading state
+          const originalIcon = btn.querySelector('.refresh-icon');
+          const spinnerIcon = btn.querySelector('.spinner-icon');
+
+          btn.disabled = true;
+          originalIcon.style.display = 'none';
+          spinnerIcon.style.display = 'inline';
+
+          try {
+            const formData = new FormData();
+            formData.append('phone', phone);
+
+            const res = await fetch('/refresh_stats', {
+              method: 'POST',
+              body: formData
+            });
+            const data = await res.json();
+
+            if (data.ok) {
+              // Reload page after short delay to show updated stats
+              setTimeout(() => {
+                window.location.reload();
+              }, 2000);
+            } else {
+              alert('Error: ' + data.msg);
+              btn.disabled = false;
+              originalIcon.style.display = 'inline';
+              spinnerIcon.style.display = 'none';
+            }
+          } catch (err) {
+            alert('Gagal menghubungi server.');
+            console.error(err);
+            btn.disabled = false;
+            originalIcon.style.display = 'inline';
+            spinnerIcon.style.display = 'none';
+          }
+        });
+      });
+    }
+    attachRefreshButtons();
+
+    // ================= GLOBAL REFRESH BUTTON =================
+    const refreshAllBtn = document.getElementById('refresh-all-btn');
+    if (refreshAllBtn) {
+      refreshAllBtn.addEventListener('click', async function () {
+        if (!confirm('Refresh data untuk semua akun? Proses ini akan memakan waktu beberapa saat.')) return;
+
+        const originalIcon = refreshAllBtn.querySelector('.refresh-icon');
+        const spinnerIcon = refreshAllBtn.querySelector('.spinner-icon');
+        const btnText = refreshAllBtn.querySelector('span');
+
+        refreshAllBtn.disabled = true;
+        originalIcon.style.display = 'none';
+        spinnerIcon.style.display = 'inline';
+        btnText.textContent = 'Refreshing...';
+
+        // Get all phones
+        const phones = [];
+        document.querySelectorAll('input[name="phone[]"]').forEach(input => {
+          if (input.value.trim()) phones.push(input.value.trim());
+        });
+
+        if (phones.length === 0) {
+          alert('Tidak ada akun untuk di-refresh.');
+          window.location.reload();
+          return;
+        }
+
+        // Trigger refresh for each phone
+        let successCount = 0;
+        for (const phone of phones) {
+          try {
+            const formData = new FormData();
+            formData.append('phone', phone);
+            await fetch('/refresh_stats', { method: 'POST', body: formData });
+            successCount++;
+          } catch (e) {
+            console.error('Failed to trigger refresh for', phone, e);
+          }
+        }
+
+        // Wait a bit then reload
+        setTimeout(() => {
+          alert(`Refresh dimulai untuk ${successCount} akun. Halaman akan dimuat ulang dalam 5 detik.`);
+          setTimeout(() => {
+            window.location.reload();
+          }, 5000);
+        }, 1000);
+      });
+    }
 
     // ================= PASSWORD TOGGLE =================
     function attachToggle(root) {
