@@ -1,16 +1,26 @@
 :root {
-  /* Clean Blue Palette */
-  --bg: #f9fafb;
+  /* Premium Solid Palette */
+  --bg: #f3f4f6;
+  /* Cool Gray 100 */
   --card: #ffffff;
-  --text: #111827;
+  --text: #1f2937;
+  /* Gray 800 */
   --text-light: #6b7280;
-  --blue: #2563eb;
-  --blue-dark: #1e40af;
-  --blue-light: #dbeafe;
+  /* Gray 500 */
+  --blue: #3b82f6;
+  /* Blue 500 */
+  --blue-dark: #2563eb;
+  /* Blue 600 */
+  --blue-light: #eff6ff;
+  /* Blue 50 */
   --success: #10b981;
+  /* Emerald 500 */
   --warning: #f59e0b;
+  /* Amber 500 */
   --danger: #ef4444;
+  /* Red 500 */
   --border: #e5e7eb;
+  /* Gray 200 */
 }
 
 * {
@@ -18,6 +28,85 @@
   margin: 0;
   padding: 0;
 }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* Stat Box (Modal & Pendapatan) - Bold Solid Colors */
+.stat-box {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  border-radius: 16px;
+  border: none;
+  /* No border for solid look */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s;
+}
+
+.stat-box:hover {
+  transform: translateY(-2px);
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+  opacity: 0.9;
+}
+
+.stat-value {
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+/* Income (Modal) - Solid Gold */
+.income-display {
+  background: #f59e0b;
+  /* Amber 500 */
+  color: #ffffff;
+}
+
+.income-display .stat-label {
+  color: #fffbeb;
+  /* Amber 50 */
+}
+
+/* Balance (Saldo) - Solid Cyan */
+.balance-display {
+  background: #06b6d4;
+  /* Cyan 500 */
+  color: #ffffff;
+}
+
+.balance-display .stat-label {
+  color: #ecfeff;
+  /* Cyan 50 */
+}
+
+/* Withdrawal (Pendapatan) - Solid Orange */
+.withdrawal-display {
+  background: #f97316;
+  /* Orange 500 */
+  color: #ffffff;
+}
+
+.withdrawal-display .stat-label {
+  color: #fff7ed;
+  /* Orange 50 */
+}
+
+
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -258,54 +347,14 @@ body {
   width: 100%;
 }
 
-.main-inputs {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: 100%;
-}
+/* Main inputs will be overridden by grid layout below */
 
-/* Input Rows */
+/* Input Rows - Base styles */
 .input-row {
   display: flex;
   align-items: center;
   gap: 8px;
   width: 100%;
-}
-
-/* Phone + Level Row */
-.phone-level-row {
-  display: flex;
-  gap: 8px;
-}
-
-.phone-level-row .phone-group {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.phone-level-row select[name="level[]"] {
-  width: 70px;
-  flex-shrink: 0;
-}
-
-/* Password + Run Row */
-.password-run-row {
-  display: flex;
-  gap: 8px;
-}
-
-.password-run-row .pwd-field {
-  flex: 1;
-  position: relative;
-}
-
-.password-run-row .play-btn {
-  width: auto;
-  flex-shrink: 0;
-  padding: 0 20px;
 }
 
 /* Action Group (Review + Schedule) */
@@ -353,45 +402,85 @@ select {
   color: #4b5563;
 }
 
-/* Desktop Layout */
+/* Unified Layout for All Screen Sizes */
+.main-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Base Row Style */
+.input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+/* Row 1: Phone | Password */
+.row-1 .phone-group {
+  flex: 0.9;
+  /* 45% approx */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.row-1 .pwd-field {
+  flex: 1.1;
+  /* 55% approx */
+  position: relative;
+}
+
+/* Row 2: Level | Run | Review */
+.row-2 .level-select {
+  width: 80px;
+  /* Fixed width for level */
+  flex-shrink: 0;
+}
+
+.row-2 .play-btn {
+  flex: 1;
+}
+
+.row-2 .review-btn {
+  flex: 1;
+}
+
+/* Row 3: Schedule */
+.row-3 {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.row-3 .schedule-btn {
+  width: 100%;
+}
+
+.schedule-status {
+  font-size: 0.8rem;
+  color: var(--text-light);
+  text-align: center;
+  font-style: italic;
+}
+
+/* Ensure buttons and inputs have consistent height */
+.input-row .btn,
+.input-row input,
+.input-row select,
+.phone-prefix {
+  height: 42px;
+}
+
+/* Desktop adjustments */
 @media (min-width: 768px) {
-  .main-inputs {
-    gap: 8px;
-  }
 
-  .phone-level-row .phone-group {
-    width: auto;
-    flex: 1;
-  }
-
-  .phone-level-row select[name="level[]"] {
-    width: 70px;
-  }
-
-  .password-run-row .pwd-field {
-    flex: 1;
-  }
-
-  .password-run-row .play-btn {
-    height: 38px;
-    padding: 0 20px;
-    font-size: 14px;
-  }
-
-  .action-group {
-    display: flex;
-    gap: 6px;
-  }
-
+  .password-run-row .play-btn,
   .action-group .btn {
-    width: auto;
     height: 38px;
-    padding: 0 16px;
-    font-size: 14px;
-    flex: 1;
   }
 
-  /* Compact inputs on desktop */
   input[type="text"],
   input[type="password"],
   select,
@@ -822,6 +911,8 @@ select:focus {
 
 /* Mobile */
 @media (max-width: 760px) {
+
+  /* Mobile Layout Adjustments */
   .container {
     padding: 16px;
   }
@@ -840,51 +931,8 @@ select:focus {
     padding: 1rem;
   }
 
-  .main-inputs {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-  }
-
-  /* Mobile field widths - Force override desktop styles */
-  .input-row {
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .phone-level-row .phone-group {
-    width: 100%;
-  }
-
-  .phone-level-row select[name="level[]"] {
-    width: 100%;
-  }
-
-  .password-run-row {
-    flex-direction: column;
-  }
-
-  .password-run-row .pwd-field {
-    width: 100%;
-  }
-
-  .password-run-row .play-btn {
-    width: 100%;
-  }
-
-
-
-  .action-group {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    width: 100%;
-  }
-
-  .action-group .btn {
-    width: 100%;
-  }
+  /* Allow main-inputs to use the unified grid layout defined above */
+  /* Removed flex-direction: column override */
 
   /* Mobile Bottom Controls */
   .bottom-controls {
@@ -986,64 +1034,7 @@ select:focus {
   border: 1px solid #a7f3d0;
 }
 
-/* Stats Row (Modal & Pendapatan) */
-.stats-row {
-  display: flex;
-  flex-direction: row;
-  align-items: stretch;
-  gap: 12px;
-  margin-top: 12px;
-}
 
-/* Stat Box (Modal & Pendapatan) */
-.stat-box {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 20px 16px;
-  border-radius: 16px;
-  font-size: 1rem;
-  flex: 1;
-  min-width: 0;
-  text-align: center;
-  min-height: 70px;
-}
-
-/* Modal (Income) */
-.income-display {
-  background: #fef08a;
-  /* Solid Yellow-200 */
-  border: 2px solid #eab308;
-  color: #854d0e;
-}
-
-/* Pendapatan (Withdrawal) */
-.withdrawal-display {
-  background: #fed7aa;
-  /* Solid Orange-200 */
-  border: 2px solid #f97316;
-  color: #7c2d12;
-}
-
-.stat-label {
-  font-weight: 600;
-  opacity: 0.85;
-  font-size: 0.75rem;
-  margin-bottom: 6px;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-}
-
-.stat-value {
-  font-weight: 700;
-  font-size: 1.1rem;
-  font-family: 'Roboto Mono', monospace;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-}
 
 .progress-label {
   opacity: 0.9;
@@ -1065,61 +1056,4 @@ select:focus {
   margin-top: 16px;
   padding-top: 16px;
   border-top: 1px solid var(--border);
-}
-
-.stat-box {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 12px;
-  border-radius: 12px;
-  border: 1px solid transparent;
-}
-
-.stat-label {
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 4px;
-}
-
-.stat-value {
-  font-size: 1.1rem;
-  font-weight: 700;
-}
-
-/* Income (Modal) - Yellow/Gold */
-.income-display {
-  background: #fffbeb;
-  border-color: #fcd34d;
-  color: #b45309;
-}
-
-.income-display .stat-label {
-  color: #d97706;
-}
-
-/* Balance (Saldo) - Blue/Cyan */
-.balance-display {
-  background: #ecfeff;
-  border-color: #67e8f9;
-  color: #0e7490;
-}
-
-.balance-display .stat-label {
-  color: #0891b2;
-}
-
-/* Withdrawal (Pendapatan) - Orange/Red */
-.withdrawal-display {
-  background: #fff7ed;
-  border-color: #fdba74;
-  color: #c2410c;
-}
-
-.withdrawal-display .stat-label {
-  color: #ea580c;
 }

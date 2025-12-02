@@ -7,43 +7,245 @@
   <title>Set Jadwal - MBA7 Automation</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
   <style>
-    /* Form styling untuk schedule page */
-    .form-group {
+    /* Schedule Page Specific Styles */
+    .schedule-container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .schedule-card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 24px 20px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
       margin-bottom: 20px;
     }
 
-    .form-group label {
-      display: block;
+    .account-info {
+      background: #3b82f6;
+      border-radius: 12px;
+      padding: 18px 20px;
+      margin-bottom: 20px;
+      color: white;
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+      overflow: hidden;
+      text-align: center;
+    }
+
+    .account-label {
+      font-size: 0.75rem;
+      opacity: 0.9;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
       font-weight: 600;
-      margin-bottom: 8px;
+    }
+
+    .account-number {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+
+    .time-picker-group {
+      margin-bottom: 20px;
+    }
+
+    .time-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      margin-bottom: 12px;
       color: var(--text);
     }
 
-    .form-group input[type="time"] {
-      width: 100%;
-      max-width: 300px;
-    }
-
-    .info-text {
-      color: var(--muted);
-      font-size: 0.9rem;
-      margin-top: 8px;
-    }
-
-    .phone-display {
-      font-size: 1.1rem;
-      font-weight: 600;
+    .time-label svg {
       color: var(--blue);
-      padding: 8px 12px;
-      background: var(--bg);
-      border-radius: 6px;
-      display: inline-block;
     }
 
-    .actions {
+    .time-input-wrapper {
+      position: relative;
+      display: inline-block;
+      width: 100%;
+      max-width: 280px;
+    }
+
+    .time-input-wrapper input[type="time"] {
+      width: 100%;
+      padding: 12px 16px;
+      font-size: 1.2rem;
+      font-weight: 600;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      background: white;
+      color: var(--text);
+      transition: all 0.2s ease;
+    }
+
+    .time-input-wrapper input[type="time"]:focus {
+      outline: none;
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .info-card {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
       display: flex;
-      gap: 12px;
-      margin-top: 24px;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .info-card svg {
+      flex-shrink: 0;
+      color: var(--blue);
+      margin-top: 2px;
+    }
+
+    .info-card-content {
+      flex: 1;
+    }
+
+    .info-card-title {
+      font-weight: 600;
+      color: var(--blue-dark);
+      margin-bottom: 2px;
+      font-size: 0.9rem;
+    }
+
+    .info-card-text {
+      color: #1e40af;
+      font-size: 0.85rem;
+      line-height: 1.4;
+    }
+
+    .warning-card {
+      background: #fef3c7;
+      border: 1px solid #fde047;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .warning-card svg {
+      flex-shrink: 0;
+      color: #f59e0b;
+      margin-top: 2px;
+    }
+
+    .warning-card-text {
+      color: #92400e;
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .action-buttons .btn {
+      flex: 1;
+      justify-content: center;
+      padding: 12px 20px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .action-buttons .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .action-buttons .btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .clear-schedule {
+      text-align: center;
+      margin-top: 16px;
+    }
+
+    .clear-schedule button {
+      background: none;
+      border: none;
+      color: var(--danger);
+      font-size: 0.875rem;
+      cursor: pointer;
+      padding: 8px 16px;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+      font-weight: 500;
+    }
+
+    .clear-schedule button:hover {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 760px) {
+      .schedule-card {
+        padding: 24px 20px;
+      }
+
+      .account-info {
+        padding: 20px 24px;
+      }
+
+      .account-label {
+        font-size: 0.65rem;
+        margin-bottom: 5px;
+      }
+
+      .account-number {
+        font-size: 1.1rem;
+        letter-spacing: 0.3px;
+      }
+
+      .time-input-wrapper input[type="time"] {
+        font-size: 1.25rem;
+        padding: 14px 16px;
+      }
+
+      .action-buttons {
+        flex-direction: column;
+      }
+
+      .action-buttons .btn {
+        width: 100%;
+      }
+    }
+
+    /* Animation */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .schedule-card {
+      animation: fadeInUp 0.4s ease;
     }
   </style>
 </head>
@@ -56,48 +258,115 @@
         <div class="logo">MA</div>
         <div>
           <h1 class="app-title">Set Jadwal Harian</h1>
-          <p class="lead">Jalankan automation setiap hari pada jam yang dipilih.</p>
+          <p class="lead">Otomatisasi berjalan setiap hari pada waktu yang Anda tentukan</p>
         </div>
       </div>
     </header>
 
-    <!-- Form Card -->
-    <div class="card">
-      <form method="post">
-        <input type="hidden" name="phone" value="{{ phone_display }}" />
+    <div class="schedule-container">
+      <!-- Account Info Card -->
+      <div class="account-info">
+        <div class="account-label">Nomor Akun</div>
+        <div class="account-number">+62{{ phone_display }}</div>
+      </div>
 
-        <div class="form-group">
-          <label>Nomor Akun:</label>
-          <div class="phone-display">+62{{ phone_display }}</div>
-        </div>
+      <!-- Main Schedule Card -->
+      <div class="schedule-card">
+        <form method="post" id="scheduleForm">
+          <input type="hidden" name="phone" value="{{ phone_display }}" />
 
-        <div class="form-group">
-          <label for="schedule">Jam Harian (WIB):</label>
-          <input id="schedule" name="schedule" type="time" value="{{ schedule or '' }}" />
-          <p class="info-text">Pilih jam berapa automation akan dijalankan setiap hari. Kosongkan untuk menghapus
-            jadwal.</p>
-        </div>
+          <!-- Time Picker -->
+          <div class="time-picker-group">
+            <label class="time-label" for="schedule">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" />
+                <path d="M12 7v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" />
+              </svg>
+              Waktu Eksekusi (WIB)
+            </label>
+            <div class="time-input-wrapper">
+              <input id="schedule" name="schedule" type="time" value="{{ schedule or '' }}" required />
+            </div>
+          </div>
 
-        <div class="actions">
-          <button type="submit" class="btn btn-primary">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" />
-              <path d="M12 7v6l4 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
-                stroke-linejoin="round" />
+          <!-- Info Card -->
+          <div class="info-card">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" />
+              <path d="M12 16v-4M12 8h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
             </svg>
-            Simpan Jadwal
-          </button>
-          <a href="/" class="btn btn-secondary">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
-                stroke-linejoin="round" />
+            <div class="info-card-content">
+              <div class="info-card-title">Cara Kerja</div>
+              <div class="info-card-text">
+                Program akan berjalan otomatis setiap hari pada jam yang Anda pilih. Pastikan aplikasi tetap aktif untuk
+                menjalankan jadwal.
+              </div>
+            </div>
+          </div>
+
+          <!-- Warning Card -->
+          <div class="warning-card">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M12 9v4m0 4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" />
             </svg>
-            Kembali
-          </a>
-        </div>
-      </form>
+            <div class="warning-card-text">
+              <strong>Catatan:</strong> Jadwal tidak akan berjalan pada hari Minggu sesuai kebijakan sistem.
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="action-buttons">
+            <button type="submit" class="btn btn-success">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" />
+              </svg>
+              Simpan Jadwal
+            </button>
+            <a href="/" class="btn btn-secondary">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" />
+              </svg>
+              Kembali
+            </a>
+          </div>
+
+          <!-- Clear Schedule Option -->
+          {% if schedule %}
+          <div class="clear-schedule">
+            <button type="button" onclick="clearSchedule()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                style="display: inline; vertical-align: middle; margin-right: 4px;">
+                <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              </svg>
+              Hapus Jadwal
+            </button>
+          </div>
+          {% endif %}
+        </form>
+      </div>
     </div>
   </div>
+
+  <script>
+    function clearSchedule() {
+      if (confirm('Yakin ingin menghapus jadwal? Program tidak akan berjalan otomatis.')) {
+        document.getElementById('schedule').value = '';
+        document.getElementById('scheduleForm').submit();
+      }
+    }
+
+    // Auto-focus on time input
+    document.addEventListener('DOMContentLoaded', function () {
+      const timeInput = document.getElementById('schedule');
+      if (!timeInput.value) {
+        timeInput.focus();
+      }
+    });
+  </script>
 </body>
 
 </html>

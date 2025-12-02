@@ -9,139 +9,101 @@ VIEWPORTS = {
 }
 
 
-def scrape_income(page, timeout: int = 30) -> float:
-    """Scrape total income from deposit record page."""
+def scrape_record_page(page, url_suffix: str, record_type: str, timeout: int = 30) -> float:
+    """
+    Generic function to scrape total amount from a record page (deposit or withdrawal).
+    
+    Args:
+        page: Playwright page object
+        url_suffix: URL suffix (e.g., "amount/deposit/record")
+        record_type: "income" or "withdrawal" to determine specific selectors/logic if needed
+        timeout: Timeout in seconds
+    """
     try:
-        # Navigate to deposit record page
-        page.goto("https://mba7.com/#/amount/deposit/record", wait_until="domcontentloaded", timeout=timeout * 1000)
-        
-        # Wait longer for dynamic content to load
-        page.wait_for_timeout(5000)
-        
-        # Try to wait for at least one record cell to appear
-        try:
-            page.wait_for_selector(".details-record-cell", timeout=5000)
-        except Exception:
-            print("  No deposit records found on page")
-            return 0.0
-        
-        # Find all deposit record cells
-        deposit_cells = page.locator(".details-record-cell").all()
-        print(f"  Found {len(deposit_cells)} total records")
-        total_income = 0.0
-        paid_count = 0
-        
-        for idx, cell in enumerate(deposit_cells, 1):
-            try:
-                # Debug: print all text content in cell
-                cell_text = cell.text_content(timeout=2000)
-                print(f"\n  === Record {idx} ===")
-                print(f"  Full text: {cell_text[:200]}")
-                
-                # Try to get status - try different selectors
-                status = None
-                try:
-                    status_element = cell.locator(".record-status span")
-                    status = status_element.text_content(timeout=1000)
-                    print(f"  Status (method 1): '{status}'")
-                except Exception as e1:
-                    print(f"  Status method 1 failed: {e1}")
-                    try:
-                        status_element = cell.locator(".record-status")
-                        status = status_element.text_content(timeout=1000)
-                        print(f"  Status (method 2): '{status}'")
-                    except Exception as e2:
-                        print(f"  Status method 2 failed: {e2}")
-                
-                if status and "Dibayar" in status:
-                    paid_count += 1
-                    # Extract amount
-                    amount_element = cell.locator(".amount-change")
-                    amount_text = amount_element.text_content(timeout=1000)
-                    
-                    if amount_text:
-                        # Parse "+4.500.000,00" -> 4500000.00
-                        cleaned = amount_text.strip().replace('+', '').replace(' ', '').replace('.', '').replace(',', '.')
-                        try:
-                            amount = float(cleaned)
-                            total_income += amount
-                            print(f"  ✓ Deposit: {amount_text} -> Rp {amount:,.0f}")
-                        except ValueError:
-                            print(f"  ✗ Failed to parse: {amount_text}")
-                else:
-                    print(f"  -> SKIPPED (not Dibayar)")
-            except Exception as e:
-                print(f"  Error processing record {idx}: {e}")
-                continue
-        
-        print(f"  Total paid records: {paid_count}")
-        print(f"  Total income: Rp {total_income:,.2f}")
-        return total_income
-    except Exception as e:
-        print(f"Error scraping income: {e}")
-        return 0.0
-
-
-def scrape_withdrawal(page, timeout: int = 30) -> float:
-    """Scrape total withdrawals from withdrawal record page."""
-    try:
-        # Navigate to withdrawal record page  
-        page.goto("https://mba7.com/#/amount/withdrawal/record", wait_until="domcontentloaded", timeout=timeout * 1000)
+        full_url = f"https://mba7.com/#/{url_suffix}"
+        print(f"  Navigating to {record_type} page: {full_url}")
+        page.goto(full_url, wait_until="domcontentloaded", timeout=timeout * 1000)
         
         # Wait for dynamic content
         page.wait_for_timeout(5000)
         
-        # Try to wait for records
+        # Check if any records exist
         try:
             page.wait_for_selector(".details-record-cell", timeout=5000)
         except Exception:
-            print("  No withdrawal records found")
+            print(f"  No {record_type} records found on page")
             return 0.0
         
-        # Find all withdrawal records
-        withdrawal_cells = page.locator(".details-record-cell").all()
-        print(f"  Found {len(withdrawal_cells)} withdrawal records")
-        total_withdrawal = 0.0
-        success_count = 0
+        # Find all record cells
+        cells = page.locator(".details-record-cell").all()
+        print(f"  Found {len(cells)} total {record_type} records")
         
-        for idx, cell in enumerate(withdrawal_cells, 1):
+        total_amount = 0.0
+        valid_count = 0
+        
+        for idx, cell in enumerate(cells, 1):
             try:
-                # Get status
-                status = None
+                # Try to get status
+                status = ""
                 try:
-                    status_element = cell.locator(".record-status span")
-                    status = status_element.text_content(timeout=1000)
+                    # Try primary selector
+                    status = cell.locator(".record-status span").text_content(timeout=1000)
                 except Exception:
                     try:
-                        status_element = cell.locator(".record-status")
-                        status = status_element.text_content(timeout=1000)
+                        # Try secondary selector
+                        status = cell.locator(".record-status").text_content(timeout=1000)
                     except Exception:
                         pass
                 
-                if status and "Kesuksesan" in status:
-                    success_count += 1
-                    # Extract amount (no + sign for withdrawals)
-                    amount_element = cell.locator(".amount-change")
-                    amount_text = amount_element.text_content(timeout=1000)
+                # Check if status indicates success
+                is_valid = False
+                if record_type == "income":
+                    if status and "Dibayar" in status:
+                        is_valid = True
+                elif record_type == "withdrawal":
+                    # Original code checked for "Kesuksesan"
+                    if status and "Kesuksesan" in status:
+                        is_valid = True
+                
+                if is_valid:
+                    valid_count += 1
+                    amount_el = cell.locator(".amount-change")
+                    amount_text = amount_el.text_content(timeout=1000) if amount_el.count() > 0 else "0"
                     
                     if amount_text:
-                        # Parse "200.000,00" -> 200000.00
-                        cleaned = amount_text.strip().replace('.', '').replace(',', '.')
+                        # Parse "+4.500.000,00" -> 4500000.00 or "200.000,00" -> 200000.00
+                        cleaned = amount_text.strip().replace('+', '').replace('-', '').replace(' ', '').replace('.', '').replace(',', '.')
                         try:
                             amount = float(cleaned)
-                            total_withdrawal += amount
-                            print(f"  ✓ Withdrawal: {amount_text} -> Rp {amount:,.0f}")
+                            total_amount += amount
+                            print(f"  ✓ {record_type.capitalize()}: {amount_text} -> {amount:,.0f}")
                         except ValueError:
                             print(f"  ✗ Failed to parse: {amount_text}")
+                else:
+                    # print(f"  -> SKIPPED (Status: {status})")
+                    pass
+
             except Exception as e:
+                print(f"  Error processing record {idx}: {e}")
                 continue
         
-        print(f"  Total successful withdrawals: {success_count}")
-        print(f"  Total withdrawal: Rp {total_withdrawal:,.2f}")
-        return total_withdrawal
+        print(f"  Total valid {record_type} records: {valid_count}")
+        print(f"  Total {record_type}: Rp {total_amount:,.2f}")
+        return total_amount
+
     except Exception as e:
-        print(f"Error scraping withdrawal: {e}")
+        print(f"Error scraping {record_type}: {e}")
         return 0.0
+
+
+def scrape_income(page, timeout: int = 30) -> float:
+    """Scrape total income from deposit record page."""
+    return scrape_record_page(page, "amount/deposit/record", "income", timeout)
+
+
+def scrape_withdrawal(page, timeout: int = 30) -> float:
+    """Scrape total withdrawals from withdrawal record page."""
+    return scrape_record_page(page, "amount/withdrawal/record", "withdrawal", timeout)
 
 
 

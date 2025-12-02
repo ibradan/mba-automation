@@ -158,23 +158,13 @@
             </div>
 
             <div class="main-inputs">
-              {# Row 1: Phone + Level #}
-              <div class="input-row phone-level-row">
+              {# Row 1: Phone | Password #}
+              <div class="input-row row-1">
                 <div class="phone-group">
-                  <div class="status-dot {{ status_class }}"></div>
                   <span class="phone-prefix">+62</span>
                   <input name="phone[]" type="text" placeholder="NO HP" value="{{ acc.phone_display }}" maxlength="13"
                     required />
                 </div>
-                <select name="level[]" aria-label="Level">
-                  <option value="E1" {% if acc.level=='E1' %}selected{% endif %}>E1</option>
-                  <option value="E2" {% if acc.level=='E2' %}selected{% endif %}>E2</option>
-                  <option value="E3" {% if acc.level=='E3' %}selected{% endif %}>E3</option>
-                </select>
-              </div>
-
-              {# Row 2: Password + Run Button #}
-              <div class="input-row password-run-row">
                 <div class="pwd-field">
                   <input name="password[]" class="pwd" type="password" placeholder="Kata Sandi"
                     value="{{ acc.password }}" maxlength="15" required autocomplete="new-password" />
@@ -194,6 +184,16 @@
                     </svg>
                   </button>
                 </div>
+              </div>
+
+              {# Row 2: Level | Run | Review #}
+              <div class="input-row row-2">
+                <select name="level[]" aria-label="Level" class="level-select">
+                  <option value="E1" {% if acc.level=='E1' %}selected{% endif %}>E1</option>
+                  <option value="E2" {% if acc.level=='E2' %}selected{% endif %}>E2</option>
+                  <option value="E3" {% if acc.level=='E3' %}selected{% endif %}>E3</option>
+                </select>
+
                 <button type="button" class="btn btn-success play-btn" title="Jalankan Akun Ini" data-bound="1">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="play-icon">
                     <polygon points="5 3 19 12 5 21 5 3" stroke="currentColor" stroke-width="2" fill="currentColor"
@@ -210,10 +210,7 @@
                   </svg>
                   <span>Run</span>
                 </button>
-              </div>
 
-              {# Row 3: Review + Schedule Buttons #}
-              <div class="action-group">
                 <button type="button" class="btn btn-primary review-btn" title="Set Review Harian">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M21 15v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4" stroke="currentColor" stroke-width="1.6"
@@ -223,7 +220,10 @@
                   </svg>
                   <span>Review</span>
                 </button>
+              </div>
 
+              {# Row 3: Schedule (Full Width) #}
+              <div class="input-row row-3">
                 <button type="button" class="btn btn-secondary schedule-btn" title="Set Jadwal">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" />
@@ -232,7 +232,13 @@
                   </svg>
                   <span>{% if acc.schedule %}{{ acc.schedule }}{% else %}Jadwal{% endif %}</span>
                 </button>
-
+                <div class="schedule-status">
+                  {% if acc.schedule %}
+                  Program akan jalan otomatis pada {{ acc.schedule }}
+                  {% else %}
+                  Program belum jalan otomatis, silahkan isi jadwal
+                  {% endif %}
+                </div>
               </div>
             </div>
 
@@ -289,7 +295,7 @@
               {# Row 1: Phone + Level #}
               <div class="input-row phone-level-row">
                 <div class="phone-group">
-                  <div class="status-dot pending"></div>
+
                   <span class="phone-prefix">+62</span>
                   <input name="phone[]" type="text" placeholder="NO HP" maxlength="13" />
                 </div>
@@ -321,6 +327,31 @@
                   </button>
                 </div>
                 <button type="button" class="btn btn-success play-btn" title="Jalankan Akun Ini">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="play-icon">
+                    <polygon points="5 3 19 12 5 21 5 3" stroke="currentColor" stroke-width="2" fill="currentColor"
+                      stroke-linejoin="round" />
+                  </svg>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="spinner-icon"
+                    style="display:none;">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" opacity="0.25" />
+                    <path d="M12 2 A10 10 0 0 1 22 12" stroke="currentColor" stroke-width="2" fill="none"
+                      stroke-linecap="round">
+                      <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s"
+                        repeatCount="indefinite" />
+                    </path>
+                  </svg>
+                  <span>Run</span>
+                </button>
+              </div>
+
+              {# Row 2.5: Level + Run (Desktop only) #}
+              <div class="input-row level-run-row">
+                <select name="level[]" aria-label="Level" class="level-desktop">
+                  <option value="E1">E1</option>
+                  <option value="E2" selected>E2</option>
+                  <option value="E3">E3</option>
+                </select>
+                <button type="button" class="btn btn-success play-btn play-btn-desktop" title="Jalankan Akun Ini">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="play-icon">
                     <polygon points="5 3 19 12 5 21 5 3" stroke="currentColor" stroke-width="2" fill="currentColor"
                       stroke-linejoin="round" />
@@ -412,9 +443,7 @@
           </button>
         </div>
 
-        <div class="actions-note">
-          🟢 selesai 🟡 terlewat ⚪ belum jalan
-        </div>
+
       </div>
     </form>
   </div>
@@ -575,20 +604,12 @@
             </div>
 
             <div class="main-inputs">
-              <div class="input-row phone-level-row">
+              {# Row 1: Phone | Password #}
+              <div class="input-row row-1">
                 <div class="phone-group">
-                  <div class="status-dot pending"></div>
                   <span class="phone-prefix">+62</span>
                   <input name="phone[]" type="text" placeholder="NO HP" maxlength="13" required />
                 </div>
-                <select name="level[]" aria-label="Level">
-                  <option value="E1">E1</option>
-                  <option value="E2" selected>E2</option>
-                  <option value="E3">E3</option>
-                </select>
-              </div>
-
-              <div class="input-row password-run-row">
                 <div class="pwd-field">
                   <input name="password[]" class="pwd" type="password" placeholder="Kata Sandi" maxlength="15" required />
                   <button type="button" class="pwd-toggle" aria-label="Toggle password" title="Tampilkan Password">
@@ -604,6 +625,16 @@
                     </svg>
                   </button>
                 </div>
+              </div>
+
+              {# Row 2: Level | Run | Review #}
+              <div class="input-row row-2">
+                <select name="level[]" aria-label="Level" class="level-select">
+                  <option value="E1">E1</option>
+                  <option value="E2" selected>E2</option>
+                  <option value="E3">E3</option>
+                </select>
+
                 <button type="button" class="btn btn-success play-btn" title="Jalankan Akun Ini">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="play-icon">
                     <polygon points="5 3 19 12 5 21 5 3" stroke="currentColor" stroke-width="2" fill="currentColor" stroke-linejoin="round" />
@@ -616,9 +647,7 @@
                   </svg>
                   <span>Run</span>
                 </button>
-              </div>
 
-              <div class="action-group">
                 <button type="button" class="btn btn-primary review-btn" title="Set Review Harian">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M21 15v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
@@ -626,6 +655,10 @@
                   </svg>
                   <span>Review</span>
                 </button>
+              </div>
+
+              {# Row 3: Schedule (Full Width) #}
+              <div class="input-row row-3">
                 <button type="button" class="btn btn-secondary schedule-btn" title="Set Jadwal">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" />
@@ -633,6 +666,9 @@
                   </svg>
                   <span>Jadwal</span>
                 </button>
+                <div class="schedule-status">
+                  Program belum jalan otomatis, silahkan isi jadwal
+                </div>
               </div>
             </div>
           </div>
