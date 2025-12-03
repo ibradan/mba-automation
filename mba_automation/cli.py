@@ -1,11 +1,12 @@
 import argparse
 import os
+import time
 # from dotenv import load_dotenv
 import json
 import datetime
 import fcntl
 from playwright.sync_api import sync_playwright
-from .automation import run as automation_run, refresh_stats_only
+from .automation import run as automation_run
 
 ACCOUNTS_FILE = os.path.join(os.path.dirname(__file__), '..', 'accounts.json')
 ACCOUNTS_FILE = os.path.abspath(ACCOUNTS_FILE)
@@ -70,7 +71,36 @@ def main():
 
         for phone in phones:
             print(f"Starting automation for {phone} (headless={final_headless})")
-            completed, total, income, withdrawal, balance = automation_run(playwright, phone=phone, password=password, headless=final_headless, slow_mo=args.slow_mo, iterations=args.iterations, review_text=args.review, viewport_name=args.viewport, timeout=args.timeout)
+            
+            # Retry loop to ensure completion
+            max_retries = 50
+            attempt = 0
+            completed = 0
+            total = args.iterations
+            income = 0.0
+            withdrawal = 0.0
+            balance = 0.0
+
+            while attempt < max_retries:
+                attempt += 1
+                if attempt > 1:
+                    print(f"🔄 Retry attempt {attempt}/{max_retries} for {phone}...")
+                
+                try:
+                    completed, total, income, withdrawal, balance = automation_run(playwright, phone=phone, password=password, headless=final_headless, slow_mo=args.slow_mo, iterations=args.iterations, review_text=args.review, viewport_name=args.viewport, timeout=args.timeout)
+                    
+                    if completed >= total and total > 0:
+                        print(f"✅ SUCCESS: {phone} completed all tasks ({completed}/{total})")
+                        break
+                    
+                    print(f"⚠️ Incomplete: {completed}/{total}. Retrying in 5s...")
+                    time.sleep(5)
+                except Exception as e:
+                    print(f"❌ Error during run: {e}. Retrying in 5s...")
+                    time.sleep(5)
+            
+            if completed < total:
+                print(f"❌ FAILED: Could not complete tasks for {phone} after {max_retries} attempts.")
             
             # Save progress to accounts.json
             try:

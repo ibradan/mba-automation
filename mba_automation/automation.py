@@ -97,8 +97,50 @@ def scrape_record_page(page, url_suffix: str, record_type: str, timeout: int = 3
 
 
 def scrape_income(page, timeout: int = 30) -> float:
-    """Scrape total income from deposit record page."""
-    return scrape_record_page(page, "amount/deposit/record", "income", timeout)
+    """
+    Scrape 'Deposit Kerja' (Modal) from the profile page.
+    Uses specific CSS selector: .van-grid.user-account-info > div:nth-child(2)
+    """
+    try:
+        # Navigate to profile page if not already there
+        if "/#/me" not in page.url:
+            print("  Navigating to profile page for Deposit Kerja: https://mba7.com/#/me")
+            page.goto("https://mba7.com/#/me", timeout=timeout*1000)
+            page.wait_for_timeout(3000)
+        
+        print("  Looking for 'Deposit Kerja' element using specific selector...")
+        
+        # Use the specific selector provided by user
+        # #app > div > div.van-config-provider.provider-box > div.main-wrapper-tabbar-height > div.top-container > div.user-info-container > div.user-info-card-container > div.user-info-card.travel-border > div.van-grid.user-account-info > div:nth-child(2) > div
+        # Simplified to: .van-grid.user-account-info > div:nth-child(2) > div
+        selector = ".van-grid.user-account-info > div:nth-child(2) > div"
+        
+        try:
+            element = page.locator(selector).first
+            element.wait_for(timeout=5000)
+            
+            # Get the value from van-badge__wrapper inside this element
+            value_el = element.locator(".van-badge__wrapper").first
+            raw_value = value_el.text_content(timeout=3000).strip()
+            print(f"  Found raw Deposit Kerja value: {raw_value}")
+            
+            # Parse "4.500.000,00" -> 4500000.0
+            clean_text = raw_value.replace(".", "").replace(",", ".").strip()
+            try:
+                val = float(clean_text)
+                print(f"  ✓ Deposit Kerja (Modal): Rp {val:,.0f}")
+                return val
+            except ValueError:
+                print(f"  ✗ Failed to parse Deposit Kerja value: {raw_value}")
+                return 0.0
+                
+        except Exception as e:
+            print(f"  ✗ Could not find element with selector '{selector}': {e}")
+            return 0.0
+
+    except Exception as e:
+        print(f"Error scraping Deposit Kerja (Income): {e}")
+        return 0.0
 
 
 def scrape_withdrawal(page, timeout: int = 30) -> float:
@@ -380,42 +422,4 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
         browser.close()
 
 
-def refresh_stats_only(playwright: Playwright, phone: str, password: str, headless: bool = True, timeout: int = 30) -> Tuple[float, float, float]:
-    """
-    Login and scrape stats only (Income, Withdrawal, Balance).
-    Returns: (income, withdrawal, balance)
-    """
-    browser = playwright.chromium.launch(headless=headless)
-    context = browser.new_context(viewport={"width": 390, "height": 844})
-    page = context.new_page()
-    page.set_default_timeout(timeout * 1000)
 
-    try:
-        # Login using shared function
-        if not login(page, phone, password, timeout):
-            print(f"Login failed for {phone}, cannot refresh stats.")
-            return 0.0, 0.0, 0.0
-
-        # Scrape Income
-        print("Scraping income...")
-        income = scrape_income(page, timeout)
-        
-        # Scrape Withdrawal  
-        print("Scraping withdrawal...")
-        withdrawal = scrape_withdrawal(page, timeout)
-        
-        # Scrape Balance
-        print("Scraping balance...")
-        balance = scrape_balance(page, timeout)
-        
-        print(f"✓ Stats refreshed: Income={income:,.0f}, Withdrawal={withdrawal:,.0f}, Balance={balance:,.0f}")
-        return income, withdrawal, balance
-
-    except Exception as e:
-        print(f"✗ Error refreshing stats for {phone}: {e}")
-        import traceback
-        traceback.print_exc()
-        return 0.0, 0.0, 0.0
-    finally:
-        context.close()
-        browser.close()

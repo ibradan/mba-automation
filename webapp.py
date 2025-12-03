@@ -734,7 +734,7 @@ def schedule():
 
 @app.route("/run_single", methods=["POST"])
 def run_single():
-    from mba_automation.automation import run as automation_run, refresh_stats_only
+    from mba_automation.automation import run as automation_run
     """Run automation for a single account immediately."""
     phone = request.form.get("phone", "").strip()
     if not phone:
@@ -768,87 +768,7 @@ def run_single():
     return jsonify({"ok": True, "msg": f"Automation started for {phone}"})
 
 
-@app.route("/refresh_stats", methods=["POST"])
-def refresh_stats():
-    from mba_automation.automation import refresh_stats_only
-    
-    phone = request.form.get("phone", "").strip()
-    
-    # If phone is provided, refresh single. If not, refresh all (not implemented yet for simplicity, let's stick to single for now or loop)
-    # The user asked for "Refresh" button per card, so single is priority.
-    
-    if not phone:
-         return jsonify({"ok": False, "msg": "phone is required"}), 400
 
-    normalized = normalize_phone(phone)
-    if not normalized:
-        return jsonify({"ok": False, "msg": "invalid phone format"}), 400
-
-    # Find account details
-    accounts = _safe_load_accounts()
-    target_acc = None
-    for acc in accounts:
-        if acc.get("phone") == normalized:
-            target_acc = acc
-            break
-    
-    if not target_acc:
-        return jsonify({"ok": False, "msg": "akun tidak ditemukan"}), 404
-
-    if not target_acc:
-        return jsonify({"ok": False, "msg": "akun tidak ditemukan"}), 404
-
-    try:
-        logger.info(f"Starting stats refresh for {normalized}")
-        # Use settings for timeout
-        settings = _safe_load_settings()
-        timeout = settings.get('timeout', 30)
-        
-        # Run scrape
-        from playwright.sync_api import sync_playwright
-        with sync_playwright() as p:
-            income, withdrawal, balance = refresh_stats_only(
-                p, 
-                phone=target_acc['phone'], 
-                password=target_acc['password'], 
-                headless=True,
-                timeout=timeout
-            )
-        
-        # Update accounts.json
-        if income > 0 or withdrawal > 0 or balance >= 0:
-            with SCHED_LOCK:
-                # Reload to get latest state
-                current_accounts = _safe_load_accounts()
-                updated = False
-                for acc in current_accounts:
-                    if acc.get('phone') == normalized:
-                        today = datetime.datetime.now().strftime('%Y-%m-%d')
-                        if 'daily_progress' not in acc:
-                            acc['daily_progress'] = {}
-                        if today not in acc['daily_progress']:
-                            acc['daily_progress'][today] = {
-                                'completed': 0, 'total': 0, 'percentage': 0
-                            }
-                        
-                        acc['daily_progress'][today]['income'] = income
-                        acc['daily_progress'][today]['withdrawal'] = withdrawal
-                        acc['daily_progress'][today]['balance'] = balance
-                        updated = True
-                        break
-                
-                if updated:
-                    _safe_write_accounts(current_accounts)
-                    logger.info(f"Stats updated for {normalized}: Inc={income}, Wd={withdrawal}, Bal={balance}")
-                    return jsonify({"ok": True, "msg": "Data updated successfully"})
-                else:
-                    return jsonify({"ok": False, "msg": "Failed to update account data"}), 500
-        else:
-             return jsonify({"ok": False, "msg": "Scraping returned empty data"}), 500
-            
-    except Exception as e:
-        logger.exception(f"Failed stats refresh for {normalized}: {e}")
-        return jsonify({"ok": False, "msg": str(e)}), 500
 
 
 @app.route("/logs")

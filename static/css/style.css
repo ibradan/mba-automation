@@ -1,26 +1,22 @@
 :root {
-  /* Premium Solid Palette */
-  --bg: #f3f4f6;
-  /* Cool Gray 100 */
+  /* Elegant Clean Theme */
+  --bg: #f8f9fa;
+  /* Very light gray background */
   --card: #ffffff;
+  /* White cards */
   --text: #1f2937;
-  /* Gray 800 */
+  /* Dark gray text */
   --text-light: #6b7280;
-  /* Gray 500 */
-  --blue: #3b82f6;
-  /* Blue 500 */
-  --blue-dark: #2563eb;
-  /* Blue 600 */
+  /* Muted text */
+  --blue: #2563eb;
+  /* Professional Blue */
+  --blue-dark: #1d4ed8;
   --blue-light: #eff6ff;
-  /* Blue 50 */
   --success: #10b981;
-  /* Emerald 500 */
   --warning: #f59e0b;
-  /* Amber 500 */
   --danger: #ef4444;
-  /* Red 500 */
   --border: #e5e7eb;
-  /* Gray 200 */
+  /* Light gray border */
 }
 
 * {
@@ -70,40 +66,63 @@ body {
   font-weight: 800;
 }
 
-/* Income (Modal) - Solid Gold */
+/* Stat Box - Clean & Minimal */
+.stat-box {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  box-shadow: none;
+  transition: all 0.2s;
+}
+
+.stat-box:hover {
+  border-color: #d1d5db;
+  transform: translateY(-1px);
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+  color: var(--text-light);
+}
+
+.stat-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.5px;
+}
+
+/* Specific Stat Styles - Minimal Accents */
 .income-display {
-  background: #f59e0b;
-  /* Amber 500 */
-  color: #ffffff;
+  border-bottom: 3px solid #f59e0b;
+  /* Amber accent line */
 }
 
-.income-display .stat-label {
-  color: #fffbeb;
-  /* Amber 50 */
-}
-
-/* Balance (Saldo) - Solid Cyan */
 .balance-display {
-  background: #06b6d4;
-  /* Cyan 500 */
-  color: #ffffff;
+  border-bottom: 3px solid #06b6d4;
+  /* Cyan accent line */
 }
 
-.balance-display .stat-label {
-  color: #ecfeff;
-  /* Cyan 50 */
-}
-
-/* Withdrawal (Pendapatan) - Solid Orange */
 .withdrawal-display {
-  background: #f97316;
-  /* Orange 500 */
-  color: #ffffff;
+  border-bottom: 3px solid #f97316;
+  /* Orange accent line */
 }
 
+/* Remove old specific overrides */
+.income-display .stat-label,
+.balance-display .stat-label,
 .withdrawal-display .stat-label {
-  color: #fff7ed;
-  /* Orange 50 */
+  color: var(--text-light);
 }
 
 
@@ -152,10 +171,10 @@ body {
   position: absolute;
   top: 100%;
   right: 0;
-  background: white;
+  background: #ffffff;
   border: 1px solid var(--border);
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   padding: 16px;
   min-width: 280px;
   z-index: 100;
@@ -204,14 +223,14 @@ body {
   font-size: 0.8rem;
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: white;
+  background: #ffffff;
   cursor: pointer;
   transition: background 0.2s;
   color: var(--text);
 }
 
 .btn-small:hover {
-  background: #f3f4f6;
+  background: #f9fafb;
 }
 
 .settings-link {
@@ -227,7 +246,7 @@ body {
 }
 
 .settings-link:hover {
-  background: #f3f4f6;
+  background: #f9fafb;
 }
 
 .settings-link svg {
@@ -315,10 +334,11 @@ body {
   box-shadow: 0 0 0 2px rgba(156, 163, 175, 0.2);
 }
 
-/* Status Card Backgrounds */
+/* Status Card Backgrounds - Clean White */
 .row-item.ran {
-  background: #f0fdf4;
-  border-color: #86efac;
+  background: #ffffff;
+  border-color: #10b981;
+  /* Green border for success */
 }
 
 .row-item.ran::before {
@@ -326,8 +346,9 @@ body {
 }
 
 .row-item.due {
-  background: #fffbeb;
-  border-color: #fcd34d;
+  background: #ffffff;
+  border-color: #f59e0b;
+  /* Amber border for due */
 }
 
 .row-item.due::before {
@@ -336,7 +357,7 @@ body {
 
 .row-item.pending {
   background: #ffffff;
-  border-color: #e2e8f0;
+  border-color: var(--border);
 }
 
 /* Card Grid Layout */
@@ -379,15 +400,21 @@ input[type="text"],
 input[type="password"],
 select {
   height: 42px;
-  /* Consistent height */
   padding: 0 12px;
   font-size: 15px;
-  /* Prevent zoom on iOS */
   border-radius: 10px;
-  /* Consistent radius */
   border: 1px solid #d1d5db;
-  background: #fff;
+  background: #ffffff;
+  color: var(--text);
   width: 100%;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input:focus,
+select:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .phone-prefix {
@@ -395,7 +422,7 @@ select {
   display: flex;
   align-items: center;
   padding: 0 12px;
-  background: #f3f4f6;
+  background: #f9fafb;
   border: 1px solid #d1d5db;
   border-radius: 10px;
   font-weight: 600;
@@ -593,11 +620,11 @@ select:focus {
 /* Bottom Card */
 .bottom-card {
   background: #ffffff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 16px;
-  margin-top: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  margin-top: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .bottom-controls-row {
@@ -674,16 +701,18 @@ select:focus {
 /* Cards */
 .account-card {
   background: #ffffff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
   border-radius: 12px;
-  /* Increased radius */
-  padding: 16px;
-  /* Increased padding */
-  margin-bottom: 18px;
-  /* Increased margin */
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   transition: all 0.2s ease;
   position: relative;
+}
+
+.account-card:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
 }
 
 
@@ -702,13 +731,14 @@ select:focus {
 }
 
 .btn-secondary {
-  background: white;
+  background: #ffffff;
   border: 1px solid var(--border);
   color: var(--text);
 }
 
 .btn-secondary:hover {
-  background: var(--bg);
+  background: #f9fafb;
+  border-color: #d1d5db;
 }
 
 .btn-danger {
@@ -756,9 +786,9 @@ select:focus {
   align-items: center;
   justify-content: center;
   border-radius: 6px;
-  background: #fee2e2;
-  border: 1px solid #fecaca;
-  color: var(--danger);
+  background: transparent;
+  border: 1px solid transparent;
+  color: #9ca3af;
   cursor: pointer;
   font-size: 1.1rem;
   font-weight: 700;
@@ -766,9 +796,8 @@ select:focus {
 }
 
 .remove:hover {
-  background: var(--danger);
-  color: white;
-  transform: scale(1.05);
+  background: #fee2e2;
+  color: #ef4444;
 }
 
 /* Add Button */
@@ -777,7 +806,7 @@ select:focus {
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  background: white;
+  background: #ffffff;
   border: 1px solid var(--border);
   border-radius: 99px;
   color: var(--blue);
@@ -788,7 +817,7 @@ select:focus {
 }
 
 #add-row:hover {
-  background: var(--blue-light);
+  background: #eff6ff;
   border-color: var(--blue);
 }
 
@@ -900,13 +929,15 @@ select:focus {
 }
 
 .flash.success {
-  background: #d1fae5;
-  color: #065f46;
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
 }
 
 .flash.error {
-  background: #fee2e2;
-  color: #991b1b;
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
 }
 
 /* Mobile */
@@ -984,11 +1015,11 @@ select:focus {
   align-items: center;
   justify-content: center;
   background: #f3f4f6;
-  border: 1px solid #d1d5db;
+  border: 1px solid #e5e7eb;
   border-radius: 8px;
-  font-weight: 700;
-  font-size: 0.95rem;
-  color: #374151;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-light);
 }
 
 .progress-delete-row .daily-progress {
@@ -1000,38 +1031,37 @@ select:focus {
   flex-shrink: 0;
 }
 
-/* Progress Bar (separate) */
+/* Daily Progress - Clean Pill */
 .daily-progress {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 4px 8px;
-  background: #f0fdf4;
-  border-radius: 4px;
+  gap: 6px;
+  padding: 4px 12px;
+  background: #f3f4f6;
+  border-radius: 99px;
   margin-top: 8px;
   font-size: 0.8rem;
-  border: 1px solid #bbf7d0;
-  color: #166534;
-  white-space: nowrap;
+  font-weight: 500;
+  color: var(--text);
+  border: 1px solid transparent;
 }
 
 .daily-progress.progress-low {
-  background: #fee2e2;
-  color: #991b1b;
-  border: 1px solid #fecaca;
+  background: #f3f4f6;
+  color: var(--text-light);
 }
 
 .daily-progress.progress-partial {
-  background: #fef3c7;
-  color: #92400e;
-  border: 1px solid #fde047;
+  background: #fffbeb;
+  color: #b45309;
+  border-color: #fcd34d;
 }
 
 .daily-progress.progress-complete {
-  background: #d1fae5;
-  color: #065f46;
-  border: 1px solid #a7f3d0;
+  background: #ecfdf5;
+  color: #047857;
+  border-color: #6ee7b7;
 }
 
 
