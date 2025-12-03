@@ -575,41 +575,6 @@ select:focus {
   height: 18px;
 }
 
-/* Button Variants */
-.btn-primary {
-  background: #1a73e8;
-  color: white;
-  border: 1px solid #1a73e8;
-}
-
-.btn-primary:hover {
-  background: #1557b0;
-}
-
-.btn-outline-primary {
-  background: transparent;
-  color: #1a73e8;
-  border: 1px solid #d0d7e2;
-}
-
-.btn-outline-primary:hover {
-  background: rgba(26, 115, 232, 0.08);
-  border-color: #1a73e8;
-}
-
-.btn-outline-secondary {
-  background: transparent;
-  color: #5f6368;
-  border: 1px solid #d0d7e2;
-}
-
-.btn-outline-secondary:hover {
-  background: rgba(95, 99, 104, 0.08);
-  border-color: #5f6368;
-}
-
-
-
 /* Divider */
 .divider {
   border: 0;
