@@ -637,7 +637,7 @@
                   <option value="E3">E3</option>
                 </select>
 
-                <button type="button" class="btn btn-secondary play-btn" title="Jalankan Akun Ini">
+                <button type="button" class="btn btn-success play-btn" title="Jalankan Akun Ini">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="play-icon">
                     <polygon points="5 3 19 12 5 21 5 3" stroke="currentColor" stroke-width="2" fill="currentColor" stroke-linejoin="round" />
                   </svg>
@@ -650,7 +650,7 @@
                   <span>Run</span>
                 </button>
 
-                <button type="button" class="btn btn-secondary review-btn" title="Set Review Harian">
+                <button type="button" class="btn btn-primary review-btn" title="Set Review Harian">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M21 15v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
                     <path d="M7 10l5-5 5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
@@ -661,7 +661,7 @@
 
               {# Row 3: Schedule (Full Width) #}
               <div class="input-row row-3">
-                <button type="button" class="btn btn-primary schedule-btn" title="Set Jadwal">
+                <button type="button" class="btn btn-secondary schedule-btn" title="Set Jadwal">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" />
                     <path d="M12 7v6l4 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
@@ -683,7 +683,6 @@
         attachScheduleButtons();
         attachPlayButtons(); // Attach play button listener
       });
-    }
 
     // ================= PASSWORD TOGGLE =================
     function attachToggle(root) {
