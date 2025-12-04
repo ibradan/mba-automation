@@ -1,0 +1,8 @@
+# MBA Automation Crontab - Auto-generated
+# Run scheduled automation for accounts
+
+# Account: 6282129002163 (Schedule: 00:10)
+10 0 * * * cd /home/dan/projects/mba-automation-workspace && /usr/bin/python3 -m mba_automation.cli run --phone 6282129002163 --headless >> /home/dan/projects/mba-automation-workspace/logs/cron_82129002163.log 2>&1
+
+# Account: 6285117678844 (Schedule: 00:14)
+14 0 * * * cd /home/dan/projects/mba-automation-workspace && /usr/bin/python3 -m mba_automation.cli run --phone 6285117678844 --headless >> /home/dan/projects/mba-automation-workspace/logs/cron_85117678844.log 2>&1

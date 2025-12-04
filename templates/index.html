@@ -467,7 +467,7 @@
         formData.set('action', 'save');
 
         // Show saving indicator (optional)
-        console.log('Auto-saving...');
+        // console.log('Auto-saving...');
 
         fetch(form.action || '/', {
           method: 'POST',
@@ -475,7 +475,7 @@
         }).then(response => {
           isSaving = false;
           if (response.ok) {
-            console.log('✓ Auto-saved successfully');
+            // console.log('✓ Auto-saved successfully');
             // Optional: Show brief success indicator
           } else {
             console.error('Auto-save failed with status:', response.status);
@@ -493,7 +493,7 @@
       if (form) {
         form.addEventListener('input', autoSave);
         form.addEventListener('change', autoSave);
-        console.log('Auto-save enabled');
+        // console.log('Auto-save enabled');
       }
 
       // Settings dropdown toggle
@@ -558,13 +558,13 @@
       const formData = new FormData(form);
       formData.set('action', 'save');
 
-      console.log('Force saving...');
+      // console.log('Force saving...');
       fetch(form.action || '/', {
         method: 'POST',
         body: formData
       }).then(response => {
         if (response.ok) {
-          console.log('✓ Force saved successfully');
+          // console.log('✓ Force saved successfully');
         } else {
           console.error('Force save failed');
         }
