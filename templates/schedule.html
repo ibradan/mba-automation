@@ -42,14 +42,15 @@
     }
 
     .account-number {
-      font-size: 1.35rem;
+      font-size: clamp(1rem, 5vw, 1.35rem);
       font-weight: 700;
-      letter-spacing: 1px;
-      word-break: break-all;
-      overflow-wrap: break-word;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
       padding: 0 10px;
       max-width: 100%;
       display: inline-block;
+      text-overflow: ellipsis;
+      overflow: hidden;
     }
 
     .time-picker-group {
