@@ -18,6 +18,7 @@ venv/
 # Runtime / logs / data
 runs.log
 accounts.json
+logs/
 
 # pytest
 .pytest_cache/
