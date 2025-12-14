@@ -41,16 +41,12 @@
       font-weight: 600;
     }
 
-    .account-number {
-      font-size: clamp(1rem, 5vw, 1.35rem);
+    .schedule-phone-text {
+      font-size: 1.8rem;
       font-weight: 700;
-      letter-spacing: 0.5px;
+      letter-spacing: 1.5px;
       white-space: nowrap;
-      padding: 0 10px;
-      max-width: 100%;
-      display: inline-block;
-      text-overflow: ellipsis;
-      overflow: hidden;
+      margin-top: 4px;
     }
 
     .time-picker-group {
@@ -271,7 +267,7 @@
       <!-- Account Info Card -->
       <div class="account-info">
         <div class="account-label">Nomor Akun</div>
-        <div class="account-number">+62{{ phone_display }}</div>
+        <div class="schedule-phone-text">+62{{ phone_display }}</div>
       </div>
 
       <!-- Main Schedule Card -->
