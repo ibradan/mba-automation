@@ -10,6 +10,8 @@ import threading
 import time
 import logging
 from logging.handlers import RotatingFileHandler
+import queue
+
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET", "please-change-this")
@@ -18,7 +20,47 @@ LOG_FILE = os.path.join(os.path.dirname(__file__), "runs.log")
 ACCOUNTS_FILE = os.path.join(os.path.dirname(__file__), "accounts.json")
 SETTINGS_FILE = os.path.join(os.path.dirname(__file__), "settings.json")
 SCHED_LOCK = threading.Lock()
+SETTINGS_FILE = os.path.join(os.path.dirname(__file__), "settings.json")
+SCHED_LOCK = threading.Lock()
 SCHED_CHECK_INTERVAL = 20  # seconds between schedule checks
+
+# Job Queue for Serial Execution (Pi Zero Optimization)
+JOB_QUEUE = queue.Queue()
+
+def worker():
+    """Background worker to process automation jobs serially."""
+    while True:
+        try:
+            job = JOB_QUEUE.get()
+            if job is None:
+                break
+            
+            cmd = job.get('cmd')
+            log_file = job.get('log_file')
+            phone_display = job.get('phone_display')
+            
+            logger.info(f"QUEUE: Starting job for {phone_display}")
+            
+            try:
+                # Open file for writing
+                with open(log_file, "w") as f:
+                    # Run synchronously - creating a BLOCKING call here
+                    # This ensures only one browser instance runs at a time
+                    subprocess.run(cmd, cwd=os.path.dirname(__file__), stdout=f, stderr=subprocess.STDOUT)
+                
+                logger.info(f"QUEUE: Finished job for {phone_display}")
+            except Exception as e:
+                logger.exception(f"QUEUE: Job failed for {phone_display}: {e}")
+            finally:
+                JOB_QUEUE.task_done()
+                
+        except Exception as e:
+            logger.exception(f"Worker exception: {e}")
+
+# Start worker thread
+worker_thread = threading.Thread(target=worker, daemon=True)
+worker_thread.start()
+
 
 
 def _safe_load_settings():
@@ -284,7 +326,7 @@ def index():
                 if headless:
                     cmd.append("--headless")
 
-                logger.info("START for %s: %s", phone, ' '.join(shlex.quote(c) for c in cmd))
+                logger.info("ENQUEUE for %s: %s", phone, ' '.join(shlex.quote(c) for c in cmd))
 
                 try:
                     # Create logs directory if it doesn't exist
@@ -295,18 +337,20 @@ def index():
                     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
                     log_file = os.path.join(log_dir, f"automation_{phone_for_cli}_{timestamp}.log")
                     
-                    # Open file for writing - subprocess will inherit the file descriptor
-                    # We can close it in the parent after Popen, the child keeps it open
-                    f = open(log_file, "w")
-                    subprocess.Popen(cmd, cwd=os.path.dirname(__file__), stdout=f, stderr=subprocess.STDOUT)
-                    # Close file handle in parent process to avoid leaking FDs
-                    f.close()
+                    # Add to Queue instead of Popen
+                    JOB_QUEUE.put({
+                        'cmd': cmd,
+                        'log_file': log_file,
+                        'phone_display': phone
+                    })
+                    
                     started += 1
-                    logger.info("Started logging to %s", log_file)
+                    logger.info("Queued job logging to %s", log_file)
                 except Exception as e:
                     # don't crash the request; log and show flash
-                    logger.exception("FAILED START for %s: %s", phone_for_cli, e)
-                    flash(f"Gagal memulai automation untuk {phone}: {e}", "error")
+                    logger.exception("FAILED ENQUEUE for %s: %s", phone_for_cli, e)
+                    flash(f"Gagal memasukkan antrian untuk {phone}: {e}", "error")
+
 
             if started:
                 flash(f"Automation started in background for {started} phone(s).", "success")
@@ -399,6 +443,23 @@ def index():
                             except Exception:
                                 status = ''
 
+                    # Determine stats for display: prefer today's, otherwise latest
+                    display_stats = {}
+                    if pct > 0: # simplified check: if we have progress, we have data for today
+                        display_stats = progress
+                    elif progress: # or if progress exists but pct is 0 (started but low progress?)
+                        display_stats = progress
+                    else:
+                        # Check past data in daily_progress
+                        # daily_progress keys are YYYY-MM-DD
+                        dp = it.get('daily_progress', {})
+                        if dp:
+                            # sort dates descending
+                            sorted_dates = sorted(dp.keys(), reverse=True)
+                            # pick the first one
+                            latest_date = sorted_dates[0]
+                            display_stats = dp[latest_date]
+
                     saved_accounts.append({
                         "phone_display": display, 
                         "password": pwd, 
@@ -406,7 +467,8 @@ def index():
                         "schedule": schedule, 
                         "last_run_ts": last_run_ts or it.get('last_run'), 
                         "status": status,
-                        "daily_progress": it.get('daily_progress', {})
+                        "daily_progress": it.get('daily_progress', {}),
+                        "display_stats": display_stats
                     })
     except Exception:
         saved_accounts = []
@@ -427,8 +489,10 @@ def index():
         "index.html",
         saved=saved_accounts,
         now=now,
-        settings=settings
+        settings=settings,
+        queue_size=JOB_QUEUE.qsize()
     )
+
 
 
 def _safe_load_accounts():
@@ -511,7 +575,7 @@ def _trigger_run_for_account(acc):
     # run headless by default for scheduled runs
     cmd.append("--headless")
 
-    logger.info("SCHEDULED START for %s: %s", phone_display, ' '.join(shlex.quote(c) for c in cmd))
+    logger.info("SCHEDULED ENQUEUE for %s: %s", phone_display, ' '.join(shlex.quote(c) for c in cmd))
 
     # Create logs directory if it doesn't exist
     log_dir = os.path.join(os.path.dirname(__file__), "logs")
@@ -522,14 +586,17 @@ def _trigger_run_for_account(acc):
     log_file = os.path.join(log_dir, f"schedule_{phone_display}_{timestamp}.log")
 
     try:
-        f = open(log_file, "w")
-        subprocess.Popen(cmd, cwd=os.path.dirname(__file__), stdout=f, stderr=subprocess.STDOUT)
-        f.close()
-        logger.info("Started scheduled logging to %s", log_file)
+        JOB_QUEUE.put({
+            'cmd': cmd,
+            'log_file': log_file,
+            'phone_display': phone_display
+        })
+        logger.info("Queued scheduled job logging to %s", log_file)
         return True
     except Exception as e:
-        logger.exception("FAILED SCHEDULED START for %s: %s", phone_display, e)
+        logger.exception("FAILED SCHEDULED ENQUEUE for %s: %s", phone_display, e)
         return False
+
 
 
 def _scheduler_loop():

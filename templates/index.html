@@ -243,26 +243,26 @@
             </div>
 
             {# Stats Row (Modal & Pendapatan) - AT THE BOTTOM #}
-            {% if acc.daily_progress and today in acc.daily_progress %}
+            {% if acc.display_stats %}
             <div class="stats-row">
-              {% if acc.daily_progress[today].get('income') %}
-              {% set income = acc.daily_progress[today].income %}
+              {% if acc.display_stats.get('income') %}
+              {% set income = acc.display_stats.income %}
               <div class="stat-box income-display">
                 <span class="stat-label">Modal</span>
                 <span class="stat-value">Rp {{ "{:,.0f}".format(income) }}</span>
               </div>
               {% endif %}
 
-              {% if 'balance' in acc.daily_progress[today] %}
-              {% set balance = acc.daily_progress[today].balance %}
+              {% if acc.display_stats.get('balance') %}
+              {% set balance = acc.display_stats.balance %}
               <div class="stat-box balance-display">
                 <span class="stat-label">Saldo</span>
                 <span class="stat-value">Rp {{ "{:,.0f}".format(balance) }}</span>
               </div>
               {% endif %}
 
-              {% if acc.daily_progress[today].get('withdrawal') %}
-              {% set withdrawal = acc.daily_progress[today].withdrawal %}
+              {% if acc.display_stats.get('withdrawal') %}
+              {% set withdrawal = acc.display_stats.withdrawal %}
               <div class="stat-box withdrawal-display">
                 <span class="stat-label">Pendapatan</span>
                 <span class="stat-value">Rp {{ "{:,.0f}".format(withdrawal) }}</span>
