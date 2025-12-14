@@ -221,7 +221,7 @@ def perform_tasks(page: Page, iterations: int, review_text: Optional[str] = None
     return tasks_completed, tasks_total
 
 
-def run(playwright: Playwright, phone: str, password: str, headless: bool = False, slow_mo: int = 200, iterations: int = 30, review_text: Optional[str] = None, viewport_name: str = "iPhone 12", timeout: int = 30) -> Tuple[int, int, float, float, float]:
+def run(playwright: Playwright, phone: str, password: str, headless: bool = False, slow_mo: int = 200, iterations: int = 30, review_text: Optional[str] = None, viewport_name: str = "iPhone 12", timeout: int = 30, sync_only: bool = False) -> Tuple[int, int, float, float, float]:
     browser = playwright.chromium.launch(headless=headless, slow_mo=slow_mo)
     
     vp = VIEWPORTS.get(viewport_name, VIEWPORTS["iPhone 12"])
@@ -238,7 +238,30 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
             return 0, iterations, 0.0, 0.0, 0.0
 
         # ========== PERFORM TASKS ==========
-        tasks_completed, tasks_total = perform_tasks(page, iterations, review_text)
+        if not sync_only:
+            tasks_completed, tasks_total = perform_tasks(page, iterations, review_text)
+        else:
+            print("Sync only mode: skipping tasks execution.")
+            # For sync only, we don't know the progress, so we return 0/0 or handle it upstream.
+            # However, typically sync is done to check balance. 
+            # We can try to read progress from the ticket page anyway?
+            # Let's try to read progress if possible, but not do loops.
+            try:
+                # Go to ticket page to read progress
+                page.locator(".van-badge__wrapper.van-icon.van-icon-undefined.item-icon.iconfont.icon-ticket").click()
+                page.wait_for_timeout(2000)
+                
+                progress_element = page.locator(".van-progress__pivot").first
+                progress_text = progress_element.text_content(timeout=3000)
+                if progress_text and "/" in progress_text:
+                    parts = progress_text.split("/")
+                    tasks_completed = int(parts[0].strip())
+                    tasks_total = int(parts[1].strip())
+                    print(f"Synced progress: {tasks_completed}/{tasks_total}")
+                else:
+                    tasks_completed, tasks_total = 0, iterations
+            except Exception:
+                tasks_completed, tasks_total = 0, iterations
 
         # ========== SCRAPE DATA ==========
         print("Scraping income from deposit records...")

@@ -89,49 +89,11 @@ def scrape_record_page(page: Page, url_suffix: str, record_type: str, timeout: i
 
 def scrape_income(page: Page, timeout: int = 30) -> float:
     """
-    Scrape 'Deposit Kerja' (Modal) from the profile page.
-    Uses specific CSS selector: .van-grid.user-account-info > div:nth-child(2)
+    Scrape 'Deposit Kerja' (Modal) from the deposit record page.
+    URL: https://mba7.com/#/amount/deposit/record
+    Logic: Sum of amounts where status is 'Dibayar'
     """
-    try:
-        # Navigate to profile page if not already there
-        if "/#/me" not in page.url:
-            print("  Navigating to profile page for Deposit Kerja: https://mba7.com/#/me")
-            page.goto("https://mba7.com/#/me", timeout=timeout*1000)
-            page.wait_for_timeout(3000)
-        
-        print("  Looking for 'Deposit Kerja' element using specific selector...")
-        
-        # Use the specific selector provided by user
-        # #app > div > div.van-config-provider.provider-box > div.main-wrapper-tabbar-height > div.top-container > div.user-info-container > div.user-info-card-container > div.user-info-card.travel-border > div.van-grid.user-account-info > div:nth-child(2) > div
-        # Simplified to: .van-grid.user-account-info > div:nth-child(2) > div
-        selector = ".van-grid.user-account-info > div:nth-child(2) > div"
-        
-        try:
-            element = page.locator(selector).first
-            element.wait_for(timeout=5000)
-            
-            # Get the value from van-badge__wrapper inside this element
-            value_el = element.locator(".van-badge__wrapper").first
-            raw_value = value_el.text_content(timeout=3000).strip()
-            print(f"  Found raw Deposit Kerja value: {raw_value}")
-            
-            # Parse "4.500.000,00" -> 4500000.0
-            clean_text = raw_value.replace(".", "").replace(",", ".").strip()
-            try:
-                val = float(clean_text)
-                print(f"  ✓ Deposit Kerja (Modal): Rp {val:,.0f}")
-                return val
-            except ValueError:
-                print(f"  ✗ Failed to parse Deposit Kerja value: {raw_value}")
-                return 0.0
-                
-        except Exception as e:
-            print(f"  ✗ Could not find element with selector '{selector}': {e}")
-            return 0.0
-
-    except Exception as e:
-        print(f"Error scraping Deposit Kerja (Income): {e}")
-        return 0.0
+    return scrape_record_page(page, "amount/deposit/record", "income", timeout)
 
 
 def scrape_withdrawal(page: Page, timeout: int = 30) -> float:

@@ -211,6 +211,41 @@
                   <span>Run</span>
                 </button>
 
+                {% set synced_today = False %}
+                {% if acc.last_sync_ts %}
+                {% set sync_dt = acc.last_sync_ts[:10] %}
+                {% if sync_dt == now.strftime('%Y-%m-%d') %}
+                {% set synced_today = True %}
+                {% endif %}
+                {% endif %}
+                {% set is_loading = acc.is_syncing %}
+
+                <button type="button"
+                  class="btn {% if synced_today and not is_loading %}btn-outline-success{% else %}btn-warning{% endif %} sync-btn"
+                  title="Sync Data Saldo" {% if is_loading %}disabled{% endif %}>
+
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="sync-icon"
+                    style="{% if is_loading %}display:none;{% endif %}">
+                    {% if synced_today %}
+                    <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                      stroke-linejoin="round" />
+                    {% else %}
+                    <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    {% endif %}
+                  </svg>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="spinner-icon"
+                    style="{% if not is_loading %}display:none;{% endif %}">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" opacity="0.25" />
+                    <path d="M12 2 A10 10 0 0 1 22 12" stroke="currentColor" stroke-width="2" fill="none"
+                      stroke-linecap="round">
+                      <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s"
+                        repeatCount="indefinite" />
+                    </path>
+                  </svg>
+                  <span>{% if synced_today and not is_loading %}Synced{% else %}Sync{% endif %}</span>
+                </button>
+
                 <button type="button" class="btn btn-primary review-btn" title="Set Review Harian">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M21 15v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4" stroke="currentColor" stroke-width="1.6"
@@ -371,7 +406,23 @@
 
               {# Row 3: Review + Schedule Buttons #}
               <div class="action-group">
-                <button type="button" class="btn btn-secondary review-btn" title="Set Review Harian">
+                <button type="button" class="btn btn-warning sync-btn" title="Sync Data Saldo">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="sync-icon">
+                    <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="spinner-icon"
+                    style="display:none;">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" opacity="0.25" />
+                    <path d="M12 2 A10 10 0 0 1 22 12" stroke="currentColor" stroke-width="2" fill="none"
+                      stroke-linecap="round">
+                      <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s"
+                        repeatCount="indefinite" />
+                    </path>
+                  </svg>
+                  <span>Sync</span>
+                </button>
+                <button type="button" class="btn btn-primary review-btn" title="Set Review Harian">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M21 15v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4" stroke="currentColor" stroke-width="1.6"
                       stroke-linecap="round" stroke-linejoin="round" />
@@ -388,66 +439,65 @@
                   </svg>
                   <span>Jadwal</span>
                 </button>
-
               </div>
+
             </div>
           </div>
-
-          <button type="button" class="remove" onclick="removeRow(this)" title="Hapus akun" aria-label="Hapus akun">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="8" y1="12" x2="16" y2="12"></line>
-            </svg>
-          </button>
         </div>
-        {%- endif %}
-      </div>
 
-      <!-- Tambah & Save Buttons -->
-      <div style="margin-top: 16px; margin-bottom: 12px; display: flex; gap: 8px;">
-        <button type="button" id="add-row" class="btn btn-outline-primary" title="Tambah Nomor"
-          aria-label="Tambah Nomor">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        <button type="button" class="remove" onclick="removeRow(this)" title="Hapus akun" aria-label="Hapus akun">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-        </button>
-        <button type="submit" name="action" value="save" class="btn btn-outline-secondary" title="Simpan Pengaturan"
-          aria-label="Simpan">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-            <polyline points="17 21 17 13 7 13 7 21"></polyline>
-            <polyline points="7 3 7 8 15 8"></polyline>
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="8" y1="12" x2="16" y2="12"></line>
           </svg>
         </button>
       </div>
+      {%- endif %}
+  </div>
 
-      <!-- Bottom Controls (All in One Row) -->
-      <div class="bottom-card">
-        <div class="bottom-controls-row">
+  <!-- Tambah & Save Buttons -->
+  <div style="margin-top: 16px; margin-bottom: 12px; display: flex; gap: 8px;">
+    <button type="button" id="add-row" class="btn btn-outline-primary" title="Tambah Nomor" aria-label="Tambah Nomor">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+    </button>
+    <button type="submit" name="action" value="save" class="btn btn-outline-secondary" title="Simpan Pengaturan"
+      aria-label="Simpan">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+        <polyline points="7 3 7 8 15 8"></polyline>
+      </svg>
+    </button>
+  </div>
 
-          <button type="submit" name="action" value="start" class="btn btn-success" id="run-all-btn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="play-icon">
-              <polygon points="5 3 19 12 5 21 5 3" stroke="currentColor" stroke-width="1.6" fill="currentColor" />
-            </svg>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="spinner-icon" style="display:none;">
-              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" opacity="0.25" />
-              <path d="M12 2 A10 10 0 0 1 22 12" stroke="currentColor" stroke-width="2" fill="none"
-                stroke-linecap="round">
-                <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s"
-                  repeatCount="indefinite" />
-              </path>
-            </svg>
-            <span id="btn-text">Jalankan Semua</span>
-          </button>
-        </div>
+  <!-- Bottom Controls (All in One Row) -->
+  <div class="bottom-card">
+    <div class="bottom-controls-row">
+
+      <button type="submit" name="action" value="start" class="btn btn-success" id="run-all-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="play-icon">
+          <polygon points="5 3 19 12 5 21 5 3" stroke="currentColor" stroke-width="1.6" fill="currentColor" />
+        </svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="spinner-icon" style="display:none;">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" opacity="0.25" />
+          <path d="M12 2 A10 10 0 0 1 22 12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round">
+            <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s"
+              repeatCount="indefinite" />
+          </path>
+        </svg>
+        <span id="btn-text">Jalankan Semua</span>
+      </button>
+    </div>
 
 
-      </div>
-    </form>
+  </div>
+  </form>
   </div>
 
   <!-- ================= SCRIPTS ================= -->
@@ -659,19 +709,28 @@
                 </button>
               </div>
 
-              {# Row 3: Schedule (Full Width) #}
-              <div class="input-row row-3">
-                <button type="button" class="btn btn-secondary schedule-btn" title="Set Jadwal">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" />
-                    <path d="M12 7v6l4 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+              {# Row 3: Review + Schedule Buttons #}
+              <div class="action-group">
+                <button type="button" class="btn btn-warning sync-btn" title="Sync Data Saldo">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="sync-icon">
+                    <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
-                  <span>Jadwal</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="spinner-icon" style="display:none;">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" opacity="0.25" />
+                    <path d="M12 2 A10 10 0 0 1 22 12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round">
+                      <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s" repeatCount="indefinite" />
+                    </path>
+                  </svg>
+                  <span>Sync</span>
                 </button>
-                <div class="schedule-status">
-                  Program belum jalan otomatis, silahkan isi jadwal
-                </div>
-              </div>
+
+                <button type="button" class="btn btn-primary review-btn" title="Set Review Harian">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M21 15v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M7 10l5-5 5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                  <span>Review</span>
+                </button>
             </div>
           </div>
         `;
@@ -682,6 +741,7 @@
         attachReviewButtons();
         attachScheduleButtons();
         attachPlayButtons(); // Attach play button listener
+        attachSyncButtons();
       });
 
     // ================= PASSWORD TOGGLE =================
@@ -777,6 +837,72 @@
       });
     }
     attachPlayButtons();
+
+    // ================= SYNC BUTTON =================
+    function attachSyncButtons() {
+      document.querySelectorAll('.sync-btn').forEach(function (btn) {
+        if (btn.dataset.bound) return;
+        btn.dataset.bound = '1';
+
+        btn.addEventListener('click', async function () {
+          const row = btn.closest('.row-item');
+          if (!row) return;
+
+          const phoneInput = row.querySelector('input[name="phone[]"]');
+          if (!phoneInput) return;
+
+          const phone = phoneInput.value.trim();
+          if (!phone) {
+            alert('Masukkan nomor HP terlebih dahulu.');
+            return;
+          }
+
+          // Show loading state
+          const originalIcon = btn.querySelector('.sync-icon');
+          const spinnerIcon = btn.querySelector('.spinner-icon');
+
+          btn.disabled = true;
+          originalIcon.style.display = 'none';
+          spinnerIcon.style.display = 'inline';
+
+          try {
+            const formData = new FormData();
+            formData.append('phone', phone);
+
+            const res = await fetch('/sync_single', {
+              method: 'POST',
+              body: formData
+            });
+            const data = await res.json();
+
+            if (data.ok) {
+              // Reload to show potentially updated data (wait a bit or just reload?)
+              // Since it's queued, immediate reload won't show result.
+              // Just show success message.
+              alert('Sync job queued for +62' + phone);
+              // reset button state
+              btn.disabled = false;
+              originalIcon.style.display = 'inline';
+              spinnerIcon.style.display = 'none';
+            } else {
+              alert('Error: ' + data.msg);
+              // Reset state
+              btn.disabled = false;
+              originalIcon.style.display = 'inline';
+              spinnerIcon.style.display = 'none';
+            }
+          } catch (err) {
+            alert('Gagal menghubungi server.');
+            console.error(err);
+            // Reset state
+            btn.disabled = false;
+            originalIcon.style.display = 'inline';
+            spinnerIcon.style.display = 'none';
+          }
+        });
+      });
+    }
+    attachSyncButtons();
 
     // ================= REVIEW BUTTON =================
     function attachReviewButtons() {

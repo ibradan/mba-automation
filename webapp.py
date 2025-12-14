@@ -466,6 +466,14 @@ def index():
                         "level": lvl, 
                         "schedule": schedule, 
                         "last_run_ts": last_run_ts or it.get('last_run'), 
+                        "last_sync_ts": it.get('last_sync_ts'),
+                        "is_syncing": (
+                            it.get('is_syncing', False) and 
+                            it.get('sync_start_ts') and 
+                            (now - datetime.datetime.fromisoformat(it['sync_start_ts'])).total_seconds() < 300
+                            # Only consider syncing if started < 5 mins ago
+                        ) if it.get('sync_start_ts') else False,
+                        "sync_start_ts": it.get('sync_start_ts'),
                         "status": status,
                         "daily_progress": it.get('daily_progress', {}),
                         "display_stats": display_stats
@@ -801,38 +809,117 @@ def schedule():
 
 @app.route("/run_single", methods=["POST"])
 def run_single():
-    from mba_automation.automation import run as automation_run
-    """Run automation for a single account immediately."""
-    phone = request.form.get("phone", "").strip()
+    return _handle_single_run(request, sync_only=False)
+
+
+@app.route("/sync_single", methods=["POST"])
+def sync_single():
+    return _handle_single_run(request, sync_only=True)
+
+
+def _handle_single_run(req, sync_only=False):
+    phone = req.form.get('phone', '').strip()
     if not phone:
-        return jsonify({"ok": False, "msg": "phone is required"}), 400
+        return jsonify({"ok": False, "msg": "No phone provided"}), 400
 
-    normalized = normalize_phone(phone)
-    if not normalized:
-        return jsonify({"ok": False, "msg": "invalid phone format"}), 400
-
-    # Find account details
+    norm = normalize_phone(phone)
+    # find account to get password
     accounts = _safe_load_accounts()
-    target_acc = None
-    for acc in accounts:
-        if acc.get("phone") == normalized:
-            target_acc = acc
+    acc = None
+    for a in accounts:
+        if a.get('phone') == norm:
+            acc = a
             break
-    
-    if not target_acc:
-        return jsonify({"ok": False, "msg": "akun tidak ditemukan"}), 404
+            
+    if not acc:
+         return jsonify({"ok": False, "msg": "Account not found"}), 404
+         
+    pwd = acc.get('password', '')
+    if not pwd:
+         return jsonify({"ok": False, "msg": "Password empty"}), 400
 
-    # Trigger run in background
-    def run_bg():
+    # Determine iterations
+    lvl = acc.get('level', 'E2')
+    iterations = 30
+    lvl_up = (lvl or '').upper()
+    if lvl_up == 'E1':
+        iterations = 15
+    elif lvl_up == 'E2':
+        iterations = 30
+    elif lvl_up == 'E3':
+        iterations = 60
+    else:
         try:
-            _trigger_run_for_account(target_acc)
-        except Exception as e:
-            logger.exception("Failed manual single run for %s: %s", normalized, e)
+            iterations = int(lvl)
+        except Exception:
+            iterations = 30
 
-    t = threading.Thread(target=run_bg, daemon=True)
-    t.start()
+    phone_display = phone # already stripped in form
+    
+    # Load settings
+    settings = _safe_load_settings()
+    timeout = settings.get('timeout', 30)
+    viewport = settings.get('viewport', 'iPhone 12')
+    
+    cmd = [sys.executable, "-m", "mba_automation.cli", "--phone", phone_display, "--password", pwd, "--iterations", str(iterations), "--timeout", str(timeout), "--viewport", viewport]
+    
+    # Always headless for single run unless valid reason not to? 
+    # Actually, for debugging user might want headful single run.
+    # But usually webapp triggers headless. Let's respect env/default.
+    env_headless = os.getenv('MBA_HEADLESS')
+    def parse_bool(v):
+        if v is None:
+            return None
+        return str(v).strip().lower() in ("1","true","yes","on")
+    h_val = parse_bool(env_headless)
+    headless = True if h_val is None else h_val
+    
+    if headless:
+        cmd.append("--headless")
+        
+    if sync_only:
+        cmd.append("--sync")
 
-    return jsonify({"ok": True, "msg": f"Automation started for {phone}"})
+    logger.info("SINGLE RUN ENQUEUE (Sync=%s) for %s: %s", sync_only, phone, ' '.join(shlex.quote(c) for c in cmd))
+
+    try:
+        # Create logs directory
+        log_dir = os.path.join(os.path.dirname(__file__), "logs")
+        os.makedirs(log_dir, exist_ok=True)
+        
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        prefix = "sync" if sync_only else "manual"
+        log_file = os.path.join(log_dir, f"{prefix}_{phone_display}_{timestamp}.log")
+        
+        # If running sync, mark state in accounts.json for UI persistence
+        if sync_only:
+            try:
+                acc_list: List[Dict[str, Any]] = _safe_load_accounts()
+                changed = False
+                for acc in acc_list:
+                    # Normalize both sides to match
+                    p1 = normalize_phone(str(acc.get('phone')))
+                    p2 = normalize_phone(phone_display)
+                    if p1 == p2:
+                        acc['is_syncing'] = True
+                        acc['sync_start_ts'] = datetime.datetime.now().isoformat()
+                        changed = True
+                        break
+                if changed:
+                    _safe_write_accounts(acc_list)
+            except Exception as e:
+                logger.warning("Failed to mark sync state: %s", e)
+
+        JOB_QUEUE.put({
+            'cmd': cmd,
+            'log_file': log_file,
+            'phone_display': phone_display
+        })
+        
+        return jsonify({"ok": True, "msg": "Job queued"})
+    except Exception as e:
+        logger.exception("FAILED SINGLE RUN ENQUEUE: %s", e)
+        return jsonify({"ok": False, "msg": str(e)}), 500
 
 
 

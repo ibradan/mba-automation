@@ -28,6 +28,7 @@ def main():
     parser.add_argument("--review", type=str, default=None, help="Optional review text to submit")
     parser.add_argument("--viewport", type=str, default="iPhone 12", help="Device viewport name (e.g., 'iPhone 12')")
     parser.add_argument("--timeout", type=int, default=30, help="Navigation timeout in seconds")
+    parser.add_argument("--sync", action="store_true", help="Sync financial data only (skips tasks loop)")
     args = parser.parse_args()
 
     # load .env if present
@@ -87,10 +88,13 @@ def main():
                     print(f"🔄 Retry attempt {attempt}/{max_retries} for {phone}...")
                 
                 try:
-                    completed, total, income, withdrawal, balance = automation_run(playwright, phone=phone, password=password, headless=final_headless, slow_mo=args.slow_mo, iterations=args.iterations, review_text=args.review, viewport_name=args.viewport, timeout=args.timeout)
+                    completed, total, income, withdrawal, balance = automation_run(playwright, phone=phone, password=password, headless=final_headless, slow_mo=args.slow_mo, iterations=args.iterations, review_text=args.review, viewport_name=args.viewport, timeout=args.timeout, sync_only=args.sync)
                     
-                    if completed >= total and total > 0:
-                        print(f"✅ SUCCESS: {phone} completed all tasks ({completed}/{total})")
+                    if args.sync or (completed >= total and total > 0):
+                        if args.sync:
+                            print(f"✅ SYNC: {phone} financial data updated")
+                        else:
+                            print(f"✅ SUCCESS: {phone} completed all tasks ({completed}/{total})")
                         break
                     
                     print(f"⚠️ Incomplete: {completed}/{total}. Retrying in 5s...")
@@ -132,7 +136,14 @@ def main():
                                     'withdrawal': withdrawal,
                                     'balance': balance
                                 }
-                                acc['last_run_ts'] = datetime.datetime.now().isoformat()
+                                if args.sync:
+                                    acc['last_sync_ts'] = datetime.datetime.now().isoformat()
+                                else:
+                                    acc['last_run_ts'] = datetime.datetime.now().isoformat()
+                                    # Also update sync ts during run? Maybe, since we got fresh data.
+                                    acc['last_sync_ts'] = datetime.datetime.now().isoformat()
+                                # Clear persistent sync state
+                                acc['is_syncing'] = False
                                 updated = True
                                 break
                         
