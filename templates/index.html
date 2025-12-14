@@ -9,6 +9,77 @@
   <meta http-equiv="Expires" content="0" />
   <title>TERNAK UANG</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=20" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* Chart Styles */
+    .chart-wrapper {
+      margin-top: 1rem;
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid #e2e8f0;
+      height: 320px;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      overflow: hidden;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+    }
+
+    .chart-wrapper canvas {
+      width: 100% !important;
+      max-height: 240px !important;
+    }
+
+    .chart-nav-btn {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      color: #64748b;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .chart-nav-btn:hover:not(:disabled) {
+      background: #f1f5f9;
+      color: #334155;
+      border-color: #94a3b8;
+    }
+
+    .chart-nav-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .toggle-chart-btn {
+      background: none;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      transition: all 0.2s;
+      padding: 4px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: auto;
+      /* Push to right if in flex */
+    }
+
+    .toggle-chart-btn:hover {
+      color: #f8fafc;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .toggle-chart-btn.active svg {
+      transform: rotate(180deg);
+    }
+  </style>
 </head>
 
 <body>
@@ -119,7 +190,7 @@
         {%- for acc in saved %}
         {% set status_class = acc.status if acc.status else 'pending' %}
 
-        <div class="account-card row-item {{ status_class }}">
+        <div class="account-card row-item {{ status_class }}" data-history='{{ acc.daily_progress | tojson | safe }}'>
           <div class="inputs">
 
             {# Daily Progress Indicator #}
@@ -279,7 +350,7 @@
 
             {# Stats Row (Modal & Pendapatan) - AT THE BOTTOM #}
             {% if acc.display_stats %}
-            <div class="stats-row">
+            <div class="stats-row" style="position: relative;">
               {% if acc.display_stats.get('income') %}
               {% set income = acc.display_stats.income %}
               <div class="stat-box income-display">
@@ -303,10 +374,38 @@
                 <span class="stat-value">Rp {{ "{:,.0f}".format(withdrawal) }}</span>
               </div>
               {% endif %}
+
+              <button type="button" class="toggle-chart-btn" onclick="toggleChart(this)" title="Lihat Grafik">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+            </div>
+
+            <div class="chart-wrapper" style="display: none;">
+              <canvas></canvas>
+              <div style="display: flex; justify-content: center; gap: 8px; margin-top: 8px;">
+                <button type="button" class="chart-nav-btn prev" onclick="shiftChartDate(event, this, -1)"
+                  title="Sebelumnya">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                  </svg>
+                </button>
+                <button type="button" class="chart-nav-btn next" onclick="shiftChartDate(event, this, 1)"
+                  title="Selanjutnya" disabled>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
+                </button>
+              </div>
             </div>
             {% endif %}
           </div>
         </div>
+
         {%- endfor %}
         {%- else %}
         <!-- ========== BARIS DEFAULT 1 (wajib isi, required) ========== -->
@@ -876,6 +975,69 @@
             const data = await res.json();
 
             if (data.ok) {
+              // Show toast or simple alert for now
+              // alert('Automation started for +62' + phone);
+              // Redirect to logs or just stay? Let's stay but maybe show a flash message
+              // For now, just reload to update status or show success
+              window.location.reload();
+            } else {
+              alert('Error: ' + data.msg);
+              // Reset state
+              btn.disabled = false;
+              originalIcon.style.display = 'inline';
+              spinnerIcon.style.display = 'none';
+            }
+          } catch (err) {
+            alert('Gagal menghubungi server.');
+            console.error(err);
+            // Reset state
+            btn.disabled = false;
+            originalIcon.style.display = 'inline';
+            spinnerIcon.style.display = 'none';
+          }
+        });
+      });
+    }
+    attachPlayButtons();
+
+    // ================= SYNC BUTTON =================
+    function attachSyncButtons() {
+      document.querySelectorAll('.sync-btn').forEach(function (btn) {
+        if (btn.dataset.bound) return;
+        btn.dataset.bound = '1';
+
+        btn.addEventListener('click', async function () {
+          const row = btn.closest('.row-item');
+          if (!row) return;
+
+          const phoneInput = row.querySelector('input[name="phone[]"]');
+          if (!phoneInput) return;
+
+          const phone = phoneInput.value.trim();
+          if (!phone) {
+            alert('Masukkan nomor HP terlebih dahulu.');
+            return;
+          }
+
+          // Show loading state
+          const originalIcon = btn.querySelector('.sync-icon');
+          const spinnerIcon = btn.querySelector('.spinner-icon');
+
+          btn.disabled = true;
+          originalIcon.style.display = 'none';
+          spinnerIcon.style.display = 'inline';
+
+          try {
+            const formData = new FormData();
+            formData.append('phone', phone);
+
+            const res = await fetch('/sync_single', {
+              method: 'POST',
+              body: formData
+            });
+            const data = await res.json();
+
+            if (data.ok) {
               // Reload to show potentially updated data (wait a bit or just reload?)
               // Since it's queued, immediate reload won't show result.
               // Just show success message.
@@ -1055,6 +1217,236 @@
         setTimeout(() => addRowBtn.classList.remove('clicked'), 240);
       });
     }
+    // ================= CHART TOGGLE & RENDER =================
+    function toggleChart(btn) {
+      const row = btn.closest('.account-card');
+      if (!row) return;
+
+      const chartWrapper = row.querySelector('.chart-wrapper');
+      if (!chartWrapper) return;
+
+      // Toggle display
+      const isHidden = chartWrapper.style.display === 'none';
+      chartWrapper.style.display = isHidden ? 'block' : 'none';
+
+      // Toggle button active class
+      if (isHidden) {
+        btn.classList.add('active');
+        // Lazy render if canvas empty
+        const canvas = chartWrapper.querySelector('canvas');
+        if (canvas && !canvas.getAttribute('data-rendered')) {
+          renderChart(row, canvas);
+          canvas.setAttribute('data-rendered', 'true');
+        }
+      } else {
+        btn.classList.remove('active');
+      }
+    }
+
+    function renderChart(row, canvas) {
+      try {
+        const historyStr = row.dataset.history;
+        if (!historyStr || historyStr === '{}') return;
+
+        const history = JSON.parse(historyStr);
+        const dates = Object.keys(history).sort();
+        if (dates.length === 0) return;
+
+        // PAGINATION
+        let endIndex = parseInt(canvas.dataset.endIndex);
+        if (isNaN(endIndex)) endIndex = dates.length;
+        if (endIndex > dates.length) endIndex = dates.length;
+        if (endIndex < 7) endIndex = 7;
+
+        let startIndex = endIndex - 7;
+        if (startIndex < 0) startIndex = 0;
+
+        const slicedDates = dates.slice(startIndex, endIndex);
+
+        // Update nav buttons
+        const wrapper = canvas.closest('.chart-wrapper');
+        if (wrapper) {
+          const prevBtn = wrapper.querySelector('.prev');
+          const nextBtn = wrapper.querySelector('.next');
+          if (prevBtn) prevBtn.disabled = startIndex <= 0;
+          if (nextBtn) nextBtn.disabled = endIndex >= dates.length;
+          canvas.dataset.endIndex = endIndex;
+        }
+
+        const incomeData = [], balanceData = [], withdrawalData = [];
+        slicedDates.forEach(date => {
+          const entry = history[date];
+          incomeData.push(entry.income || 0);
+          balanceData.push(entry.balance || 0);
+          withdrawalData.push(entry.withdrawal || 0);
+        });
+
+        // Destroy old chart
+        if (canvas.chartInstance) canvas.chartInstance.destroy();
+
+        const ctx = canvas.getContext('2d');
+
+        // Create gradients for fill
+        const modalGradient = ctx.createLinearGradient(0, 0, 0, 240);
+        modalGradient.addColorStop(0, 'rgba(245, 158, 11, 0.3)');
+        modalGradient.addColorStop(1, 'rgba(245, 158, 11, 0.02)');
+
+        const saldoGradient = ctx.createLinearGradient(0, 0, 0, 240);
+        saldoGradient.addColorStop(0, 'rgba(6, 182, 212, 0.3)');
+        saldoGradient.addColorStop(1, 'rgba(6, 182, 212, 0.02)');
+
+        const pendapatanGradient = ctx.createLinearGradient(0, 0, 0, 240);
+        pendapatanGradient.addColorStop(0, 'rgba(249, 115, 22, 0.3)');
+        pendapatanGradient.addColorStop(1, 'rgba(249, 115, 22, 0.02)');
+
+        canvas.chartInstance = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: slicedDates,
+            datasets: [
+              {
+                label: 'Modal',
+                data: incomeData,
+                borderColor: '#f59e0b',
+                backgroundColor: modalGradient,
+                borderWidth: 2.5,
+                pointRadius: 4,
+                pointBackgroundColor: '#f59e0b',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointHoverRadius: 7,
+                tension: 0.4,
+                fill: true
+              },
+              {
+                label: 'Saldo',
+                data: balanceData,
+                borderColor: '#06b6d4',
+                backgroundColor: saldoGradient,
+                borderWidth: 2.5,
+                pointRadius: 4,
+                pointBackgroundColor: '#06b6d4',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointHoverRadius: 7,
+                tension: 0.4,
+                fill: true
+              },
+              {
+                label: 'Pendapatan',
+                data: withdrawalData,
+                borderColor: '#f97316',
+                backgroundColor: pendapatanGradient,
+                borderWidth: 2.5,
+                pointRadius: 4,
+                pointBackgroundColor: '#f97316',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointHoverRadius: 7,
+                tension: 0.4,
+                fill: true
+              }
+            ]
+          },
+          options: {
+            animation: {
+              duration: 2000,
+              easing: 'easeOutQuart',
+              loop: false
+            },
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+              mode: 'index',
+              intersect: false
+            },
+            plugins: {
+              legend: {
+                position: 'top',
+                align: 'end',
+                labels: {
+                  color: '#64748b',
+                  font: { size: 12, family: "'Inter', sans-serif", weight: 600 },
+                  usePointStyle: true,
+                  pointStyle: 'circle',
+                  padding: 20,
+                  boxWidth: 8,
+                  boxHeight: 8
+                }
+              },
+              tooltip: {
+                enabled: true,
+                backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                titleColor: '#f1f5f9',
+                bodyColor: '#e2e8f0',
+                titleFont: { size: 13, weight: 600, family: "'Inter', sans-serif" },
+                bodyFont: { size: 12, family: "'Inter', sans-serif" },
+                borderColor: 'rgba(255,255,255,0.05)',
+                borderWidth: 1,
+                cornerRadius: 12,
+                padding: 14,
+                displayColors: true,
+                usePointStyle: true,
+                callbacks: {
+                  label: function (context) {
+                    let label = context.dataset.label || '';
+                    if (label) {
+                      label += ': ';
+                    }
+                    if (context.parsed.y !== null) {
+                      label += context.parsed.y.toLocaleString('id-ID');
+                    }
+                    return label;
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                ticks: { color: '#94a3b8', font: { size: 11, family: "'Inter', sans-serif" } },
+                grid: { display: false, drawBorder: false }
+              },
+              y: {
+                ticks: {
+                  color: '#94a3b8',
+                  font: { size: 11, family: "'Inter', sans-serif" },
+                  callback: function (value) {
+                    return value.toLocaleString('id-ID');
+                  }
+                },
+                grid: { color: 'rgba(0,0,0,0.03)', borderDash: [5, 5], drawBorder: false },
+                beginAtZero: true
+              }
+            }
+          }
+        });
+
+        canvas.style.height = '240px';
+        canvas.style.width = '100%';
+      } catch (e) {
+        console.error('Chart error:', e);
+      }
+    }
+
+    function shiftChartDate(e, btn, direction) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const wrapper = btn.closest('.chart-wrapper');
+      const canvas = wrapper.querySelector('canvas');
+      if (!canvas) return;
+
+      let endIndex = parseInt(canvas.dataset.endIndex);
+      if (isNaN(endIndex)) return;
+
+      endIndex += (direction * 7);
+
+      canvas.dataset.endIndex = endIndex;
+
+      const row = wrapper.closest('.account-card');
+      renderChart(row, canvas);
+    }
+
   </script>
 </body>
 
