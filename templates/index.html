@@ -190,7 +190,8 @@
         {%- for acc in saved %}
         {% set status_class = acc.status if acc.status else 'pending' %}
 
-        <div class="account-card row-item {{ status_class }}" data-history='{{ acc.daily_progress | tojson | safe }}'>
+        <div class="account-card row-item {{ status_class }}" data-history='{{ acc.daily_progress | tojson | safe }}'
+          data-phone="{{ acc.phone_display }}" data-last-sync="{{ acc.last_sync_ts[:10] if acc.last_sync_ts else '' }}">
           <div class="inputs">
 
             {# Daily Progress Indicator #}
@@ -663,7 +664,74 @@
           }
         });
       }
+
+      // Auto-sync stale accounts
+      autoSyncStaleAccounts();
     });
+
+    // Auto-sync accounts that haven't been synced today
+    function autoSyncStaleAccounts() {
+      const today = new Date().toISOString().slice(0, 10);
+      const cards = document.querySelectorAll('.account-card[data-phone]');
+      const staleAccounts = [];
+
+      cards.forEach(card => {
+        const lastSync = card.dataset.lastSync || '';
+        const phone = card.dataset.phone;
+        if (phone && lastSync !== today) {
+          staleAccounts.push({ card, phone });
+        }
+      });
+
+      if (staleAccounts.length === 0) return;
+
+      console.log('Auto-syncing ' + staleAccounts.length + ' stale accounts...');
+
+      // Sync accounts one by one with delay
+      let delay = 0;
+      staleAccounts.forEach(({ card, phone }) => {
+        setTimeout(() => {
+          const syncBtn = card.querySelector('.sync-btn');
+          if (syncBtn && !syncBtn.disabled) {
+            // Show loading state
+            const syncIcon = syncBtn.querySelector('.sync-icon');
+            const spinnerIcon = syncBtn.querySelector('.spinner-icon');
+            if (syncIcon) syncIcon.style.display = 'none';
+            if (spinnerIcon) spinnerIcon.style.display = 'inline';
+            syncBtn.disabled = true;
+
+            // Call sync API
+            const formData = new FormData();
+            formData.append('phone', phone);
+            fetch('/sync_single', { method: 'POST', body: formData })
+              .then(res => res.json())
+              .then(data => {
+                if (data.ok) {
+                  console.log('Auto-synced: +62' + phone);
+                  // Update button to show synced state
+                  syncBtn.classList.remove('btn-warning');
+                  syncBtn.classList.add('btn-outline-success');
+                  const label = syncBtn.querySelector('span');
+                  if (label) label.textContent = 'Synced';
+                  if (syncIcon) {
+                    syncIcon.innerHTML = '<path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+                    syncIcon.style.display = 'inline';
+                  }
+                  if (spinnerIcon) spinnerIcon.style.display = 'none';
+                  syncBtn.disabled = false;
+                }
+              })
+              .catch(err => {
+                console.error('Auto-sync failed for +62' + phone, err);
+                if (syncIcon) syncIcon.style.display = 'inline';
+                if (spinnerIcon) spinnerIcon.style.display = 'none';
+                syncBtn.disabled = false;
+              });
+          }
+        }, delay);
+        delay += 2000; // 2 second delay between each sync
+      });
+    }
 
     function removeRow(btn) {
       const row = btn.closest('.row-item');
