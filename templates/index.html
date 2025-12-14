@@ -1394,9 +1394,18 @@
                       label += ': ';
                     }
                     if (context.parsed.y !== null) {
-                      label += context.parsed.y.toLocaleString('id-ID');
+                      label += 'Rp ' + context.parsed.y.toLocaleString('id-ID');
                     }
                     return label;
+                  },
+                  footer: function (tooltipItems) {
+                    const chart = tooltipItems[0].chart;
+                    const index = tooltipItems[0].dataIndex;
+                    const modal = chart.data.datasets[0].data[index];
+                    const pendapatan = chart.data.datasets[2].data[index];
+                    const profit = pendapatan - modal;
+                    const sign = profit > 0 ? '+' : '';
+                    return '\nKeuntungan: ' + sign + 'Rp ' + profit.toLocaleString('id-ID');
                   }
                 }
               }
