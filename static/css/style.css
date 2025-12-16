@@ -1052,3 +1052,9 @@ select:focus {
   padding-top: 16px;
   border-top: 1px solid var(--border);
 }
+
+a.stat-box {
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+}

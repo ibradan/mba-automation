@@ -11,6 +11,7 @@ import time
 import logging
 from logging.handlers import RotatingFileHandler
 import queue
+import fcntl
 
 
 app = Flask(__name__)
@@ -18,8 +19,6 @@ app.secret_key = os.getenv("FLASK_SECRET", "please-change-this")
 
 LOG_FILE = os.path.join(os.path.dirname(__file__), "runs.log")
 ACCOUNTS_FILE = os.path.join(os.path.dirname(__file__), "accounts.json")
-SETTINGS_FILE = os.path.join(os.path.dirname(__file__), "settings.json")
-SCHED_LOCK = threading.Lock()
 SETTINGS_FILE = os.path.join(os.path.dirname(__file__), "settings.json")
 SCHED_LOCK = threading.Lock()
 SCHED_CHECK_INTERVAL = 20  # seconds between schedule checks
@@ -232,32 +231,40 @@ def index():
         # If user only wants to save accounts, do that and return
         if action == 'save':
             try:
-                # load existing accounts to preserve reviews using locked read
-                existing = {}
-                raw_existing = _safe_load_accounts()
-                for a in raw_existing:
-                    existing[a.get('phone')] = a
+                def update_save(current_accounts):
+                    # Convert list to dict for easy merging
+                    existing_map = {}
+                    for a in current_accounts:
+                        norm_p = normalize_phone(a.get('phone'))
+                        if norm_p:
+                             existing_map[norm_p] = a
+                    
+                    new_list = []
+                    for phone, pwd, lvl in entries:
+                        norm = normalize_phone(phone)
+                        # Start with fresh object
+                        acc = {"phone": norm, "password": pwd, "level": (lvl or "E2")}
+                        
+                        # Preserve dynamic data from EXISTING file content
+                        if norm in existing_map:
+                            old = existing_map[norm]
+                            if 'reviews' in old: acc['reviews'] = old['reviews']
+                            if 'schedule' in old: acc['schedule'] = old['schedule']
+                            if 'last_run' in old: acc['last_run'] = old['last_run']
+                            if 'last_run_ts' in old: acc['last_run_ts'] = old['last_run_ts']
+                            if 'last_sync_ts' in old: acc['last_sync_ts'] = old['last_sync_ts']
+                            if 'daily_progress' in old: acc['daily_progress'] = old['daily_progress']
+                            if 'is_syncing' in old: acc['is_syncing'] = old['is_syncing']
+                            if 'sync_start_ts' in old: acc['sync_start_ts'] = old['sync_start_ts']
+                            
+                        new_list.append(acc)
+                    return new_list
 
-                saved = []
-                for phone, pwd, lvl in entries:
-                    norm = normalize_phone(phone)
-                    acc = {"phone": norm, "password": pwd, "level": (lvl or "E2")}
-                    # merge reviews if present in existing data
-                    if norm in existing and isinstance(existing[norm].get('reviews'), dict):
-                        acc['reviews'] = existing[norm].get('reviews')
-                    # merge schedule if present
-                    if norm in existing and existing[norm].get('schedule'):
-                        acc['schedule'] = existing[norm].get('schedule')
-                    # CRITICAL FIX: preserve last_run timestamp to maintain status
-                    if norm in existing and existing[norm].get('last_run'):
-                        acc['last_run'] = existing[norm].get('last_run')
-                    # CRITICAL FIX: preserve daily_progress to maintain tracking data
-                    if norm in existing and existing[norm].get('daily_progress'):
-                        acc['daily_progress'] = existing[norm].get('daily_progress')
-                    saved.append(acc)
-                # persist using locked, atomic write
-                _safe_write_accounts(saved)
-                flash(f"{len(saved)} akun disimpan.", "success")
+                if _atomic_update_accounts(update_save):
+                     flash(f"{len(entries)} akun disimpan.", "success")
+                else:
+                     flash("Gagal menyimpan akun (file locked/error).", "error")
+
             except Exception as e:
                 flash(f"Gagal menyimpan akun: {e}", "error")
             return redirect(url_for("index"))
@@ -356,28 +363,27 @@ def index():
                 flash(f"Automation started in background for {started} phone(s).", "success")
 
             # Persist submitted accounts so they can be reused later (update saved list)
+            # Persist submitted accounts so they can be reused later (update saved list)
             try:
-                # load existing accounts to preserve reviews via locked read
-                existing = {}
-                raw_existing = _safe_load_accounts()
-                for a in raw_existing:
-                    existing[a.get('phone')] = a
+                def update_start(current_accounts):
+                    existing_map = {}
+                    for a in current_accounts:
+                        n = normalize_phone(a.get('phone'))
+                        if n: existing_map[n] = a
+                    
+                    new_list = []
+                    for phone_in, pwd, lvl in entries:
+                         norm = normalize_phone(phone_in)
+                         acc = {"phone": norm, "password": pwd, "level": (lvl or "E2")}
+                         if norm in existing_map:
+                             old = existing_map[norm]
+                             # Merge all persistent fields
+                             for k in ['reviews', 'schedule', 'last_run', 'last_run_ts', 'last_sync_ts', 'daily_progress', 'is_syncing', 'sync_start_ts']:
+                                 if k in old: acc[k] = old[k]
+                         new_list.append(acc)
+                    return new_list
 
-                saved = []
-                for phone, pwd, lvl in entries:
-                    norm = normalize_phone(phone)
-                    acc = {"phone": norm, "password": pwd, "level": (lvl or "E2")}
-                    if norm in existing and isinstance(existing[norm].get('reviews'), dict):
-                        acc['reviews'] = existing[norm].get('reviews')
-                    if norm in existing and existing[norm].get('schedule'):
-                        acc['schedule'] = existing[norm].get('schedule')
-                    # CRITICAL FIX: preserve last_run and daily_progress in run block too
-                    if norm in existing and existing[norm].get('last_run'):
-                        acc['last_run'] = existing[norm].get('last_run')
-                    if norm in existing and existing[norm].get('daily_progress'):
-                        acc['daily_progress'] = existing[norm].get('daily_progress')
-                    saved.append(acc)
-                _safe_write_accounts(saved)
+                _atomic_update_accounts(update_start)
             except Exception as e:
                 # don't fail the request if saving fails
                 logger.warning("WARNING saving accounts failed: %s", e)
@@ -503,35 +509,103 @@ def index():
 
 
 
-def _safe_load_accounts():
-    with SCHED_LOCK:
-        if os.path.exists(ACCOUNTS_FILE):
-            try:
-                with open(ACCOUNTS_FILE, 'r') as f:
-                    return json.load(f)
-            except Exception:
-                # file corrupted or unreadable -> return empty list so callers can recover
-                try:
-                    # log the problem to the log file if possible
-                    with open(LOG_FILE, 'a') as lf:
-                        lf.write(f"{datetime.datetime.now().isoformat()} WARNING failed to read accounts file\n")
-                except Exception:
-                    pass
-                return []
-        return []
 
+def _safe_load_accounts():
+    """Load accounts with shared lock to prevent reading during a write."""
+    with SCHED_LOCK:
+        if not os.path.exists(ACCOUNTS_FILE):
+            return []
+        try:
+            with open(ACCOUNTS_FILE, 'r') as f:
+                try:
+                    fcntl.flock(f, fcntl.LOCK_SH)
+                    return json.load(f)
+                finally:
+                    fcntl.flock(f, fcntl.LOCK_UN)
+        except Exception as e:
+            logger.warning("WARNING failed to read accounts file: %s", e)
+            return []
+
+
+def _atomic_update_accounts(update_fn):
+    """
+    Atomically update accounts.json using a file lock.
+    update_fn(accounts_list) -> modified_accounts_list
+    """
+    with SCHED_LOCK:
+        # Create file if not exists
+        if not os.path.exists(ACCOUNTS_FILE):
+            try:
+                with open(ACCOUNTS_FILE, 'w') as f:
+                    json.dump([], f)
+            except Exception:
+                pass
+
+        # === AUTO BACKUP START ===
+        try:
+            backup_dir = os.path.join(os.path.dirname(ACCOUNTS_FILE), 'backups')
+            os.makedirs(backup_dir, exist_ok=True)
+            
+            # Simple rotation: shift .4->.5, .3->.4, etc.
+            # keep top 5
+            max_backups = 5
+            base_name = os.path.join(backup_dir, 'accounts.json.bak')
+            
+            # Remove oldest if exists
+            if os.path.exists(f"{base_name}.{max_backups}"):
+                 try: os.remove(f"{base_name}.{max_backups}")
+                 except: pass
+            
+            # Shift others
+            for i in range(max_backups - 1, 0, -1):
+                src = f"{base_name}.{i}"
+                dst = f"{base_name}.{i+1}"
+                if os.path.exists(src):
+                    try: os.rename(src, dst)
+                    except: pass
+            
+            # Copy current to .1
+            if os.path.exists(ACCOUNTS_FILE):
+                import shutil
+                try: 
+                    shutil.copy2(ACCOUNTS_FILE, f"{base_name}.1")
+                except: pass
+                
+        except Exception as e:
+            logger.warning("Backup failed (proceeding with update): %s", e)
+        # === AUTO BACKUP END ===
+
+        try:
+            with open(ACCOUNTS_FILE, 'r+') as f:
+                # Exclusive lock
+                fcntl.flock(f, fcntl.LOCK_EX)
+                try:
+                    try:
+                        f.seek(0)
+                        accounts = json.load(f)
+                    except json.JSONDecodeError:
+                        accounts = []
+                    
+                    # Apply update
+                    new_accounts = update_fn(accounts)
+                    
+                    f.seek(0)
+                    f.truncate()
+                    json.dump(new_accounts, f, indent=2)
+                    f.flush()
+                    os.fsync(f.fileno())
+                    return True
+                finally:
+                    fcntl.flock(f, fcntl.LOCK_UN)
+        except Exception as e:
+            logger.error("Failed atomic update: %s", e)
+            return False
 
 def _safe_write_accounts(accounts):
-    with SCHED_LOCK:
-        # atomic write to avoid partial files when concurrent readers exist
-        tmp = ACCOUNTS_FILE + ".tmp"
-        try:
-            with open(tmp, 'w') as f:
-                json.dump(accounts, f, indent=2)
-            os.replace(tmp, ACCOUNTS_FILE)
-        except Exception as e:
-            # try best-effort logging
-            logger.warning("WARNING failed to write accounts file: %s", e)
+    """Legacy wrapper for simple overwrite (still uses lock)."""
+    def overwrite(_):
+        return accounts
+    _atomic_update_accounts(overwrite)
 
 
 def _trigger_run_for_account(acc):
@@ -615,69 +689,77 @@ def _scheduler_loop():
             if datetime.datetime.now().weekday() == 6:
                 time.sleep(SCHED_CHECK_INTERVAL)
                 continue
+            
+            def check_and_trigger(accounts):
+                now = datetime.datetime.now()
+                now_hm = now.strftime('%H:%M')
+                any_triggered = False
+
+                for acc in accounts:
+                    sched = acc.get('schedule')
+                    if not sched:
+                        continue
+                    if sched != now_hm:
+                        continue
+
+                    # Check last run
+                    last_ts = acc.get('last_run_ts')
+                    last_dt = None
+                    if last_ts:
+                         try: last_dt = datetime.datetime.fromisoformat(last_ts)
+                         except: pass
+                    elif acc.get('last_run'):
+                         # legacy
+                         try:
+                             d = datetime.date.fromisoformat(acc.get('last_run'))
+                             last_dt = datetime.datetime.combine(d, datetime.time(0,0))
+                         except: pass
+
+                    # Schedule time today
+                    try:
+                        hh, mm = (int(x) for x in sched.split(':'))
+                        scheduled_dt = datetime.datetime.combine(now.date(), datetime.time(hh, mm))
+                    except Exception:
+                        logger.warning("Invalid schedule format for %s: %s", acc.get('phone', 'unknown'), sched)
+                        continue
+                        
+                    if last_dt and last_dt >= scheduled_dt:
+                        continue
+                        
+                    # Trigger
+                    ok = _trigger_run_for_account(acc)
+                    if ok:
+                        acc['last_run_ts'] = datetime.datetime.now().isoformat()
+                        if 'last_run' in acc: del acc['last_run']
+                        any_triggered = True
+                
+                return accounts if any_triggered else accounts # if no change, atomic update detects equality? no, we need to return list.
+
+            # Special handling: only write if needed. 
+            # But _atomic_update_accounts always writes. 
+            # We can use a trick: read first, check if anything needs triggering.
+            # OR just run it. If it writes unchanged data, it's fine but inefficient.
+            # Let's optimize:
+            
+            # 1. Peek first
+            peek_accounts = _safe_load_accounts()
+            needs_update = False
             now = datetime.datetime.now()
             now_hm = now.strftime('%H:%M')
-            today_str = now.date().isoformat()
-
-            accounts = _safe_load_accounts()
-            modified = False
-            for acc in accounts:
+            
+            for acc in peek_accounts:
                 sched = acc.get('schedule')
-                if not sched:
-                    continue
+                if sched and sched == now_hm:
+                    needs_update = True
+                    break
+            
+            if needs_update:
+                # 2. Run atomic update
+                _atomic_update_accounts(check_and_trigger)
 
-                # only check when the clock matches the scheduled H:M
-                if sched != now_hm:
-                    continue
-
-                # Determine last run time. Prefer ISO timestamp 'last_run_ts'.
-                last_ts = acc.get('last_run_ts')
-                last_dt = None
-                if last_ts:
-                    try:
-                        last_dt = datetime.datetime.fromisoformat(last_ts)
-                    except Exception:
-                        last_dt = None
-                else:
-                    # fallback for legacy 'last_run' date-only value: treat as that date at 00:00
-                    legacy = acc.get('last_run')
-                    if legacy:
-                        try:
-                            d = datetime.date.fromisoformat(legacy)
-                            last_dt = datetime.datetime.combine(d, datetime.time(hour=0, minute=0))
-                        except Exception:
-                            last_dt = None
-
-                # scheduled datetime for today at HH:MM
-                try:
-                    hh, mm = (int(x) for x in sched.split(':'))
-                    scheduled_dt = datetime.datetime.combine(now.date(), datetime.time(hour=hh, minute=mm))
-                except Exception:
-                    # bad schedule format — skip
-                    continue
-
-                # If last_dt exists and is >= scheduled_dt, we've already run at/after the scheduled time — skip
-                if last_dt is not None and last_dt >= scheduled_dt:
-                    continue
-
-                # Otherwise trigger the run
-                ok = _trigger_run_for_account(acc)
-                if ok:
-                    # store full timestamp to allow precise comparisons later
-                    acc['last_run_ts'] = datetime.datetime.now().isoformat()
-                    # remove legacy field if present
-                    if 'last_run' in acc:
-                        try:
-                            del acc['last_run']
-                        except Exception:
-                            pass
-                    modified = True
-
-            if modified:
-                _safe_write_accounts(accounts)
         except Exception as e:
             logger.exception("Scheduler error: %s", e)
-
+ 
         time.sleep(SCHED_CHECK_INTERVAL)
 
 
