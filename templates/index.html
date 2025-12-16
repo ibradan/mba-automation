@@ -354,26 +354,29 @@
             <div class="stats-row" style="position: relative;">
               {% if acc.display_stats.get('income') %}
               {% set income = acc.display_stats.income %}
-              <div class="stat-box income-display">
+              <a href="{{ url_for('history', phone=acc.phone_display, metric='modal') }}"
+                class="stat-box income-display" style="text-decoration: none;">
                 <span class="stat-label">Modal</span>
                 <span class="stat-value">Rp {{ "{:,.0f}".format(income).replace(',', '.') }}</span>
-              </div>
+              </a>
               {% endif %}
 
               {% if acc.display_stats.get('balance') %}
               {% set balance = acc.display_stats.balance %}
-              <div class="stat-box balance-display">
+              <a href="{{ url_for('history', phone=acc.phone_display, metric='saldo') }}"
+                class="stat-box balance-display" style="text-decoration: none;">
                 <span class="stat-label">Saldo</span>
                 <span class="stat-value">Rp {{ "{:,.0f}".format(balance).replace(',', '.') }}</span>
-              </div>
+              </a>
               {% endif %}
 
               {% if acc.display_stats.get('withdrawal') %}
               {% set withdrawal = acc.display_stats.withdrawal %}
-              <div class="stat-box withdrawal-display">
+              <a href="{{ url_for('history', phone=acc.phone_display, metric='pendapatan') }}"
+                class="stat-box withdrawal-display" style="text-decoration: none;">
                 <span class="stat-label">Pendapatan</span>
                 <span class="stat-value">Rp {{ "{:,.0f}".format(withdrawal).replace(',', '.') }}</span>
-              </div>
+              </a>
               {% endif %}
 
               <button type="button" class="toggle-chart-btn" onclick="toggleChart(this)" title="Lihat Grafik">

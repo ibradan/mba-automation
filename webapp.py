@@ -807,6 +807,72 @@ def schedule():
     return render_template('schedule.html', phone_display=display_phone, schedule=existing_schedule)
 
 
+@app.route("/history/<phone>/<metric>")
+def history(phone, metric):
+    # Normalize phone
+    norm = normalize_phone(phone)
+    accounts = _safe_load_accounts()
+    
+    # Find account
+    acc = next((a for a in accounts if a.get('phone') == norm), None)
+    if not acc:
+        flash("Akun tidak ditemukan", "error")
+        return redirect(url_for('index'))
+        
+    daily_progress = acc.get('daily_progress', {})
+    
+    # Map metric to internal key and display label
+    metric_map = {
+        'modal': {'key': 'income', 'label': 'Modal'},
+        'saldo': {'key': 'balance', 'label': 'Saldo'},
+        'pendapatan': {'key': 'withdrawal', 'label': 'Pendapatan'}
+    }
+    
+    if metric not in metric_map:
+        flash("Tipe riwayat tidak valid", "error")
+        return redirect(url_for('index'))
+        
+    info = metric_map[metric]
+    target_key = info['key']
+    label = info['label']
+    
+    # Prepare list
+    history_items = []
+    
+    # Sort dates descending
+    sorted_dates = sorted(daily_progress.keys(), reverse=True)
+    
+    # Locale for days
+    days_id = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu']
+    months_id = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
+    
+    for date_str in sorted_dates:
+        data = daily_progress[date_str]
+        val = data.get(target_key)
+        
+        if val is not None:
+             try:
+                 dt = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+                 day_name = days_id[dt.weekday()]
+                 # Format: 14 Desember 2025
+                 month_name = months_id[dt.month]
+                 date_formatted = f"{dt.day} {month_name} {dt.year}"
+                 
+                 history_items.append({
+                     'date_formatted': date_formatted,
+                     'day_name': day_name,
+                     'value': float(val)
+                 })
+             except Exception:
+                 continue
+                 
+    return render_template('history.html', 
+                           phone=phone, 
+                           label=label, 
+                           metric_type=metric,
+                           history_items=history_items)
+
+
 @app.route("/run_single", methods=["POST"])
 def run_single():
     return _handle_single_run(request, sync_only=False)

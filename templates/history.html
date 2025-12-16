@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="id">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Riwayat Transaksi - TERNAK UANG</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=20" />
+    <style>
+        .history-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 16px;
+        }
+
+        .history-header {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            margin-bottom: 16px;
+            text-align: center;
+            position: relative;
+        }
+
+        .back-btn {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: #f1f5f9;
+            color: #64748b;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .back-btn:hover {
+            background: #e2e8f0;
+            color: #334155;
+        }
+
+        .history-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .history-subtitle {
+            font-size: 0.9rem;
+            color: var(--text-light);
+            font-family: monospace;
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .history-item {
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: transform 0.2s;
+        }
+
+        .history-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .history-date {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .date-main {
+            font-weight: 600;
+            color: var(--text);
+            font-size: 1rem;
+        }
+
+        .date-sub {
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+
+        .history-amount {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--text);
+        }
+
+        .amount-modal {
+            color: #f59e0b;
+            /* Amber/Gold */
+        }
+
+        .amount-pendapatan {
+            color: #f97316;
+            /* Orange */
+        }
+
+        .amount-saldo {
+            color: #06b6d4;
+            /* Cyan */
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-light);
+            font-style: italic;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="history-container">
+        <div class="history-header">
+            <a href="{{ url_for('index') }}" class="back-btn" title="Kembali">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5"></path>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+            </a>
+
+            <div class="history-title">Riwayat {{ label }}</div>
+            <div class="history-subtitle">+62{{ phone }}</div>
+        </div>
+
+        <div class="history-list">
+            {% if history_items %}
+            {% for item in history_items %}
+            <div class="history-item">
+                <div class="history-date">
+                    <span class="date-main">{{ item.date_formatted }}</span>
+                    <span class="date-sub">{{ item.day_name }}</span>
+                </div>
+                <div class="history-amount amount-{{ metric_type }}">
+                    Rp {{ "{:,.0f}".format(item.value).replace(',', '.') }}
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="empty-state">
+                Belum ada data riwayat untuk ditampilkan.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+
+</html>
