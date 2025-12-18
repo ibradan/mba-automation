@@ -1,7 +1,7 @@
 #!/bin/bash
 # deploy-raspi.sh - Deploy to Raspberry Pi
 
-RASPI_IP="192.168.0.192"
+RASPI_IP="192.168.0.207"
 RASPI_USER="pi"
 
 echo "🔍 Detecting service path on Raspberry Pi..."
@@ -21,10 +21,13 @@ ssh ${RASPI_USER}@${RASPI_IP} "mkdir -p ${REMOTE_PATH}/templates ${REMOTE_PATH}/
 echo "�📤 Copying files to Raspberry Pi (${RASPI_IP})..."
 
 # Copy file yang berubah
+scp requirements.txt ${RASPI_USER}@${RASPI_IP}:${REMOTE_PATH}/requirements.txt
+scp -r mba_automation ${RASPI_USER}@${RASPI_IP}:${REMOTE_PATH}/
+scp -r templates ${RASPI_USER}@${RASPI_IP}:${REMOTE_PATH}/
+scp -r static ${RASPI_USER}@${RASPI_IP}:${REMOTE_PATH}/
 scp webapp.py ${RASPI_USER}@${RASPI_IP}:${REMOTE_PATH}/webapp.py
-scp templates/index.html ${RASPI_USER}@${RASPI_IP}:${REMOTE_PATH}/templates/index.html
-scp templates/history.html ${RASPI_USER}@${RASPI_IP}:${REMOTE_PATH}/templates/history.html
-scp static/css/style.css ${RASPI_USER}@${RASPI_IP}:${REMOTE_PATH}/static/css/style.css
+scp setup-raspi.sh ${RASPI_USER}@${RASPI_IP}:${REMOTE_PATH}/setup-raspi.sh
+chmod +x setup-raspi.sh
 
 echo "🔄 Restarting service..."
 ssh ${RASPI_USER}@${RASPI_IP} "sudo systemctl restart mba-automation"

@@ -93,3 +93,53 @@ Weekend / Sunday behaviour
 
 - Sunday is considered a holiday: scheduled runs will NOT execute on Sundays and the review editor does not include Sunday (Minggu) anymore. Use schedules on Mon–Sat only.
 ```
+
+Raspberry Pi Zero 2 W Setup
+---------------------------
+
+The **Raspberry Pi Zero 2 W** (512MB RAM) requires specific configuration to run this automation.
+
+### 1. Requirements
+
+- **Raspberry Pi Zero 2 W** (Zero 1 is NOT supported)
+- **microSD Card**: Minimum 16GB
+- **OS**: [Raspberry Pi OS Lite (64-bit)](https://www.raspberrypi.com/software/operating-systems/entry/raspberry-pi-os-lite-64-bit/)
+    - **IMPORTANT**: You **MUST** use the 64-bit version. Playwright does not support 32-bit Linux.
+
+### 2. Deployment
+
+1.  **Configure IP**: Edit `deploy-raspi.sh` on your computer and set the correct `RASPI_IP`.
+2.  **Deploy**: Run the script to copy files to your Pi.
+    ```bash
+    ./deploy-raspi.sh
+    ```
+3.  **Setup Check**: SSH into your Pi.
+    ```bash
+    ssh pi@<RASPI_IP>
+    ```
+
+### 3. One-Time Setup (On the Pi)
+
+Once logged into the Pi, run the setup script. This will:
+- Expand SWAP memory to 2GB (Critical for proper function with limited RAM).
+- Install system dependencies and Python.
+- Install Chromium browser (Playwright).
+- Create and start the systemd service.
+
+```bash
+# Make executable (if not already)
+chmod +x setup-raspi.sh
+
+# Run setup
+./setup-raspi.sh
+```
+
+### 4. Verification
+
+After setup, check the service status:
+
+```bash
+sudo systemctl status mba-automation
+```
+
+Access the UI at: `http://<RASPI_IP>:5000`
