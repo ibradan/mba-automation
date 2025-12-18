@@ -433,8 +433,17 @@ def index():
                     elif pct > 0:
                         status = 'due'  # Partial progress shows as yellow/due
                     else:
-                        # Fallback to schedule logic if 0% progress
-                        if schedule:
+                        # Resilient UI: If today is 0% but yesterday was 100% AND it's still very early (before 4 AM),
+                        # show it as "ran" to avoid confusion during late-night syncs or clock drift.
+                        yesterday_str = (now - datetime.timedelta(days=1)).strftime('%Y-%m-%d')
+                        yesterday_progress = it.get('daily_progress', {}).get(yesterday_str, {})
+                        if yesterday_progress.get('percentage', 0) >= 100 and now.hour < 4:
+                            status = 'ran'
+                            progress = yesterday_progress
+                            pct = 100
+                        
+                        # Fallback to schedule logic if still 0% progress
+                        if status == '' and schedule:
                             try:
                                 hh, mm = (int(x) for x in schedule.split(':'))
                                 scheduled_dt = datetime.datetime.combine(now.date(), datetime.time(hour=hh, minute=mm))

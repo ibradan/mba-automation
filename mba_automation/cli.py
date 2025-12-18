@@ -131,14 +131,12 @@ def main():
                                 # Preserve existing data if sync fails to get new ones
                                 existing = acc['daily_progress'].get(today, {})
                                 
-                                # Use newest data if it's a full run OR if we actually scraped something > 0
-                                # Otherwise keep what we had for today
-                                final_completed = completed
-                                final_total = total
-                                if args.sync and completed == 0 and existing.get('completed', 0) > 0:
-                                    final_completed = existing.get('completed', 0)
-                                    final_total = existing.get('total', total)
+                                # Sticky Progress: Never overwrite with a lower "completed" count for the same day
+                                final_completed = max(completed, existing.get('completed', 0))
+                                # Ensure total stays consistent if we already knew it
+                                final_total = max(total, existing.get('total', 0))
                                 
+                                # Preserve financial stats if new ones are 0 (likely scraping error)
                                 final_income = income if (income > 0 or not existing) else existing.get('income', 0.0)
                                 final_withdrawal = withdrawal if (withdrawal > 0 or not existing) else existing.get('withdrawal', 0.0)
                                 final_balance = balance if (balance > 0 or not existing) else existing.get('balance', 0.0)
