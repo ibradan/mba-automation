@@ -28,7 +28,8 @@ body {
   background: var(--bg);
   color: var(--text);
   font-size: 15px;
-  line-height: 1.6; overscroll-behavior-y: contain;
+  line-height: 1.6;
+  overscroll-behavior-y: contain;
 }
 
 /* Stat Box (Modal & Pendapatan) - Bold Solid Colors */
@@ -129,7 +130,8 @@ body {
   background: var(--bg);
   color: var(--text);
   font-size: 15px;
-  line-height: 1.6; overscroll-behavior-y: contain;
+  line-height: 1.6;
+  overscroll-behavior-y: contain;
 }
 
 .container {
@@ -1047,12 +1049,13 @@ select:focus {
   background: #10b981;
   color: #ffffff;
   border-color: #059669;
-  box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+  font-weight: 700;
 }
 
 .row-item.ran {
-  background: #f0fdf4 !important;
-  /* Very light green tint for the whole card */
+  background: #ecfdf5 !important;
+  border-left: 4px solid #10b981 !important;
   border-color: #10b981 !important;
 }
 

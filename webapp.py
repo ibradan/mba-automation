@@ -428,7 +428,7 @@ def index():
                     progress = it.get('daily_progress', {}).get(today_str, {})
                     pct = progress.get('percentage', 0)
                     
-                    if pct >= 100:
+                    if pct >= 99:
                         status = 'ran'
                         today_label = 'Today'
                     elif pct > 0:
@@ -449,7 +449,7 @@ def index():
                                         if prev_progress.get('percentage', 0) > 0:
                                             progress = prev_progress
                                             pct = progress.get('percentage', 0)
-                                            if pct >= 100: status = 'ran'
+                                            if pct >= 99: status = 'ran'
                                             else: status = 'due'
                                             today_label = f"Last ({d_str[-5:]})" # e.g. Last (12-18)
                                             break
