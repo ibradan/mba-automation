@@ -28,7 +28,7 @@ body {
   background: var(--bg);
   color: var(--text);
   font-size: 15px;
-  line-height: 1.6;
+  line-height: 1.6; overscroll-behavior-y: contain;
 }
 
 /* Stat Box (Modal & Pendapatan) - Bold Solid Colors */
@@ -129,7 +129,7 @@ body {
   background: var(--bg);
   color: var(--text);
   font-size: 15px;
-  line-height: 1.6;
+  line-height: 1.6; overscroll-behavior-y: contain;
 }
 
 .container {
