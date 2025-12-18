@@ -430,26 +430,28 @@ def index():
                     
                     if pct >= 100:
                         status = 'ran'
+                        today_label = 'Today'
                     elif pct > 0:
-                        status = 'due'  # Partial progress shows as yellow/due
+                        status = 'due'
+                        today_label = 'Today'
                     else:
-                        # Resilient UI: If today is 0% (e.g. system clock drift), look for the LATEST data in the last 24 hours.
+                        # Extreme Resilience: Check the last 36 hours (handles massive time drift)
                         dp = it.get('daily_progress', {})
+                        today_label = 'Today'
                         if dp:
                             sorted_dates = sorted(dp.keys(), reverse=True)
                             for d_str in sorted_dates:
                                 try:
                                     d_dt = datetime.datetime.fromisoformat(d_str)
-                                    # If this data is within 24 hours, use it as fallback
-                                    if (now - d_dt).total_seconds() < 86400:
+                                    # If this data is within 36 hours, use it as fallback
+                                    if (now - d_dt).total_seconds() < 129600: # 36 hours
                                         prev_progress = dp[d_str]
                                         if prev_progress.get('percentage', 0) > 0:
                                             progress = prev_progress
                                             pct = progress.get('percentage', 0)
                                             if pct >= 100: status = 'ran'
                                             else: status = 'due'
-                                            # Update today_str for display purposes? 
-                                            # No, let's keep track that this is not "today"
+                                            today_label = f"Last ({d_str[-5:]})" # e.g. Last (12-18)
                                             break
                                 except: continue
                         
@@ -503,7 +505,7 @@ def index():
                         "status": status,
                         "daily_progress": it.get('daily_progress', {}),
                         "display_stats": display_stats,
-                        "today_label": progress.get('date', today_str) if progress else today_str
+                        "today_label": today_label
                     })
     except Exception:
         saved_accounts = []
