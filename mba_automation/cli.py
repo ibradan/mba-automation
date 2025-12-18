@@ -142,6 +142,7 @@ def main():
                                 final_balance = balance if (balance > 0 or not existing) else existing.get('balance', 0.0)
 
                                 acc['daily_progress'][today] = {
+                                    'date': today,
                                     'completed': final_completed,
                                     'total': final_total,
                                     'percentage': int((final_completed / final_total) * 100) if final_total > 0 else 0,

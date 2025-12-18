@@ -220,23 +220,16 @@
           data-phone="{{ acc.phone_display }}" data-last-sync="{{ acc.last_sync_ts[:10] if acc.last_sync_ts else '' }}">
           <div class="inputs">
 
-            {# Daily Progress Indicator #}
-            {% set today = now.strftime('%Y-%m-%d') %}
-            {% set level_map = {'E1': 15, 'E2': 30, 'E3': 60} %}
-            {% set target = level_map[acc.level] if acc.level in level_map else 30 %}
-            {% set completed = 0 %}
-            {% set pct = 0 %}
+            {# Daily Progress Indicator (provided by backend) #}
+            {% set stats = acc.display_stats %}
+            {% set completed = stats.get('completed', 0) %}
+            {% set target = stats.get('total', 60) %}
+            {% set pct = stats.get('percentage', 0) %}
+            {% set label = acc.today_label %}
 
-            {% if acc.daily_progress and today in acc.daily_progress %}
-            {% set progress = acc.daily_progress[today] %}
-            {% set completed = progress.completed %}
-            {% set target = progress.total %}
-            {% set pct = progress.percentage %}
-            {% endif %}
-
-            {% if pct >= 100 %}
+            {% if acc.status == 'ran' %}
             {% set progress_class = 'progress-complete' %}
-            {% elif pct >= 50 %}
+            {% elif acc.status == 'due' %}
             {% set progress_class = 'progress-partial' %}
             {% else %}
             {% set progress_class = 'progress-low' %}
@@ -246,7 +239,7 @@
             <div class="progress-delete-row">
               <div class="account-number">{{ loop.index }}</div>
               <div class="daily-progress {{ progress_class }}">
-                <span class="progress-label">Today:</span>
+                <span class="progress-label">{{ label }}:</span>
                 <span class="progress-value">{{ completed }}/{{ target }}</span>
                 <span class="progress-percent">({{ pct }}%)</span>
               </div>

@@ -433,14 +433,25 @@ def index():
                     elif pct > 0:
                         status = 'due'  # Partial progress shows as yellow/due
                     else:
-                        # Resilient UI: If today is 0% but yesterday was 100% AND it's still very early (before 4 AM),
-                        # show it as "ran" to avoid confusion during late-night syncs or clock drift.
-                        yesterday_str = (now - datetime.timedelta(days=1)).strftime('%Y-%m-%d')
-                        yesterday_progress = it.get('daily_progress', {}).get(yesterday_str, {})
-                        if yesterday_progress.get('percentage', 0) >= 100 and now.hour < 4:
-                            status = 'ran'
-                            progress = yesterday_progress
-                            pct = 100
+                        # Resilient UI: If today is 0% (e.g. system clock drift), look for the LATEST data in the last 24 hours.
+                        dp = it.get('daily_progress', {})
+                        if dp:
+                            sorted_dates = sorted(dp.keys(), reverse=True)
+                            for d_str in sorted_dates:
+                                try:
+                                    d_dt = datetime.datetime.fromisoformat(d_str)
+                                    # If this data is within 24 hours, use it as fallback
+                                    if (now - d_dt).total_seconds() < 86400:
+                                        prev_progress = dp[d_str]
+                                        if prev_progress.get('percentage', 0) > 0:
+                                            progress = prev_progress
+                                            pct = progress.get('percentage', 0)
+                                            if pct >= 100: status = 'ran'
+                                            else: status = 'due'
+                                            # Update today_str for display purposes? 
+                                            # No, let's keep track that this is not "today"
+                                            break
+                                except: continue
                         
                         # Fallback to schedule logic if still 0% progress
                         if status == '' and schedule:
@@ -491,7 +502,8 @@ def index():
                         "sync_start_ts": it.get('sync_start_ts'),
                         "status": status,
                         "daily_progress": it.get('daily_progress', {}),
-                        "display_stats": display_stats
+                        "display_stats": display_stats,
+                        "today_label": progress.get('date', today_str) if progress else today_str
                     })
     except Exception:
         saved_accounts = []
