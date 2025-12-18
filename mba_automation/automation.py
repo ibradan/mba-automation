@@ -200,7 +200,7 @@ def perform_tasks(page: Page, iterations: int, review_text: Optional[str] = None
     try:
         # Go to ticket page to be sure
         page.locator(".van-badge__wrapper.van-icon.van-icon-undefined.item-icon.iconfont.icon-ticket").click()
-        page.wait_for_timeout(2000)
+        page.wait_for_timeout(500)
         
         progress_element = page.locator(".van-progress__pivot").first
         progress_text = progress_element.text_content(timeout=3000)
@@ -229,8 +229,7 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
     page = context.new_page()
 
     # Set timeout (convert to ms)
-    # Increase base timeout for slow Pi hardware
-    page.set_default_timeout(timeout * 2000) 
+    page.set_default_timeout(timeout * 1000) 
 
     # OPTIMIZATION: Block heavy resources (images, fonts, media) to save RAM/CPU
     def intercept_route(route):
@@ -256,7 +255,7 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
             try:
                 # Direct navigation is more reliable than clicking icons
                 page.goto("https://mba7.com/#/ticket", timeout=timeout*1000)
-                page.wait_for_timeout(5000)
+                page.wait_for_timeout(2000)
                 from .scraper import try_close_popups
                 try_close_popups(page)
                 

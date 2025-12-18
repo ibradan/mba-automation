@@ -24,13 +24,13 @@ def scrape_record_page(page: Page, url_suffix: str, record_type: str, timeout: i
         print(f"  Navigating to {record_type} page: {full_url}")
         page.goto(full_url, wait_until="domcontentloaded", timeout=timeout * 1000)
         
-        # Give extra time for heavy Pi Zero
-        page.wait_for_timeout(10000)
+        # Reduced wait time for fast hardware
+        page.wait_for_timeout(2500)
         try_close_popups(page)
         
         # ... logic to scrape records ...
         try:
-            page.wait_for_selector(".details-record-cell", timeout=10000)
+            page.wait_for_selector(".details-record-cell", timeout=5000)
         except Exception:
             print(f"  No {record_type} records found")
             return 0.0
@@ -76,7 +76,7 @@ def scrape_balance(page: Page, timeout: int) -> float:
         try:
             print(f"  Scraping balance (attempt {attempt+1})...")
             page.goto("https://mba7.com/#/me", timeout=timeout*1000)
-            page.wait_for_timeout(7000)
+            page.wait_for_timeout(2000)
             try_close_popups(page)
             
             balance_el = page.locator(".user-balance").first
