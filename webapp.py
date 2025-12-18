@@ -1163,14 +1163,29 @@ def api_logs():
     return jsonify({'logs': parsed_logs, 'total': len(parsed_logs)})
 
 
-# ================= BACKGROUND SCHEDULER THREAD =================
-if __name__ == "__main__":
-    # Development server only. For production, use gunicorn/uWSGI.
-    # Start scheduler thread only when running the main process (avoid Werkzeug reloader double-start)
-    if not app.debug or os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
-        t = threading.Thread(target=_scheduler_loop, daemon=True)
-        t.start()
-        logger.info("Scheduler thread started.")
+# ================= BACKGROUND THREADS STARTUP =================
+# We start threads at module level but check if already running 
+# to ensure they work both in 'python webapp.py' and 'gunicorn'.
+def _start_background_threads():
+    # Only start if not already started (useful for some dev servers)
+    if not getattr(app, '_threads_started', False):
+        # 1. Start worker thread (processes the JOB_QUEUE)
+        # (Worker thread is actually started at line 60-61, which is fine)
+        
+        # 2. Start scheduler thread (checks schedules in accounts.json)
+        # Only start scheduler if we are not in a debug reloader child or if explicitly told to
+        if not app.debug or os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+            t_sched = threading.Thread(target=_scheduler_loop, daemon=True)
+            t_sched.start()
+            logger.info("Background scheduler thread started.")
+        
+        app._threads_started = True
 
+# Trigger startup
+_start_background_threads()
+
+
+if __name__ == "__main__":
+    # Development server only. For production, use gunicorn.
     app.run(host="0.0.0.0", port=5000, debug=True)
 

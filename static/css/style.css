@@ -1024,9 +1024,16 @@ select:focus {
 }
 
 .daily-progress.progress-complete {
-  background: #ecfdf5;
-  color: #047857;
-  border-color: #6ee7b7;
+  background: #10b981;
+  color: #ffffff;
+  border-color: #059669;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+}
+
+.row-item.ran {
+  background: #f0fdf4 !important;
+  /* Very light green tint for the whole card */
+  border-color: #10b981 !important;
 }
 
 

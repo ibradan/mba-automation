@@ -248,30 +248,33 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
             return 0, iterations, 0.0, 0.0, 0.0
 
         # ========== PERFORM TASKS ==========
+        tasks_completed, tasks_total = 0, iterations
         if not sync_only:
             tasks_completed, tasks_total = perform_tasks(page, iterations, review_text)
         else:
-            print("Sync only mode: skipping tasks execution.")
-            # For sync only, we don't know the progress, so we return 0/0 or handle it upstream.
-            # However, typically sync is done to check balance. 
-            # We can try to read progress from the ticket page anyway?
-            # Let's try to read progress if possible, but not do loops.
+            print("Sync only mode: checking current progress...")
             try:
-                # Go to ticket page to read progress
-                page.locator(".van-badge__wrapper.van-icon.van-icon-undefined.item-icon.iconfont.icon-ticket").click()
-                page.wait_for_timeout(2000)
+                # Direct navigation is more reliable than clicking icons
+                page.goto("https://mba7.com/#/ticket", timeout=timeout*1000)
+                page.wait_for_timeout(5000)
+                from .scraper import try_close_popups
+                try_close_popups(page)
                 
+                # Look for progress text (usually "X/Y")
                 progress_element = page.locator(".van-progress__pivot").first
-                progress_text = progress_element.text_content(timeout=3000)
-                if progress_text and "/" in progress_text:
-                    parts = progress_text.split("/")
-                    tasks_completed = int(parts[0].strip())
-                    tasks_total = int(parts[1].strip())
-                    print(f"Synced progress: {tasks_completed}/{tasks_total}")
+                if progress_element.count() > 0:
+                    progress_text = progress_element.text_content(timeout=5000)
+                    if progress_text and "/" in progress_text:
+                        parts = progress_text.split("/")
+                        tasks_completed = int(parts[0].strip())
+                        tasks_total = int(parts[1].strip())
+                        print(f"  ✓ Current progress detected: {tasks_completed}/{tasks_total}")
                 else:
-                    tasks_completed, tasks_total = 0, iterations
-            except Exception:
-                tasks_completed, tasks_total = 0, iterations
+                    # Alternative: check record status count if pivot not found?
+                    # For now, if not found, we assume 0 or keep what we have
+                    pass
+            except Exception as e:
+                print(f"  ✗ Could not read progress during sync: {e}")
 
         # ========== SCRAPE DATA ==========
         print("Scraping income from deposit records...")

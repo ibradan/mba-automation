@@ -7,8 +7,13 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
+  <meta name="theme-color" content="#1e293b" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}" />
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon-192.png') }}" />
   <title>TERNAK UANG</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=21" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=22" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     /* Chart Styles */
@@ -1480,6 +1485,15 @@
       renderChart(row, canvas);
     }
 
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}")
+          .then(reg => console.log('Service Worker terdaftar!', reg))
+          .catch(err => console.error('Service Worker gagal!', err));
+      });
+    }
   </script>
 </body>
 
