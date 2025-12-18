@@ -255,7 +255,7 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
             try:
                 # Direct navigation is more reliable than clicking icons
                 page.goto("https://mba7.com/#/ticket", timeout=timeout*1000)
-                page.wait_for_timeout(2000)
+                page.wait_for_timeout(4000)
                 from .scraper import try_close_popups
                 try_close_popups(page)
                 

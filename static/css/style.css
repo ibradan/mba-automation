@@ -1,22 +1,20 @@
 :root {
   /* Elegant Clean Theme */
-  --bg: #f8f9fa;
-  /* Very light gray background */
+  --bg: #f1f5f9;
   --card: #ffffff;
-  /* White cards */
-  --text: #1f2937;
-  /* Dark gray text */
-  --text-light: #6b7280;
-  /* Muted text */
+  --text: #0f172a;
+  --text-light: #64748b;
   --blue: #2563eb;
-  /* Professional Blue */
   --blue-dark: #1d4ed8;
   --blue-light: #eff6ff;
   --success: #10b981;
   --warning: #f59e0b;
   --danger: #ef4444;
-  --border: #e5e7eb;
-  /* Light gray border */
+  --border: #e2e8f0;
+
+  /* Smooth Transitions */
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 * {
@@ -43,13 +41,12 @@ body {
   padding: 16px;
   border-radius: 16px;
   border: none;
-  /* No border for solid look */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  transition: transform 0.2s;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  transition: var(--transition);
 }
 
-.stat-box:hover {
-  transform: translateY(-2px);
+.stat-box:active {
+  transform: scale(0.96);
 }
 
 .stat-label {
@@ -552,22 +549,25 @@ select:focus {
 
 /* Buttons */
 .btn {
-  display: inline-flex;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
   align-items: center;
   justify-content: center;
-  height: 40px;
-  /* Standard height */
-  padding: 0 16px;
-  border-radius: 10px;
-  /* Consistent radius */
-  font-weight: 500;
-  font-size: 14.4px;
-  /* Precise font size */
-  cursor: pointer;
-  transition: all 0.2s;
-  border: 1px solid transparent;
   gap: 8px;
-  white-space: nowrap;
+  transition: var(--transition-fast);
+  user-select: none;
+}
+
+.btn:active {
+  transform: scale(0.95);
+}
+
+.btn:hover {
+  filter: brightness(1.05);
 }
 
 .btn svg {
@@ -665,19 +665,33 @@ select:focus {
 
 /* Cards */
 .account-card {
-  background: #ffffff;
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  background: var(--card);
+  border-radius: 20px;
   padding: 20px;
-  margin-bottom: 16px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  transition: all 0.2s ease;
+  margin-bottom: 20px;
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: var(--transition);
+  animation: fadeIn 0.5s ease-out backwards;
   position: relative;
 }
 
 .account-card:hover {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  transform: translateY(-1px);
+  transform: translateY(-4px);
+  box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.1);
+  border-color: #cbd5e1;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 
@@ -873,6 +887,12 @@ select:focus {
   /* Pill shape like Add button */
   width: auto;
   /* Auto width instead of block */
+}
+
+.progress-bar {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .actions-note {

@@ -128,13 +128,28 @@ def main():
                                 if 'daily_progress' not in acc:
                                     acc['daily_progress'] = {}
                                 
+                                # Preserve existing data if sync fails to get new ones
+                                existing = acc['daily_progress'].get(today, {})
+                                
+                                # Use newest data if it's a full run OR if we actually scraped something > 0
+                                # Otherwise keep what we had for today
+                                final_completed = completed
+                                final_total = total
+                                if args.sync and completed == 0 and existing.get('completed', 0) > 0:
+                                    final_completed = existing.get('completed', 0)
+                                    final_total = existing.get('total', total)
+                                
+                                final_income = income if (income > 0 or not existing) else existing.get('income', 0.0)
+                                final_withdrawal = withdrawal if (withdrawal > 0 or not existing) else existing.get('withdrawal', 0.0)
+                                final_balance = balance if (balance > 0 or not existing) else existing.get('balance', 0.0)
+
                                 acc['daily_progress'][today] = {
-                                    'completed': completed,
-                                    'total': total,
-                                    'percentage': int((completed / total) * 100) if total > 0 else 0,
-                                    'income': income,
-                                    'withdrawal': withdrawal,
-                                    'balance': balance
+                                    'completed': final_completed,
+                                    'total': final_total,
+                                    'percentage': int((final_completed / final_total) * 100) if final_total > 0 else 0,
+                                    'income': final_income,
+                                    'withdrawal': final_withdrawal,
+                                    'balance': final_balance
                                 }
                                 if args.sync:
                                     acc['last_sync_ts'] = datetime.datetime.now().isoformat()
