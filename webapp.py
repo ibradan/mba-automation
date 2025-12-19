@@ -62,27 +62,122 @@ worker_thread.start()
 
 
 
-def _safe_load_settings():
-    """Load settings from JSON file with error handling."""
-    if not os.path.exists(SETTINGS_FILE):
-        return {}
-    try:
-        with open(SETTINGS_FILE, 'r') as f:
-            return json.load(f)
-    except Exception as e:
-        logger.error(f"Failed to load settings: {e}")
-        return {}
+class DataManager:
+    """Encapsulates all interactions with accounts.json and settings.json."""
+    
+    def __init__(self):
+        self.accounts_file = ACCOUNTS_FILE
+        self.settings_file = SETTINGS_FILE
+        self.lock = threading.Lock()
 
+    def load_settings(self):
+        """Load settings from JSON file with error handling."""
+        if not os.path.exists(self.settings_file):
+            return {}
+        try:
+            with open(self.settings_file, 'r') as f:
+                return json.load(f)
+        except Exception as e:
+            logger.error(f"Failed to load settings: {e}")
+            return {}
 
-def _safe_save_settings(settings):
-    """Save settings to JSON file with error handling."""
-    try:
-        with open(SETTINGS_FILE, 'w') as f:
-            json.dump(settings, f, indent=2)
-        return True
-    except Exception as e:
-        logger.error(f"Failed to save settings: {e}")
-        return False
+    def save_settings(self, settings):
+        """Save settings to JSON file with error handling."""
+        try:
+            with open(self.settings_file, 'w') as f:
+                json.dump(settings, f, indent=2)
+            return True
+        except Exception as e:
+            logger.error(f"Failed to save settings: {e}")
+            return False
+
+    def load_accounts(self):
+        """Load accounts with shared lock to prevent reading during a write."""
+        with self.lock:
+            if not os.path.exists(self.accounts_file):
+                return []
+            try:
+                with open(self.accounts_file, 'r') as f:
+                    try:
+                        fcntl.flock(f, fcntl.LOCK_SH)
+                        return json.load(f)
+                    finally:
+                        fcntl.flock(f, fcntl.LOCK_UN)
+            except Exception as e:
+                logger.warning("WARNING failed to read accounts file: %s", e)
+                return []
+
+    def atomic_update_accounts(self, update_fn):
+        """Atomically update accounts.json using a file lock."""
+        with self.lock:
+            # Create file if not exists
+            if not os.path.exists(self.accounts_file):
+                try:
+                    with open(self.accounts_file, 'w') as f:
+                        json.dump([], f)
+                except Exception:
+                    pass
+
+            # Backup logic
+            self._backup_accounts()
+
+            try:
+                with open(self.accounts_file, 'r+') as f:
+                    fcntl.flock(f, fcntl.LOCK_EX)
+                    try:
+                        try:
+                            f.seek(0)
+                            accounts = json.load(f)
+                        except json.JSONDecodeError:
+                            accounts = []
+                        
+                        new_accounts = update_fn(accounts)
+                        
+                        f.seek(0)
+                        f.truncate()
+                        json.dump(new_accounts, f, indent=2)
+                        f.flush()
+                        os.fsync(f.fileno())
+                        return True
+                    finally:
+                        fcntl.flock(f, fcntl.LOCK_UN)
+            except Exception as e:
+                logger.error("Failed atomic update: %s", e)
+                return False
+
+    def _backup_accounts(self):
+        """Internal helper for rotating backups of accounts.json."""
+        try:
+            backup_dir = os.path.join(os.path.dirname(self.accounts_file), 'backups')
+            os.makedirs(backup_dir, exist_ok=True)
+            
+            max_backups = 5
+            base_name = os.path.join(backup_dir, 'accounts.json.bak')
+            
+            if os.path.exists(f"{base_name}.{max_backups}"):
+                 try: os.remove(f"{base_name}.{max_backups}")
+                 except: pass
+            
+            for i in range(max_backups - 1, 0, -1):
+                src = f"{base_name}.{i}"
+                dst = f"{base_name}.{i+1}"
+                if os.path.exists(src):
+                    try: os.rename(src, dst)
+                    except: pass
+            
+            if os.path.exists(self.accounts_file):
+                import shutil
+                try: 
+                    shutil.copy2(self.accounts_file, f"{base_name}.1")
+                except: pass
+        except Exception as e:
+            logger.warning("Backup failed: %s", e)
+
+    def write_accounts(self, accounts):
+        """Legacy wrapper for simple overwrite."""
+        return self.atomic_update_accounts(lambda _: accounts)
+
+data_manager = DataManager()
 
 
 def _format_phone_for_cli(raw_phone: str) -> str:
@@ -141,16 +236,96 @@ def phone_display(normalized: str) -> str:
     return normalized
 
 
+@app.route("/api/accounts")
+def api_accounts():
+    """Endpoint for real-time dashboard updates."""
+    raw = data_manager.load_accounts()
+    now = datetime.datetime.now()
+    results = []
+    
+    for it in raw:
+        phone = it.get("phone", "")
+        display = phone_display(phone)
+        schedule = it.get('schedule', '')
+        last_run_ts = it.get('last_run_ts')
+        
+        status = ''
+        today_str = now.strftime('%Y-%m-%d')
+        progress = it.get('daily_progress', {}).get(today_str, {})
+        pct = progress.get('percentage', 0)
+        
+        if pct >= 99:
+            status = 'ran'
+            today_label = 'Today'
+        elif pct > 0:
+            status = 'due'
+            today_label = 'Today'
+        else:
+            dp = it.get('daily_progress', {})
+            today_label = 'Today'
+            if dp:
+                sorted_dates = sorted(dp.keys(), reverse=True)
+                for d_str in sorted_dates:
+                    try:
+                        d_dt = datetime.datetime.fromisoformat(d_str)
+                        if (now - d_dt).total_seconds() < 129600:
+                            prev_progress = dp[d_str]
+                            if prev_progress.get('percentage', 0) > 0:
+                                progress = prev_progress
+                                pct = progress.get('percentage', 0)
+                                if pct >= 99: status = 'ran'
+                                else: status = 'due'
+                                today_label = f"Last ({d_str[-5:]})"
+                                break
+                    except: continue
+            
+            if status == '' and schedule:
+                try:
+                    hh, mm = (int(x) for x in schedule.split(':'))
+                    scheduled_dt = datetime.datetime.combine(now.date(), datetime.time(hour=hh, minute=mm))
+                    if scheduled_dt <= now:
+                        status = 'due'
+                    else:
+                        status = 'pending'
+                except: pass
+
+        display_stats = progress if progress else {}
+        if not display_stats and it.get('daily_progress'):
+             dp = it.get('daily_progress', {})
+             sorted_dates = sorted(dp.keys(), reverse=True)
+             display_stats = dp[sorted_dates[0]]
+
+        results.append({
+            "phone": phone,
+            "phone_display": display,
+            "status": status,
+            "pct": pct,
+            "completed": progress.get('completed', 0),
+            "total": progress.get('total', 60),
+            "income": display_stats.get('income', 0),
+            "withdrawal": display_stats.get('withdrawal', 0),
+            "balance": display_stats.get('balance', 0),
+            "is_syncing": (
+                it.get('is_syncing', False) and 
+                it.get('sync_start_ts') and 
+                (now - datetime.datetime.fromisoformat(it['sync_start_ts'])).total_seconds() < 300
+            ) if it.get('sync_start_ts') else False,
+            "today_label": today_label
+        })
+    
+    return jsonify(results)
+
+
 @app.route("/settings/get", methods=["GET"])
 def get_settings():
-    return jsonify(_safe_load_settings())
+    return jsonify(data_manager.load_settings())
 
 
 @app.route("/settings/save", methods=["POST"])
 def save_settings():
     try:
         data = request.get_json()
-        if _safe_save_settings(data):
+        if data_manager.save_settings(data):
             return jsonify({"status": "success"})
         return jsonify({"status": "error", "message": "Failed to save settings"}), 500
     except Exception as e:
@@ -184,7 +359,7 @@ def import_accounts():
                 data = json.load(file)
                 if not isinstance(data, list):
                     return jsonify({"status": "error", "message": "Invalid format: expected a list of accounts"}), 400
-                _safe_write_accounts(data)
+                data_manager.write_accounts(data)
                 return jsonify({"status": "success", "message": f"Imported {len(data)} accounts"})
             except json.JSONDecodeError:
                 return jsonify({"status": "error", "message": "Invalid JSON file"}), 400
@@ -260,7 +435,7 @@ def index():
                         new_list.append(acc)
                     return new_list
 
-                if _atomic_update_accounts(update_save):
+                if data_manager.atomic_update_accounts(update_save):
                      flash(f"{len(entries)} akun disimpan.", "success")
                 else:
                      flash("Gagal menyimpan akun (file locked/error).", "error")
@@ -272,7 +447,7 @@ def index():
         # Only run automation if explicitly requested
         if action == 'start':
             # load saved accounts to read per-account reviews (if any)
-            saved_accounts = _safe_load_accounts()
+            saved_accounts = data_manager.load_accounts()
 
             started = 0
             for phone, pwd, lvl in entries:
@@ -323,7 +498,7 @@ def index():
                     continue
 
                 # Load settings
-                settings = _safe_load_settings()
+                settings = data_manager.load_settings()
                 timeout = settings.get('timeout', 30)
                 viewport = settings.get('viewport', 'iPhone 12')
 
@@ -383,7 +558,7 @@ def index():
                          new_list.append(acc)
                     return new_list
 
-                _atomic_update_accounts(update_start)
+                data_manager.atomic_update_accounts(update_start)
             except Exception as e:
                 # don't fail the request if saving fails
                 logger.warning("WARNING saving accounts failed: %s", e)
@@ -392,7 +567,7 @@ def index():
 
     # GET: load saved accounts to prefill the form
     saved_accounts = []
-    raw = _safe_load_accounts()
+    raw = data_manager.load_accounts()
     try:
         # prepare display form (strip leading country code for the visible input)
         now = datetime.datetime.now()
@@ -520,7 +695,7 @@ def index():
     headless_default = True if env_headless is None else bool(env_headless)
 
     # Load settings to pass to template
-    settings = _safe_load_settings()
+    settings = data_manager.load_settings()
 
     return render_template(
         "index.html",
@@ -530,105 +705,6 @@ def index():
         queue_size=JOB_QUEUE.qsize()
     )
 
-
-
-
-def _safe_load_accounts():
-    """Load accounts with shared lock to prevent reading during a write."""
-    with SCHED_LOCK:
-        if not os.path.exists(ACCOUNTS_FILE):
-            return []
-        try:
-            with open(ACCOUNTS_FILE, 'r') as f:
-                try:
-                    fcntl.flock(f, fcntl.LOCK_SH)
-                    return json.load(f)
-                finally:
-                    fcntl.flock(f, fcntl.LOCK_UN)
-        except Exception as e:
-            logger.warning("WARNING failed to read accounts file: %s", e)
-            return []
-
-
-def _atomic_update_accounts(update_fn):
-    """
-    Atomically update accounts.json using a file lock.
-    update_fn(accounts_list) -> modified_accounts_list
-    """
-    with SCHED_LOCK:
-        # Create file if not exists
-        if not os.path.exists(ACCOUNTS_FILE):
-            try:
-                with open(ACCOUNTS_FILE, 'w') as f:
-                    json.dump([], f)
-            except Exception:
-                pass
-
-        # === AUTO BACKUP START ===
-        try:
-            backup_dir = os.path.join(os.path.dirname(ACCOUNTS_FILE), 'backups')
-            os.makedirs(backup_dir, exist_ok=True)
-            
-            # Simple rotation: shift .4->.5, .3->.4, etc.
-            # keep top 5
-            max_backups = 5
-            base_name = os.path.join(backup_dir, 'accounts.json.bak')
-            
-            # Remove oldest if exists
-            if os.path.exists(f"{base_name}.{max_backups}"):
-                 try: os.remove(f"{base_name}.{max_backups}")
-                 except: pass
-            
-            # Shift others
-            for i in range(max_backups - 1, 0, -1):
-                src = f"{base_name}.{i}"
-                dst = f"{base_name}.{i+1}"
-                if os.path.exists(src):
-                    try: os.rename(src, dst)
-                    except: pass
-            
-            # Copy current to .1
-            if os.path.exists(ACCOUNTS_FILE):
-                import shutil
-                try: 
-                    shutil.copy2(ACCOUNTS_FILE, f"{base_name}.1")
-                except: pass
-                
-        except Exception as e:
-            logger.warning("Backup failed (proceeding with update): %s", e)
-        # === AUTO BACKUP END ===
-
-        try:
-            with open(ACCOUNTS_FILE, 'r+') as f:
-                # Exclusive lock
-                fcntl.flock(f, fcntl.LOCK_EX)
-                try:
-                    try:
-                        f.seek(0)
-                        accounts = json.load(f)
-                    except json.JSONDecodeError:
-                        accounts = []
-                    
-                    # Apply update
-                    new_accounts = update_fn(accounts)
-                    
-                    f.seek(0)
-                    f.truncate()
-                    json.dump(new_accounts, f, indent=2)
-                    f.flush()
-                    os.fsync(f.fileno())
-                    return True
-                finally:
-                    fcntl.flock(f, fcntl.LOCK_UN)
-        except Exception as e:
-            logger.error("Failed atomic update: %s", e)
-            return False
-
-def _safe_write_accounts(accounts):
-    """Legacy wrapper for simple overwrite (still uses lock)."""
-    def overwrite(_):
-        return accounts
-    _atomic_update_accounts(overwrite)
 
 
 def _trigger_run_for_account(acc):
@@ -765,7 +841,7 @@ def _scheduler_loop():
             # Let's optimize:
             
             # 1. Peek first
-            peek_accounts = _safe_load_accounts()
+            peek_accounts = data_manager.load_accounts()
             needs_update = False
             now = datetime.datetime.now()
             now_hm = now.strftime('%H:%M')
@@ -778,7 +854,7 @@ def _scheduler_loop():
             
             if needs_update:
                 # 2. Run atomic update
-                _atomic_update_accounts(check_and_trigger)
+                data_manager.atomic_update_accounts(check_and_trigger)
 
         except Exception as e:
             logger.exception("Scheduler error: %s", e)
@@ -797,7 +873,7 @@ def review():
 
         norm = normalize_phone(display_phone)
         # load accounts safely
-        accounts = _safe_load_accounts()
+        accounts = data_manager.load_accounts()
 
         # find account by normalized phone
         acc = None
@@ -820,7 +896,7 @@ def review():
             acc['reviews'] = reviews
 
         try:
-            _safe_write_accounts(accounts)
+            data_manager.write_accounts(accounts)
             flash('Review harian disimpan.', 'success')
         except Exception as e:
             flash(f'Gagal menyimpan review: {e}', 'error')
@@ -835,7 +911,7 @@ def review():
 
     norm = normalize_phone(display_phone)
     existing = {}
-    accounts = _safe_load_accounts()
+    accounts = data_manager.load_accounts()
     for a in accounts:
         if a.get('phone') == norm:
             existing = a.get('reviews', {}) or {}
@@ -857,7 +933,7 @@ def schedule():
         schedule_val = request.form.get('schedule', '').strip()
 
         # load accounts (locked)
-        accounts = _safe_load_accounts()
+        accounts = data_manager.load_accounts()
 
         # find account by normalized phone
         acc = None
@@ -888,7 +964,7 @@ def schedule():
                 del acc['schedule']
 
         try:
-            _safe_write_accounts(accounts)
+            data_manager.write_accounts(accounts)
             flash('Jadwal disimpan.', 'success')
         except Exception as e:
             flash(f'Gagal menyimpan jadwal: {e}', 'error')
@@ -903,7 +979,7 @@ def schedule():
 
     norm = normalize_phone(display_phone)
     existing_schedule = ''
-    accounts = _safe_load_accounts()
+    accounts = data_manager.load_accounts()
     for a in accounts:
         if a.get('phone') == norm:
             existing_schedule = a.get('schedule', '') or ''
@@ -916,7 +992,7 @@ def schedule():
 def history(phone, metric):
     # Normalize phone
     norm = normalize_phone(phone)
-    accounts = _safe_load_accounts()
+    accounts = data_manager.load_accounts()
     
     # Find account
     acc = next((a for a in accounts if a.get('phone') == norm), None)
@@ -995,7 +1071,7 @@ def _handle_single_run(req, sync_only=False):
 
     norm = normalize_phone(phone)
     # find account to get password
-    accounts = _safe_load_accounts()
+    accounts = data_manager.load_accounts()
     acc = None
     for a in accounts:
         if a.get('phone') == norm:
@@ -1028,7 +1104,7 @@ def _handle_single_run(req, sync_only=False):
     phone_display = phone # already stripped in form
     
     # Load settings
-    settings = _safe_load_settings()
+    settings = data_manager.load_settings()
     timeout = settings.get('timeout', 30)
     viewport = settings.get('viewport', 'iPhone 12')
     
@@ -1065,7 +1141,7 @@ def _handle_single_run(req, sync_only=False):
         # If running sync, mark state in accounts.json for UI persistence
         if sync_only:
             try:
-                acc_list: List[Dict[str, Any]] = _safe_load_accounts()
+                acc_list: List[Dict[str, Any]] = data_manager.load_accounts()
                 changed = False
                 for acc in acc_list:
                     # Normalize both sides to match
@@ -1077,7 +1153,7 @@ def _handle_single_run(req, sync_only=False):
                         changed = True
                         break
                 if changed:
-                    _safe_write_accounts(acc_list)
+                    data_manager.write_accounts(acc_list)
             except Exception as e:
                 logger.warning("Failed to mark sync state: %s", e)
 

@@ -32,21 +32,21 @@ class TestWebappUtils(unittest.TestCase):
         self.assertEqual(webapp._format_phone_for_cli('+62812345'), '812345')
         self.assertEqual(webapp._format_phone_for_cli(''), '')
 
-    def test_safe_write_and_load_accounts_atomic(self):
+    def test_data_manager_write_and_load_accounts_atomic(self):
         tmpfd, tmppath = tempfile.mkstemp(prefix='accounts-', suffix='.json')
         os.close(tmpfd)
         try:
-            # point the module to the temp path
-            orig = webapp.ACCOUNTS_FILE
-            webapp.ACCOUNTS_FILE = tmppath
+            # point the data_manager specifically to the temp path
+            orig = webapp.data_manager.accounts_file
+            webapp.data_manager.accounts_file = tmppath
 
             data = [{"phone": "62811", "password": "x"}]
-            webapp._safe_write_accounts(data)
-            read = webapp._safe_load_accounts()
+            webapp.data_manager.write_accounts(data)
+            read = webapp.data_manager.load_accounts()
             self.assertEqual(read, data)
 
         finally:
-            webapp.ACCOUNTS_FILE = orig
+            webapp.data_manager.accounts_file = orig
             try:
                 os.unlink(tmppath)
             except Exception:
@@ -69,37 +69,38 @@ class TestWebappUtils(unittest.TestCase):
     def test_trigger_run_missing_password(self):
         # account missing password should be skipped
         acc = {"phone": "628123", "password": ""}
-        # monkeypatch popen to avoid launching processes
-        orig_popen = webapp.subprocess.Popen
+        # monkeypatch JOB_QUEUE to ensure nothing is queued
+        orig_q = webapp.JOB_QUEUE
         try:
-            webapp.subprocess.Popen = lambda *a, **k: (_ for _ in ()).throw(RuntimeError("should not be called"))
+            class MockQueue:
+                def put(self, *a, **k):
+                    raise RuntimeError("should not be called")
+            webapp.JOB_QUEUE = MockQueue()
             ok = webapp._trigger_run_for_account(acc)
             self.assertFalse(ok)
         finally:
-            webapp.subprocess.Popen = orig_popen
+            webapp.JOB_QUEUE = orig_q
 
-    def test_trigger_run_calls_popen(self):
+    def test_trigger_run_queues_job(self):
         acc = {"phone": "628123", "password": "pw", "level": 'E2'}
-        calls = []
-        orig_popen = webapp.subprocess.Popen
+        queued = []
+        orig_q = webapp.JOB_QUEUE
         try:
-            def fake_popen(*args, **kwargs):
-                calls.append((args, kwargs))
-                class Dummy:
-                    def __init__(self):
-                        pass
-                return Dummy()
-
-            webapp.subprocess.Popen = fake_popen
+            class MockQueue:
+                def put(self, item):
+                    queued.append(item)
+                def qsize(self):
+                    return len(queued)
+            webapp.JOB_QUEUE = MockQueue()
             ok = webapp._trigger_run_for_account(acc)
             self.assertTrue(ok)
-            self.assertTrue(len(calls) == 1)
+            self.assertEqual(len(queued), 1)
             # ensure CLI module is present in the command
-            argv = calls[0][0][0]
+            argv = queued[0]['cmd']
             self.assertIn('-m', argv)
             self.assertIn('mba_automation.cli', argv)
         finally:
-            webapp.subprocess.Popen = orig_popen
+            webapp.JOB_QUEUE = orig_q
 
     def test_schedule_regex(self):
         good = ['08:30', '8:30', '00:00', '23:59']

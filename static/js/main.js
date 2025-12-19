@@ -60,13 +60,7 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     });
   }
-
-  // Settings dropdown toggle
-
-}, delay);
-delay += 2000; // 2 second delay between each sync
-      });
-    }
+});
 
 function removeRow(btn) {
   const row = btn.closest('.row-item');
@@ -134,117 +128,139 @@ document.getElementById('automation-form').addEventListener('submit', function (
   }
 });
 
-document
-  .getElementById('add-row')
-  .addEventListener('click', function () {
-    const rows = document.getElementById('rows');
-    const div = document.createElement('div');
-    div.className = 'account-card row-item';
+document.getElementById('add-row').addEventListener('click', function () {
+  const template = document.getElementById('account-card-template');
+  const rows = document.getElementById('rows');
+  const clone = template.content.cloneNode(true);
 
-    // template baris baru = sama seperti baris default pertama (required)
-    const count = document.querySelectorAll('.row-item').length + 1;
-    div.innerHTML = `
-          <div class="inputs">
-            <div class="progress-delete-row">
-              <div class="account-number">${count}</div>
-              <div class="daily-progress progress-low">
-                <span class="progress-label">Today:</span>
-                <span class="progress-value">0/30</span>
-                <span class="progress-percent">(0%)</span>
-              </div>
-              <button type="button" class="remove" onclick="removeRow(this)" title="Hapus akun" aria-label="Hapus akun">
-                <span aria-hidden="true">−</span>
-              </button>
-            </div>
+  // Set the account number
+  const count = document.querySelectorAll('.row-item').length + 1;
+  clone.querySelector('.account-number').textContent = count;
 
-            <div class="main-inputs">
-              {# Row 1: Phone | Password #}
-              <div class="input-row row-1">
-                <div class="phone-group">
-                  <span class="phone-prefix">+62</span>
-                  <input name="phone[]" type="text" placeholder="NO HP" maxlength="13" required />
-                </div>
-                <div class="pwd-field">
-                  <input name="password[]" class="pwd" type="password" placeholder="Kata Sandi" maxlength="15" required />
-                  <button type="button" class="pwd-toggle" aria-label="Toggle password" title="Tampilkan Password">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-icon" style="opacity: 0.6;">
-                      <path d="M10 12a2 2 0 1 0 4 0 2 2 0 0 0-4 0" />
-                      <path d="M21 12c-2.4 4-5.4 6-9 6-3.6 0-6.6-2-9-6 2.4-4 5.4-6 9-6 3.6 0 6.6 2 9 6" />
-                    </svg>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-off-icon" style="display:none; opacity: 0.6;">
-                      <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
-                      <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
-                      <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
-                      <line x1="2" x2="22" y1="2" y2="22" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
+  const div = clone.querySelector('.account-card');
+  rows.appendChild(clone);
 
-              {# Row 2: Level | Run | Review #}
-              <div class="input-row row-2">
-                <select name="level[]" aria-label="Level" class="level-select">
-                  <option value="E1">E1</option>
-                  <option value="E2" selected>E2</option>
-                  <option value="E3">E3</option>
-                </select>
+  // Initialize listeners for the new row
+  attachToggle(div);
+  attachPlayButtons();
+  attachSyncButtons();
+  attachReviewButtons();
+  attachScheduleButtons();
+});
 
-                <button type="button" class="btn btn-success play-btn" title="Jalankan Akun Ini">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="play-icon">
-                    <polygon points="5 3 19 12 5 21 5 3" stroke="currentColor" stroke-width="2" fill="currentColor" stroke-linejoin="round" />
-                  </svg>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="spinner-icon" style="display:none;">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" opacity="0.25" />
-                    <path d="M12 2 A10 10 0 0 1 22 12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round">
-                      <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s" repeatCount="indefinite" />
-                    </path>
-                  </svg>
-                  <span>Run</span>
-                </button>
+// ================= GLOBAL FUNCTIONS (Moved from index.html) =================
 
-                <button type="button" class="btn btn-primary review-btn" title="Set Review Harian">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M21 15v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
-                    <path d="M7 10l5-5 5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
-                  <span>Review</span>
-                </button>
-              </div>
+function formatNumber(num) {
+  return new Intl.NumberFormat('id-ID').format(num);
+}
 
-              {# Row 3: Review + Schedule Buttons #}
-              <div class="action-group">
-                <button type="button" class="btn btn-warning sync-btn" title="Sync Data Saldo">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="sync-icon">
-                    <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="spinner-icon" style="display:none;">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" opacity="0.25" />
-                    <path d="M12 2 A10 10 0 0 1 22 12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round">
-                      <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s" repeatCount="indefinite" />
-                    </path>
-                  </svg>
-                  <span>Sync</span>
-                </button>
+function updateStatusRealTime() {
+  fetch('/api/accounts')
+    .then(res => res.json())
+    .then(accounts => {
+      accounts.forEach(acc => {
+        // Find the card by phone number
+        const card = document.querySelector(`.account-card[data-phone="${acc.phone_display}"]`);
+        if (!card) return;
 
-                <button type="button" class="btn btn-primary review-btn" title="Set Review Harian">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M21 15v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
-                    <path d="M7 10l5-5 5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
-                  <span>Review</span>
-                </button>
-            </div>
-          </div>
-        `;
+        // 1. Update status class (ran/due/pending)
+        card.classList.remove('ran', 'due', 'pending');
+        card.classList.add(acc.status || 'pending');
 
-    rows.appendChild(div);
+        // 2. Update Progress Bar
+        const progressDiv = card.querySelector('.daily-progress');
+        if (progressDiv) {
+          const labelEl = progressDiv.querySelector('.progress-label');
+          const valueEl = progressDiv.querySelector('.progress-value');
+          const percentEl = progressDiv.querySelector('.progress-percent');
 
-    attachToggle(div);
-    attachReviewButtons();
-    attachScheduleButtons();
-    attachPlayButtons(); // Attach play button listener
-    attachSyncButtons();
+          if (labelEl) labelEl.textContent = acc.today_label + ':';
+          if (valueEl) valueEl.textContent = `${acc.completed}/${acc.total}`;
+          if (percentEl) percentEl.textContent = `(${acc.pct}%)`;
+
+          progressDiv.classList.remove('progress-complete', 'progress-partial', 'progress-low');
+          if (acc.status === 'ran') progressDiv.classList.add('progress-complete');
+          else if (acc.status === 'due') progressDiv.classList.add('progress-partial');
+          else progressDiv.classList.add('progress-low');
+        }
+
+        // 3. Update Syncing Spinner
+        const syncBtn = card.querySelector('.sync-btn');
+        if (syncBtn) {
+          const syncIcon = syncBtn.querySelector('.sync-icon');
+          const spinnerIcon = syncBtn.querySelector('.spinner-icon');
+          const syncLabel = syncBtn.querySelector('span');
+
+          if (acc.is_syncing) {
+            if (syncIcon) syncIcon.style.display = 'none';
+            if (spinnerIcon) spinnerIcon.style.display = 'inline';
+            if (syncLabel) syncLabel.textContent = 'Syncing...';
+            syncBtn.disabled = true;
+          } else {
+            if (spinnerIcon) spinnerIcon.style.display = 'none';
+            if (syncIcon) syncIcon.style.display = 'inline';
+            syncBtn.disabled = false;
+
+            if (acc.pct >= 99 && syncLabel) syncLabel.textContent = 'Synced';
+          }
+        }
+
+        // 4. Update Stats
+        const incomeVal = card.querySelector('.income-display .stat-value');
+        if (incomeVal) incomeVal.textContent = 'Rp ' + formatNumber(acc.income);
+
+        const withdrawalVal = card.querySelector('.withdrawal-display .stat-value');
+        if (withdrawalVal) withdrawalVal.textContent = 'Rp ' + formatNumber(acc.withdrawal);
+
+        const balanceVal = card.querySelector('.balance-display .stat-value');
+        if (balanceVal) balanceVal.textContent = 'Rp ' + formatNumber(acc.balance);
+      });
+    })
+    .catch(err => console.error('Error polling status:', err));
+}
+
+function autoSyncStaleAccounts() {
+  const today = new Date().toISOString().slice(0, 10);
+  const cards = document.querySelectorAll('.account-card[data-phone]');
+  const staleAccounts = [];
+
+  cards.forEach(card => {
+    const lastSync = card.dataset.lastSync || '';
+    const phone = card.dataset.phone;
+    if (phone && lastSync !== today) {
+      staleAccounts.push({ card, phone });
+    }
   });
+
+  if (staleAccounts.length === 0) return;
+
+  console.log(`Found ${staleAccounts.length} stale accounts. Starting sequential sync...`);
+
+  // Sync sequentially to avoid IP blocks/resource lag
+  let p = Promise.resolve();
+  staleAccounts.forEach(item => {
+    p = p.then(() => performSync(item.phone, item.card));
+  });
+}
+
+async function performSync(phone, card) {
+  console.log(`Auto-syncing +62${phone}...`);
+  try {
+    const formData = new FormData();
+    formData.append('phone', phone);
+    const res = await fetch('/sync_single', { method: 'POST', body: formData });
+    const data = await res.json();
+    return data;
+  } catch (e) {
+    console.error(`Auto-sync failed for ${phone}:`, e);
+  }
+}
+
+// Initial setup on load
+document.addEventListener('DOMContentLoaded', function () {
+  autoSyncStaleAccounts();
+  setInterval(updateStatusRealTime, 10000);
+});
 
 // ================= PASSWORD TOGGLE =================
 function attachToggle(root) {
@@ -790,7 +806,4 @@ function shiftChartDate(e, btn, direction) {
   const row = wrapper.closest('.account-card');
   renderChart(row, canvas);
 }
-
-  </script >
-</body >
 
