@@ -3,7 +3,14 @@ let autoSaveTimeout;
 let isSaving = false;
 
 function autoSave() {
-  if (isSaving) return; // Prevent multiple saves at once
+  if (isSaving) return;
+
+  const indicator = document.getElementById('save-indicator');
+  if (indicator) {
+    indicator.style.opacity = '1';
+    indicator.querySelector('span').textContent = 'Saving...';
+    indicator.querySelector('svg').style.display = 'none';
+  }
 
   clearTimeout(autoSaveTimeout);
   autoSaveTimeout = setTimeout(() => {
@@ -12,25 +19,27 @@ function autoSave() {
     const formData = new FormData(form);
     formData.set('action', 'save');
 
-    // Show saving indicator (optional)
-    // console.log('Auto-saving...');
-
     fetch(form.action || '/', {
       method: 'POST',
       body: formData
     }).then(response => {
       isSaving = false;
       if (response.ok) {
-        // console.log('✓ Auto-saved successfully');
-        // Optional: Show brief success indicator
+        if (indicator) {
+          indicator.querySelector('span').textContent = 'Saved';
+          indicator.querySelector('svg').style.display = 'inline';
+          setTimeout(() => { indicator.style.opacity = '0'; }, 2000);
+        }
       } else {
-        console.error('Auto-save failed with status:', response.status);
+        console.error('Auto-save failed:', response.status);
+        if (indicator) indicator.style.opacity = '0';
       }
     }).catch(err => {
       isSaving = false;
       console.error('Auto-save error:', err);
+      if (indicator) indicator.style.opacity = '0';
     });
-  }, 1500); // Save 1.5 seconds after user stops typing
+  }, 1500);
 }
 
 // Attach auto-save to all inputs
@@ -146,9 +155,131 @@ document.getElementById('add-row').addEventListener('click', function () {
   attachSyncButtons();
   attachReviewButtons();
   attachScheduleButtons();
+  attachMoreButtons(); // Added this line
 });
 
+// ================= MORE ACTIONS DROPDOWN =================
+function attachMoreButtons() {
+  document.querySelectorAll('.more-btn').forEach(btn => {
+    if (btn.dataset.bound) return;
+    btn.dataset.bound = '1';
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      // Close other dropdowns
+      document.querySelectorAll('.more-dropdown.show').forEach(d => {
+        if (d !== btn.nextElementSibling) d.classList.remove('show');
+      });
+      btn.nextElementSibling.classList.toggle('show');
+    });
+  });
+
+  // Close when clicking outside
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.more-dropdown.show').forEach(d => d.classList.remove('show'));
+  });
+}
+attachMoreButtons(); // Initial attachment for existing buttons
+
+// ================= AUTO SYNC ALL =================
+async function performAutoSyncAll() {
+  const cards = Array.from(document.querySelectorAll('.account-card[data-phone]'));
+  if (cards.length === 0) return;
+
+  const now = new Date();
+  const COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes
+  let syncCount = 0;
+
+  for (const card of cards) {
+    const phone = card.dataset.phone;
+    const lastSyncTs = card.dataset.lastSyncTs;
+    const isSyncing = card.querySelector('.sync-btn').disabled; // Simple check if already syncing
+
+    if (isSyncing) continue;
+
+    // Check Cooldown
+    if (lastSyncTs) {
+      const lastSyncDate = new Date(lastSyncTs);
+      if (now - lastSyncDate < COOLDOWN_MS) {
+        console.log(`Skipping auto-sync for +62${phone} (Cooldown active)`);
+        continue;
+      }
+    }
+
+    const btn = card.querySelector('.sync-btn');
+    if (!btn) continue;
+
+    // Trigger sync
+    syncCount++;
+    try {
+      const formData = new FormData();
+      formData.append('phone', phone);
+      const res = await fetch('/sync_single', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.ok) {
+        showToast('Auto-sync queued: +62' + phone, 'success');
+        card.dataset.lastSyncTs = now.toISOString();
+        card.classList.add('is-syncing'); // Add pulsing glow
+        // Wait 1.5s for a gentler sequence
+        await new Promise(r => setTimeout(r, 1500));
+      }
+    } catch (err) {
+      console.error('Auto-sync failed for', phone, err);
+    }
+  }
+
+  if (syncCount > 0) {
+    showToast(`Auto-sync started for ${syncCount} accounts`, 'info');
+  }
+}
+
 // ================= GLOBAL FUNCTIONS (Moved from index.html) =================
+
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+
+  let icon = 'ℹ️';
+  if (type === 'success') icon = '✅';
+  if (type === 'error') icon = '❌';
+
+  toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+  container.appendChild(toast);
+
+  // Auto remove
+  setTimeout(() => {
+    toast.classList.add('fade-out');
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+function animateValue(el, start, end, duration) {
+  if (!el || start === end) return;
+  const startTime = performance.now();
+
+  const step = (currentTime) => {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+
+    // Elastic Out effect
+    const c4 = (2 * Math.PI) / 3;
+    const ease = progress === 0 ? 0 : progress === 1 ? 1
+      : Math.pow(2, -10 * progress) * Math.sin((progress * 10 - 0.75) * c4) + 1;
+
+    const current = Math.floor(start + (end - start) * ease);
+
+    el.textContent = 'Rp ' + formatNumber(current);
+
+    if (progress < 1) {
+      requestAnimationFrame(step);
+    } else {
+      el.textContent = 'Rp ' + formatNumber(end);
+    }
+  };
+  requestAnimationFrame(step);
+}
 
 function formatNumber(num) {
   return new Intl.NumberFormat('id-ID').format(num);
@@ -157,11 +288,30 @@ function formatNumber(num) {
 function updateStatusRealTime() {
   fetch('/api/accounts')
     .then(res => res.json())
-    .then(accounts => {
+    .then(data => {
+      const accounts = data.accounts || [];
+      const queueSize = data.queue_size || 0;
+
+      // Update Queue Status
+      const queueBadge = document.getElementById('queue-status');
+      const queueCount = document.getElementById('queue-count');
+      if (queueCount) queueCount.textContent = queueSize;
+      if (queueBadge) {
+        if (queueSize > 0) queueBadge.classList.add('active');
+        else queueBadge.classList.remove('active');
+      }
+
       accounts.forEach(acc => {
         // Find the card by phone number
         const card = document.querySelector(`.account-card[data-phone="${acc.phone_display}"]`);
         if (!card) return;
+
+        // Toggle Is-Syncing highlight for jobs
+        if (acc.is_syncing) {
+          card.classList.add('is-syncing');
+        } else {
+          card.classList.remove('is-syncing');
+        }
 
         // 1. Update status class (ran/due/pending)
         card.classList.remove('ran', 'due', 'pending');
@@ -174,12 +324,16 @@ function updateStatusRealTime() {
           const valueEl = progressDiv.querySelector('.progress-value');
           const percentEl = progressDiv.querySelector('.progress-percent');
 
-          if (labelEl) labelEl.textContent = acc.today_label + ':';
+          if (labelEl) labelEl.textContent = acc.today_label;
           if (valueEl) valueEl.textContent = `${acc.completed}/${acc.total}`;
-          if (percentEl) percentEl.textContent = `(${acc.pct}%)`;
+
+          const fillEl = progressDiv.querySelector('.progress-fill');
+          if (fillEl) fillEl.style.width = acc.pct + '%';
 
           progressDiv.classList.remove('progress-complete', 'progress-partial', 'progress-low');
-          if (acc.status === 'ran') progressDiv.classList.add('progress-complete');
+          if (acc.status === 'ran') {
+            progressDiv.classList.add('progress-complete');
+          }
           else if (acc.status === 'due') progressDiv.classList.add('progress-partial');
           else progressDiv.classList.add('progress-low');
         }
@@ -205,18 +359,36 @@ function updateStatusRealTime() {
           }
         }
 
-        // 4. Update Stats
+        // 4. Update Stats with Animation
         const incomeVal = card.querySelector('.income-display .stat-value');
-        if (incomeVal) incomeVal.textContent = 'Rp ' + formatNumber(acc.income);
+        if (incomeVal) {
+          const oldVal = parseInt(incomeVal.textContent.replace(/[^0-9]/g, '')) || 0;
+          if (oldVal !== acc.income) animateValue(incomeVal, oldVal, acc.income, 800);
+        }
 
         const withdrawalVal = card.querySelector('.withdrawal-display .stat-value');
-        if (withdrawalVal) withdrawalVal.textContent = 'Rp ' + formatNumber(acc.withdrawal);
+        if (withdrawalVal) {
+          const oldVal = parseInt(withdrawalVal.textContent.replace(/[^0-9]/g, '')) || 0;
+          if (oldVal !== acc.withdrawal) animateValue(withdrawalVal, oldVal, acc.withdrawal, 800);
+        }
 
         const balanceVal = card.querySelector('.balance-display .stat-value');
-        if (balanceVal) balanceVal.textContent = 'Rp ' + formatNumber(acc.balance);
+        if (balanceVal) {
+          const oldVal = parseInt(balanceVal.textContent.replace(/[^0-9]/g, '')) || 0;
+          if (oldVal !== acc.balance) animateValue(balanceVal, oldVal, acc.balance, 800);
+        }
       });
+      // Re-attach action buttons if they were replaced by status updates (template)
+      // Note: This is generally not needed if only content is updated, not the buttons themselves.
+      // However, if the buttons are dynamically added/removed or their HTML is replaced,
+      // these calls ensure event listeners are re-bound.
+      attachPlayButtons();
+      attachSyncButtons();
+      attachMoreButtons(); // Added this line
     })
-    .catch(err => console.error('Error polling status:', err));
+    .catch(err => {
+      console.error('Error polling status:', err);
+    });
 }
 
 function autoSyncStaleAccounts() {
@@ -250,6 +422,10 @@ async function performSync(phone, card) {
     formData.append('phone', phone);
     const res = await fetch('/sync_single', { method: 'POST', body: formData });
     const data = await res.json();
+
+    // Refresh UI after sync to show queue change
+    setTimeout(updateStatusRealTime, 500);
+
     return data;
   } catch (e) {
     console.error(`Auto-sync failed for ${phone}:`, e);
@@ -259,7 +435,19 @@ async function performSync(phone, card) {
 // Initial setup on load
 document.addEventListener('DOMContentLoaded', function () {
   autoSyncStaleAccounts();
-  setInterval(updateStatusRealTime, 10000);
+  updateStatusRealTime(); // Run immediately on load
+  setInterval(updateStatusRealTime, 5000); // Poll every 5 seconds (more responsive)
+
+  // Auto-sync all on load
+  setTimeout(performAutoSyncAll, 1500);
+
+  // Initial progress for existing cards
+  document.querySelectorAll('.account-card').forEach(card => {
+    const fill = card.querySelector('.progress-fill');
+    if (fill && fill.dataset.pct) {
+      fill.style.width = fill.dataset.pct + '%';
+    }
+  });
 });
 
 // ================= PASSWORD TOGGLE =================
@@ -308,7 +496,7 @@ function attachPlayButtons() {
 
       const phone = phoneInput.value.trim();
       if (!phone) {
-        alert('Masukkan nomor HP terlebih dahulu.');
+        showToast('Masukkan nomor HP terlebih dahulu.', 'error');
         return;
       }
 
@@ -331,22 +519,21 @@ function attachPlayButtons() {
         const data = await res.json();
 
         if (data.ok) {
-          // Show toast or simple alert for now
-          // alert('Automation started for +62' + phone);
-          // Redirect to logs or just stay? Let's stay but maybe show a flash message
-          // For now, just reload to update status or show success
-          window.location.reload();
+          showToast('Automation started for +62' + phone, 'success');
+          setTimeout(updateStatusRealTime, 500);
+
+          btn.disabled = false;
+          originalIcon.style.display = 'inline';
+          spinnerIcon.style.display = 'none';
         } else {
-          alert('Error: ' + data.msg);
-          // Reset state
+          showToast('Gagal: ' + data.msg, 'error');
           btn.disabled = false;
           originalIcon.style.display = 'inline';
           spinnerIcon.style.display = 'none';
         }
       } catch (err) {
-        alert('Gagal menghubungi server.');
+        showToast('Gagal menghubungi server.', 'error');
         console.error(err);
-        // Reset state
         btn.disabled = false;
         originalIcon.style.display = 'inline';
         spinnerIcon.style.display = 'none';
@@ -371,7 +558,7 @@ function attachSyncButtons() {
 
       const phone = phoneInput.value.trim();
       if (!phone) {
-        alert('Masukkan nomor HP terlebih dahulu.');
+        showToast('Masukkan nomor HP terlebih dahulu.', 'error');
         return;
       }
 
@@ -394,18 +581,21 @@ function attachSyncButtons() {
         const data = await res.json();
 
         if (data.ok) {
-          alert('Sync job queued for +62' + phone);
+          // Smoothly update UI without reload or alert
+          setTimeout(updateStatusRealTime, 500);
+          showToast('Sync job queued for +62' + phone, 'success');
+
           btn.disabled = false;
           originalIcon.style.display = 'inline';
           spinnerIcon.style.display = 'none';
         } else {
-          alert('Error: ' + data.msg);
+          showToast('Error: ' + data.msg, 'error');
           btn.disabled = false;
           originalIcon.style.display = 'inline';
           spinnerIcon.style.display = 'none';
         }
       } catch (err) {
-        alert('Gagal menghubungi server.');
+        showToast('Gagal menghubungi server.', 'error');
         console.error(err);
         // Reset state
         btn.disabled = false;
@@ -432,7 +622,7 @@ function attachReviewButtons() {
 
       const phone = phoneInput.value.trim();
       if (!phone) {
-        alert('Masukkan nomor HP terlebih dahulu.');
+        showToast('Masukkan nomor HP terlebih dahulu.', 'error');
         return;
       }
 
@@ -457,7 +647,7 @@ function attachScheduleButtons() {
 
       const phone = phoneInput.value.trim();
       if (!phone) {
-        alert('Masukkan nomor HP terlebih dahulu.');
+        showToast('Masukkan nomor HP terlebih dahulu.', 'error');
         return;
       }
 
@@ -513,15 +703,15 @@ function initSettings() {
           .then(res => res.json())
           .then(data => {
             if (data.status === 'success') {
-              alert('Import berhasil! Halaman akan dimuat ulang.');
-              window.location.reload();
+              showToast('Import berhasil! Halaman akan dimuat ulang.', 'success');
+              setTimeout(() => window.location.reload(), 2000);
             } else {
-              alert('Import gagal: ' + data.message);
+              showToast('Import gagal: ' + data.message, 'error');
             }
           })
           .catch(err => {
-            console.error(err);
-            alert('Terjadi kesalahan saat import.');
+            console.error('Import error:', err);
+            showToast('Terjadi kesalahan saat import.', 'error');
           });
       }
     });
@@ -807,3 +997,72 @@ function shiftChartDate(e, btn, direction) {
   renderChart(row, canvas);
 }
 
+function fireConfetti() {
+  const colors = ['#2e59d9', '#00ba9d', '#ff9f0a', '#ff3b30', '#00c2ff', '#ffffff'];
+  const particleCount = 100;
+
+  for (let i = 0; i < particleCount; i++) {
+    const p = document.createElement('div');
+    p.className = 'confetti-particle';
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+    p.style.width = Math.random() * 10 + 5 + 'px';
+    p.style.height = p.style.width;
+    p.style.animationDelay = Math.random() * 2 + 's';
+    p.style.opacity = Math.random();
+
+    document.body.appendChild(p);
+
+    // Cleanup
+    setTimeout(() => p.remove(), 5000);
+  }
+}
+
+function initTilt(card) {
+  card.addEventListener('mousemove', e => {
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+
+    // Calculate rotation (-6 to 6 degrees)
+    const rotateX = ((y - centerY) / centerY) * -6;
+    const rotateY = ((x - centerX) / centerX) * 6;
+
+    card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-8px) scale(1.03)`;
+    card.style.boxShadow = `
+      ${-rotateY * 2}px ${rotateX * 2}px 50px rgba(46, 89, 217, 0.15),
+      0 20px 50px rgba(0, 0, 0, 0.08)
+    `;
+    card.style.transition = 'transform 0.1s ease-out, box-shadow 0.1s ease-out';
+  });
+
+  card.addEventListener('mouseleave', () => {
+    card.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0) scale(1)`;
+    card.style.boxShadow = '';
+    card.style.transition = 'all 0.6s cubic-bezier(0.23, 1, 0.32, 1)';
+  });
+}
+
+function fireConfetti() {
+  const colors = ['#2e59d9', '#00ba9d', '#ff9f0a', '#ff3b30', '#00c2ff', '#ffffff'];
+  const particleCount = 100;
+
+  for (let i = 0; i < particleCount; i++) {
+    const p = document.createElement('div');
+    p.className = 'confetti-particle';
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+    p.style.width = Math.random() * 10 + 5 + 'px';
+    p.style.height = p.style.width;
+    p.style.animationDelay = Math.random() * 2 + 's';
+    p.style.opacity = Math.random();
+
+    document.body.appendChild(p);
+
+    // Cleanup
+    setTimeout(() => p.remove(), 5000);
+  }
+}

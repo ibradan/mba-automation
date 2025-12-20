@@ -25,6 +25,8 @@ SCHED_CHECK_INTERVAL = 20  # seconds between schedule checks
 
 # Job Queue for Serial Execution (Pi Zero Optimization)
 JOB_QUEUE = queue.Queue()
+ACTIVE_JOBS = 0
+ACTIVE_JOBS_LOCK = threading.Lock()
 
 def worker():
     """Background worker to process automation jobs serially."""
@@ -41,6 +43,10 @@ def worker():
             logger.info(f"QUEUE: Starting job for {phone_display}")
             
             try:
+                with ACTIVE_JOBS_LOCK:
+                    global ACTIVE_JOBS
+                    ACTIVE_JOBS += 1
+                
                 # Open file for writing
                 with open(log_file, "w") as f:
                     # Run synchronously - creating a BLOCKING call here
@@ -51,6 +57,8 @@ def worker():
             except Exception as e:
                 logger.exception(f"QUEUE: Job failed for {phone_display}: {e}")
             finally:
+                with ACTIVE_JOBS_LOCK:
+                    ACTIVE_JOBS -= 1
                 JOB_QUEUE.task_done()
                 
         except Exception as e:
@@ -59,6 +67,30 @@ def worker():
 # Start worker thread
 worker_thread = threading.Thread(target=worker, daemon=True)
 worker_thread.start()
+
+def clean_old_logs():
+    """Delete log files older than 3 days in the logs directory."""
+    while True:
+        try:
+            log_dir = os.path.join(os.path.dirname(__file__), "logs")
+            if os.path.exists(log_dir):
+                now = time.time()
+                retention_seconds = 3 * 24 * 3600 # 3 days
+                for f in os.listdir(log_dir):
+                    f_path = os.path.join(log_dir, f)
+                    if os.path.isfile(f_path):
+                        if os.stat(f_path).st_mtime < now - retention_seconds:
+                            try:
+                                os.remove(f_path)
+                                logger.info(f"CLEANUP: Removed old log file {f}")
+                            except: pass
+        except Exception as e:
+            logger.error(f"Cleanup error: {e}")
+        time.sleep(3600) # Check every hour
+
+# Start cleanup thread
+cleanup_thread = threading.Thread(target=clean_old_logs, daemon=True)
+cleanup_thread.start()
 
 
 
@@ -313,7 +345,10 @@ def api_accounts():
             "today_label": today_label
         })
     
-    return jsonify(results)
+    return jsonify({
+        "accounts": results,
+        "queue_size": JOB_QUEUE.qsize() + ACTIVE_JOBS
+    })
 
 
 @app.route("/settings/get", methods=["GET"])
