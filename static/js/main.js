@@ -349,6 +349,33 @@ function updateStatusRealTime() {
             card.classList.remove('card-active-pulse');
           }
         }
+
+        // Update Syncing Spinner & Button State
+        const syncBtn = card.querySelector('.sync-btn');
+        if (syncBtn) {
+          const syncIcon = syncBtn.querySelector('.sync-icon');
+          const spinnerIcon = syncBtn.querySelector('.spinner-icon');
+          const syncLabel = syncBtn.querySelector('span');
+
+          if (acc.is_syncing) {
+            if (syncIcon) syncIcon.style.display = 'none';
+            if (spinnerIcon) spinnerIcon.style.display = 'inline';
+            if (syncLabel) syncLabel.textContent = 'Syncing...';
+            syncBtn.disabled = true;
+            card.classList.add('is-syncing');
+          } else {
+            if (spinnerIcon) spinnerIcon.style.display = 'none';
+            if (syncIcon) syncIcon.style.display = 'inline';
+            syncBtn.disabled = false;
+            card.classList.remove('is-syncing');
+
+            if (acc.pct >= 99 && syncLabel) {
+              syncLabel.textContent = 'Synced';
+            } else if (syncLabel) {
+              syncLabel.textContent = 'Sync Manual';
+            }
+          }
+        }
       });
     })
     .catch(err => {
