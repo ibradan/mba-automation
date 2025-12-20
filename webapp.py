@@ -55,33 +55,23 @@ def worker():
                     # Run synchronously - creating a BLOCKING call here
                     subprocess.run(cmd, cwd=os.path.dirname(__file__), stdout=f, stderr=subprocess.STDOUT)
                 
-                # Send Telegram Notification
-                try:
-                    # Reload accounts to get the latest progress update from the CLI run
-                    accounts_data = data_manager.load_accounts()
-                    norm_p = normalize_phone(phone_display)
-                    acc_info = next((a for a in accounts_data if normalize_phone(a.get('phone', '')) == norm_p), None)
-                    
-                    if acc_info:
-                        today_str = datetime.datetime.now().strftime('%Y-%m-%d')
-                        prog = acc_info.get('daily_progress', {}).get(today_str, {})
+                # Send Telegram Notification (Skip if it's just a sync job)
+                if not is_sync:
+                    try:
+                        # Reload accounts to get the latest progress update from the CLI run
+                        accounts_data = data_manager.load_accounts()
+                        norm_p = normalize_phone(phone_display)
+                        acc_info = next((a for a in accounts_data if normalize_phone(a.get('phone', '')) == norm_p), None)
                         
-                        # Format as currency-like string
-                        def fmt_rp(val):
-                            try: return f"{int(float(val or 0)):,}".replace(',', '.')
-                            except: return str(val or 0)
+                        if acc_info:
+                            today_str = datetime.datetime.now().strftime('%Y-%m-%d')
+                            prog = acc_info.get('daily_progress', {}).get(today_str, {})
+                            
+                            # Format as currency-like string
+                            def fmt_rp(val):
+                                try: return f"{int(float(val or 0)):,}".replace(',', '.')
+                                except: return str(val or 0)
 
-                        if is_sync:
-                            header = "🔄 <b>Sync Selesai!</b>"
-                            msg = (
-                                f"{header} ({phone_display})\n\n"
-                                f"📊 Progress: <b>{prog.get('completed', 0)}/{prog.get('total', 60)}</b> ({prog.get('percentage', 0)}%)\n"
-                                f"💰 Modal: <code>Rp {fmt_rp(prog.get('income'))}</code>\n"
-                                f"💵 Saldo: <code>Rp {fmt_rp(prog.get('balance'))}</code>\n"
-                                f"🧧 Pendapatan: <code>Rp {fmt_rp(prog.get('withdrawal'))}</code>\n\n"
-                                f"<i>Data berhasil disinkronisasi! 🔄</i>"
-                            )
-                        else:
                             header = "✅ <b>Tugas Selesai!</b>"
                             msg = (
                                 f"{header} ({phone_display})\n\n"
@@ -89,12 +79,12 @@ def worker():
                                 f"💵 Saldo: <code>Rp {fmt_rp(prog.get('balance'))}</code>\n\n"
                                 f"<i>Automasi sukses dijalankan! 🔥</i>"
                             )
-                        data_manager.send_telegram_msg(msg)
-                    else:
-                        data_manager.send_telegram_msg(f"✅ <b>Tugas Selesai!</b>\nAkun: <code>{phone_display}</code>\nStatus: Berhasil.")
-                except Exception as tele_e:
-                    logger.error(f"Failed to send detailed Telegram: {tele_e}")
-                    data_manager.send_telegram_msg(f"✅ <b>Tugas Selesai!</b>\nAkun: <code>{phone_display}</code>")
+                            data_manager.send_telegram_msg(msg)
+                        else:
+                            data_manager.send_telegram_msg(f"✅ <b>Tugas Selesai!</b>\nAkun: <code>{phone_display}</code>\nStatus: Berhasil.")
+                    except Exception as tele_e:
+                        logger.error(f"Failed to send detailed Telegram: {tele_e}")
+                        data_manager.send_telegram_msg(f"✅ <b>Tugas Selesai!</b>\nAkun: <code>{phone_display}</code>")
                 
                 logger.info(f"QUEUE: Finished job for {phone_display}")
             except Exception as e:
