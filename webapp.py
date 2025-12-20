@@ -71,15 +71,24 @@ def worker():
                             try: return f"{int(float(val or 0)):,}".replace(',', '.')
                             except: return str(val or 0)
 
-                        header = "🔄 <b>Sync Selesai!</b>" if is_sync else "✅ <b>Tugas Selesai!</b>"
-                        msg = (
-                            f"{header} ({phone_display})\n\n"
-                            f"📊 Progress: <b>{prog.get('completed', 0)}/{prog.get('total', 60)}</b> ({prog.get('percentage', 0)}%)\n"
-                            f"💰 Modal: <code>Rp {fmt_rp(prog.get('income'))}</code>\n"
-                            f"💵 Saldo: <code>Rp {fmt_rp(prog.get('balance'))}</code>\n"
-                            f"🧧 Pendapatan: <code>Rp {fmt_rp(prog.get('withdrawal'))}</code>\n\n"
-                            f"<i>Automasi sukses dijalankan! 🔥</i>"
-                        )
+                        if is_sync:
+                            header = "🔄 <b>Sync Selesai!</b>"
+                            msg = (
+                                f"{header} ({phone_display})\n\n"
+                                f"📊 Progress: <b>{prog.get('completed', 0)}/{prog.get('total', 60)}</b> ({prog.get('percentage', 0)}%)\n"
+                                f"💰 Modal: <code>Rp {fmt_rp(prog.get('income'))}</code>\n"
+                                f"💵 Saldo: <code>Rp {fmt_rp(prog.get('balance'))}</code>\n"
+                                f"🧧 Pendapatan: <code>Rp {fmt_rp(prog.get('withdrawal'))}</code>\n\n"
+                                f"<i>Data berhasil disinkronisasi! 🔄</i>"
+                            )
+                        else:
+                            header = "✅ <b>Tugas Selesai!</b>"
+                            msg = (
+                                f"{header} ({phone_display})\n\n"
+                                f"📊 Progress: <b>{prog.get('completed', 0)}/{prog.get('total', 60)}</b> ({prog.get('percentage', 0)}%)\n"
+                                f"💵 Saldo: <code>Rp {fmt_rp(prog.get('balance'))}</code>\n\n"
+                                f"<i>Automasi sukses dijalankan! 🔥</i>"
+                            )
                         data_manager.send_telegram_msg(msg)
                     else:
                         data_manager.send_telegram_msg(f"✅ <b>Tugas Selesai!</b>\nAkun: <code>{phone_display}</code>\nStatus: Berhasil.")
