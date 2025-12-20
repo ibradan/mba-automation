@@ -10,17 +10,17 @@ function requestNotificationPermission() {
     return;
   }
 
-  if (Notification.permission === "default") {
-    Notification.requestPermission().then(permission => {
-      if (permission === "granted") {
-        showToast("Izin diberikan! Silakan tes lagi. ✅", "success");
-      } else {
-        showToast("Izin ditolak. Cek settingan Chrome agan. ❌", "error");
-      }
-    });
-  } else if (Notification.permission === "denied") {
-    showToast("Izin diblokir. Riset permission di Chrome gan! ❌", "error");
-  }
+  showToast("Meminta izin... (" + Notification.permission + ")", "info");
+
+  Notification.requestPermission().then(permission => {
+    if (permission === "granted") {
+      showToast("Izin DIBERIKAN! Silakan tes lagi. ✅", "success");
+    } else if (permission === "denied") {
+      showToast("Izin DITOLAK. Cek settingan Chrome agan. ❌", "error");
+    } else {
+      showToast("Izin diabaikan. Klik Izinkan di pop-up gan! ⚠️", "info");
+    }
+  });
 }
 
 function showNativeNotification(title, body) {
@@ -28,7 +28,7 @@ function showNativeNotification(title, body) {
   if (!("Notification" in window)) return;
 
   if (Notification.permission !== "granted") {
-    showToast("Izin notifikasi belum aktif! ❌", "error");
+    showToast("Gagal: Izin " + Notification.permission + " ❌", "error");
     return;
   }
 
