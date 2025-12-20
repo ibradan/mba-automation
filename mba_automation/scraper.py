@@ -51,12 +51,26 @@ def scrape_record_page(page: Page, url_suffix: str, record_type: str, timeout: i
                     is_valid = True
                 
                 if is_valid:
-                    amount_el = cell.locator(".amount-change")
-                    amount_text = amount_el.text_content(timeout=1000) if amount_el.count() > 0 else "0"
-                    if amount_text:
-                        cleaned = amount_text.strip().replace('+', '').replace('-', '').replace(' ', '').replace('.', '').replace(',', '.')
-                        try: total_amount += float(cleaned)
-                        except: pass
+                    try:
+                        amount_el = cell.locator(".amount-change")
+                        amount_text = amount_el.text_content(timeout=1000) if amount_el.count() > 0 else "0"
+                        if amount_text:
+                            # Improved regex cleaning for financial strings
+                            import re
+                            cleaned = re.sub(r'[^\d.,]', '', amount_text)
+                            # Standardize to dot decimal: handle "1.234.567" or "1,234.56"
+                            if ',' in cleaned and '.' in cleaned:
+                                # Both present (eg 1.234,56 or 1,234.56) -> assume last is decimal
+                                if cleaned.rfind(',') > cleaned.rfind('.'):
+                                    cleaned = cleaned.replace('.', '').replace(',', '.')
+                                else:
+                                    cleaned = cleaned.replace(',', '')
+                            elif ',' in cleaned: # Only comma eg 1234,56
+                                cleaned = cleaned.replace(',', '.')
+                            
+                            try: total_amount += float(cleaned)
+                            except: pass
+                    except: pass
             except: continue
             
         return total_amount

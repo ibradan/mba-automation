@@ -1,16 +1,100 @@
-import argparse
-import os
-import time
-# from dotenv import load_dotenv
 import json
 import datetime
 import fcntl
+import signal
+import sys
+import re
 from playwright.sync_api import sync_playwright
 from .automation import run as automation_run
 
-ACCOUNTS_FILE = os.path.join(os.path.dirname(__file__), '..', 'accounts.json')
-ACCOUNTS_FILE = os.path.abspath(ACCOUNTS_FILE)
+ACCOUNTS_FILE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'accounts.json'))
 
+# Global state for signal handler
+current_run_data = {
+    'phone': None,
+    'completed': 0,
+    'total': 0,
+    'income': 0.0,
+    'withdrawal': 0.0,
+    'balance': 0.0,
+    'is_sync': False
+}
+
+def normalize_phone(phone):
+    """Standard normalization: ensure starts with 62."""
+    if not phone: return ""
+    p = re.sub(r'\D', '', str(phone))
+    if p.startswith('0'): p = '62' + p[1:]
+    elif p.startswith('8'): p = '62' + p
+    return p
+
+def save_progress():
+    """Atomically save current progress to accounts.json."""
+    data = current_run_data
+    if not data['phone']:
+        return
+
+    try:
+        with open(ACCOUNTS_FILE, 'r+') as f:
+            fcntl.flock(f, fcntl.LOCK_EX)
+            try:
+                accounts = json.load(f)
+                updated = False
+                today = datetime.datetime.now().strftime('%Y-%m-%d')
+                norm_target = normalize_phone(data['phone'])
+
+                for acc in accounts:
+                    if normalize_phone(acc.get('phone')) == norm_target:
+                        if 'daily_progress' not in acc:
+                            acc['daily_progress'] = {}
+                        
+                        existing = acc['daily_progress'].get(today, {})
+                        
+                        # Sticky Progress
+                        final_completed = max(data['completed'], existing.get('completed', 0))
+                        final_total = max(data['total'], existing.get('total', 0))
+                        
+                        # Sticky Financials
+                        final_income = data['income'] if (data['income'] > 0 or not existing) else existing.get('income', 0.0)
+                        final_withdrawal = data['withdrawal'] if (data['withdrawal'] > 0 or not existing) else existing.get('withdrawal', 0.0)
+                        final_balance = data['balance'] if (data['balance'] > 0 or not existing) else existing.get('balance', 0.0)
+
+                        acc['daily_progress'][today] = {
+                            'date': today,
+                            'completed': final_completed,
+                            'total': final_total,
+                            'percentage': int((final_completed / final_total) * 100) if final_total > 0 else 0,
+                            'income': final_income,
+                            'withdrawal': final_withdrawal,
+                            'balance': final_balance
+                        }
+                        
+                        ts = datetime.datetime.now().isoformat()
+                        acc['last_sync_ts'] = ts
+                        if not data['is_sync']:
+                            acc['last_run_ts'] = ts
+                        
+                        acc['is_syncing'] = False
+                        updated = True
+                        break
+                
+                if updated:
+                    f.seek(0)
+                    json.dump(accounts, f, indent=2)
+                    f.truncate()
+                    print(f"✓ Progress saved for {data['phone']}")
+            finally:
+                fcntl.flock(f, fcntl.LOCK_UN)
+    except Exception as e:
+        print(f"⚠️ Failed to save progress: {e}")
+
+def signal_handler(sig, frame):
+    print(f"\nTerminating (signal {sig}). Saving progress...")
+    save_progress()
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, signal_handler)
+signal.signal(signal.SIGTERM, signal_handler)
 
 def main():
     parser = argparse.ArgumentParser(description="MBA7 automation CLI")
@@ -73,106 +157,52 @@ def main():
         for phone in phones:
             print(f"Starting automation for {phone} (headless={final_headless})")
             
-            # Retry loop to ensure completion
-            max_retries = 50
+            current_run_data.update({
+                'phone': phone,
+                'completed': 0,
+                'total': args.iterations,
+                'income': 0.0,
+                'withdrawal': 0.0,
+                'balance': 0.0,
+                'is_sync': args.sync
+            })
+            
+            max_retries = 5
             attempt = 0
-            completed = 0
-            total = args.iterations
-            income = 0.0
-            withdrawal = 0.0
-            balance = 0.0
-
             while attempt < max_retries:
                 attempt += 1
                 if attempt > 1:
                     print(f"🔄 Retry attempt {attempt}/{max_retries} for {phone}...")
                 
                 try:
-                    completed, total, income, withdrawal, balance = automation_run(playwright, phone=phone, password=password, headless=final_headless, slow_mo=args.slow_mo, iterations=args.iterations, review_text=args.review, viewport_name=args.viewport, timeout=args.timeout, sync_only=args.sync)
+                    c, t, i, w, b = automation_run(
+                        playwright, phone=phone, password=password, 
+                        headless=final_headless, slow_mo=args.slow_mo, 
+                        iterations=args.iterations, review_text=args.review, 
+                        viewport_name=args.viewport, timeout=args.timeout, 
+                        sync_only=args.sync
+                    )
                     
-                    if args.sync or (completed >= total and total > 0):
-                        if args.sync:
-                            print(f"✅ SYNC: {phone} financial data updated")
-                        else:
-                            print(f"✅ SUCCESS: {phone} completed all tasks ({completed}/{total})")
+                    # Update global data for persistence
+                    current_run_data.update({
+                        'completed': c,
+                        'total': t,
+                        'income': i,
+                        'withdrawal': w,
+                        'balance': b
+                    })
+                    
+                    if args.sync or (c >= t and t > 0):
+                        print(f"✅ {'SYNC' if args.sync else 'SUCCESS'} for {phone}")
                         break
                     
-                    print(f"⚠️ Incomplete: {completed}/{total}. Retrying in 5s...")
+                    print(f"⚠️ Incomplete: {c}/{t}. Retrying in 5s...")
                     time.sleep(5)
                 except Exception as e:
-                    print(f"❌ Error during run: {e}. Retrying in 5s...")
+                    print(f"❌ Error: {e}. Retrying in 5s...")
                     time.sleep(5)
             
-            if completed < total:
-                print(f"❌ FAILED: Could not complete tasks for {phone} after {max_retries} attempts.")
-            
-            # Save progress to accounts.json
-            try:
-                with open(ACCOUNTS_FILE, 'r+') as f:
-                    # Use file locking to prevent race conditions
-                    fcntl.flock(f, fcntl.LOCK_EX)
-                    try:
-                        data = json.load(f)
-                        updated = False
-                        today = datetime.datetime.now().strftime('%Y-%m-%d')
-                        
-                        for acc in data:
-                            # Normalize phone (add 62 prefix if needed) for comparison
-                            normalized_phone_in_file = acc.get('phone')
-                            if normalized_phone_in_file and not normalized_phone_in_file.startswith('62'):
-                                normalized_phone_in_file = '62' + normalized_phone_in_file
-                            
-                            normalized_current_phone = phone if phone.startswith('62') else '62' + phone
-
-                            if normalized_phone_in_file == normalized_current_phone:
-                                if 'daily_progress' not in acc:
-                                    acc['daily_progress'] = {}
-                                
-                                # Preserve existing data if sync fails to get new ones
-                                existing = acc['daily_progress'].get(today, {})
-                                
-                                # Sticky Progress: Never overwrite with a lower "completed" count for the same day
-                                final_completed = max(completed, existing.get('completed', 0))
-                                # Ensure total stays consistent if we already knew it
-                                final_total = max(total, existing.get('total', 0))
-                                
-                                # Preserve financial stats if new ones are 0 (likely scraping error)
-                                final_income = income if (income > 0 or not existing) else existing.get('income', 0.0)
-                                final_withdrawal = withdrawal if (withdrawal > 0 or not existing) else existing.get('withdrawal', 0.0)
-                                final_balance = balance if (balance > 0 or not existing) else existing.get('balance', 0.0)
-
-                                acc['daily_progress'][today] = {
-                                    'date': today,
-                                    'completed': final_completed,
-                                    'total': final_total,
-                                    'percentage': int((final_completed / final_total) * 100) if final_total > 0 else 0,
-                                    'income': final_income,
-                                    'withdrawal': final_withdrawal,
-                                    'balance': final_balance
-                                }
-                                if args.sync:
-                                    acc['last_sync_ts'] = datetime.datetime.now().isoformat()
-                                else:
-                                    acc['last_run_ts'] = datetime.datetime.now().isoformat()
-                                    # Also update sync ts during run? Maybe, since we got fresh data.
-                                    acc['last_sync_ts'] = datetime.datetime.now().isoformat()
-                                # Clear persistent sync state
-                                acc['is_syncing'] = False
-                                updated = True
-                                break
-                        
-                        if updated:
-                            f.seek(0)
-                            json.dump(data, f, indent=2)
-                            f.truncate()
-                            print(f"✓ Progress saved: {completed}/{total} ({int((completed/total)*100)}%) - Income: Rp {income:,.0f} - Withdrawal: Rp {withdrawal:,.0f} - Balance: Rp {balance:,.0f}")
-                        else:
-                            print(f"Warning: Account {phone} not found in accounts.json")
-                            
-                    finally:
-                        fcntl.flock(f, fcntl.LOCK_UN)
-            except Exception as e:
-                print(f"Warning: Could not save progress: {e}")
+            save_progress()
 
 
 if __name__ == "__main__":

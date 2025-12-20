@@ -1,110 +1,13 @@
 // Auto-save functionality
 let autoSaveTimeout;
 let isSaving = false;
-let NOTIFIED_TODAY = new Set(); // Tracks phones notified for 100% completion
+let isPolling = false;
 
-// Request notification permission
-function requestNotificationPermission() {
-  if (!("Notification" in window)) {
-    showToast("Browser agan gak support notifikasi ❌", "error");
-    return;
-  }
-
-  showToast("Meminta izin... (" + Notification.permission + ")", "info");
-
-  Notification.requestPermission().then(permission => {
-    if (permission === "granted") {
-      showToast("Izin DIBERIKAN! Silakan tes lagi. ✅", "success");
-    } else if (permission === "denied") {
-      showToast("Izin DITOLAK. Cek settingan Chrome agan. ❌", "error");
-    } else {
-      showToast("Izin diabaikan. Klik Izinkan di pop-up gan! ⚠️", "info");
-    }
-  });
-}
-
-function showNativeNotification(title, body) {
-  console.log("Attempting notification:", title);
-  if (!("Notification" in window)) return;
-
-  if (Notification.permission !== "granted") {
-    showToast("Gagal: Izin " + Notification.permission + " ❌", "error");
-    return;
-  }
-
-  const options = {
-    body: body,
-    icon: '/static/icon-192.png',
-    badge: '/static/icon-192.png',
-    vibrate: [200, 100, 200],
-    tag: 'ternak-uang-alert',
-    renotify: true
-  };
-
-  // IMMEDIATE FIRE: Try standard notification first
-  try {
-    const n = new Notification(title, options);
-    console.log("Standard notification fired");
-    showToast("Notifikasi terkirim! 💎", "success");
-  } catch (e) {
-    console.warn("Standard notification failed, trying SW...", e);
-    // FALLBACK: Use ServiceWorker if standard fails (some mobile browsers require this)
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.ready.then(registration => {
-        registration.showNotification(title, options).catch(err => {
-          showToast("SW Error: " + err, "error");
-        });
-      });
-    } else {
-      showToast("Gagal total: " + e, "error");
-    }
-  }
-}
-
-function testNotification() {
-  if (!window.isSecureContext) {
-    showToast("Gagal: Harus pakai HTTPS atau localhost! ❌", "error");
-    return;
-  }
-
-  if (!("Notification" in window)) {
-    showToast("Browser tidak suport Notifikasi ❌", "error");
-    return;
-  }
-
-  if (Notification.permission === "granted") {
-    showToast("Mengirim Sinyal Notifikasi... 🛰️", "info");
-    showNativeNotification("Koneksi Berhasil! 💎", "Notifikasi Ternak Uang sudah aktif dan siap tempur gan! 🔥");
-  } else {
-    showToast("Minta izin dulu gan... Klik Izinkan!", "info");
-    requestNotificationPermission();
-  }
-}
 
 async function forceResetApp() {
   if (confirm("Reset & Update Aplikasi? \n\nIni akan menghapus cache dan memaksa download versi terbaru.")) {
-    showToast("Cleaning system... 🧹", "info");
-
-    // Unregister all SW
-    if ('serviceWorker' in navigator) {
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      for (let registration of registrations) {
-        await registration.unregister();
-      }
-    }
-
-    // Clear all caches
-    if ('caches' in window) {
-      const cacheNames = await caches.keys();
-      for (let name of cacheNames) {
-        await caches.delete(name);
-      }
-    }
-
-    showToast("Update complete! Reloading... 🚀", "success");
-    setTimeout(() => {
-      window.location.reload(true);
-    }, 1000);
+    // Deprecated for Telegram migration
+    window.location.reload(true);
   }
 }
 
@@ -202,6 +105,11 @@ function removeRow(btn) {
   row.remove();
   updateAccountNumbers(); // Re-index after removing
   forceSave(); // Save immediately after removing
+}
+
+function performAutoSyncAll() {
+  console.log("Auto-sync all requested...");
+  // This is now disabled per user request to avoid auto-queuing on refresh
 }
 
 function updateAccountNumbers() {
@@ -412,147 +320,48 @@ function updateStatusRealTime() {
         const card = document.querySelector(`.account-card[data-phone="${acc.phone_display}"]`);
         if (!card) return;
 
-        // Toggle Is-Syncing highlight for jobs
-        if (acc.is_syncing) {
-          card.classList.add('is-syncing');
-        } else {
-          card.classList.remove('is-syncing');
-        }
+        // Update progress bar
+        const fill = card.querySelector('.progress-fill');
+        const text = card.querySelector('.progress-text');
+        if (fill && text) {
+          const pct = acc.pct || 0;
+          fill.style.width = pct + '%';
+          text.textContent = `${acc.completed}/${acc.total} (${pct}%)`;
 
-        // 1. Update status class (ran/due/pending)
-        card.classList.remove('ran', 'due', 'pending');
-        card.classList.add(acc.status || 'pending');
-
-        // 2. Update Progress Bar
-        const progressDiv = card.querySelector('.daily-progress');
-        if (progressDiv) {
-          const labelEl = progressDiv.querySelector('.progress-label');
-          const valueEl = progressDiv.querySelector('.progress-value');
-          const percentEl = progressDiv.querySelector('.progress-percent');
-
-          if (labelEl) labelEl.textContent = acc.today_label;
-          if (valueEl) valueEl.textContent = `${acc.completed}/${acc.total}`;
-
-          const fillEl = progressDiv.querySelector('.progress-fill');
-          if (fillEl) fillEl.style.width = acc.pct + '%';
-
-          progressDiv.classList.remove('progress-complete', 'progress-partial', 'progress-low');
+          fill.classList.remove('progress-complete', 'progress-partial', 'progress-low');
           if (acc.status === 'ran') {
-            progressDiv.classList.add('progress-complete');
-            if (acc.pct >= 100 && !NOTIFIED_TODAY.has(acc.phone)) {
-              NOTIFIED_TODAY.add(acc.phone);
-              showNativeNotification("Tugas Selesai! ✅", `Akun ${display} sudah menyelesaikan ${acc.completed}/${acc.total} tugas.`);
-            }
+            fill.classList.add('progress-complete');
           }
-          else if (acc.status === 'due') progressDiv.classList.add('progress-partial');
-          else progressDiv.classList.add('progress-low');
+          else if (acc.status === 'due') fill.classList.add('progress-partial');
+          else fill.classList.add('progress-low');
         }
 
-        // 3. Update Syncing Spinner
-        const syncBtn = card.querySelector('.sync-btn');
-        if (syncBtn) {
-          const syncIcon = syncBtn.querySelector('.sync-icon');
-          const spinnerIcon = syncBtn.querySelector('.spinner-icon');
-          const syncLabel = syncBtn.querySelector('span');
+        // Update status badge & pulsing effect
+        const badge = card.querySelector('.status-badge');
+        if (badge) {
+          badge.className = 'status-badge status-' + (acc.status_raw || 'idle');
+          badge.textContent = acc.status_label || 'Idle';
 
-          if (acc.is_syncing) {
-            if (syncIcon) syncIcon.style.display = 'none';
-            if (spinnerIcon) spinnerIcon.style.display = 'inline';
-            if (syncLabel) syncLabel.textContent = 'Syncing...';
-            syncBtn.disabled = true;
+          // Add pulsing class if active
+          if (acc.status_raw === 'running' || acc.status_raw === 'queued') {
+            card.classList.add('card-active-pulse');
           } else {
-            if (spinnerIcon) spinnerIcon.style.display = 'none';
-            if (syncIcon) syncIcon.style.display = 'inline';
-            syncBtn.disabled = false;
-
-            if (acc.pct >= 99 && syncLabel) syncLabel.textContent = 'Synced';
+            card.classList.remove('card-active-pulse');
           }
-        }
-
-        // 4. Update Stats with Animation
-        const incomeVal = card.querySelector('.income-display .stat-value');
-        if (incomeVal) {
-          const oldVal = parseInt(incomeVal.textContent.replace(/[^0-9]/g, '')) || 0;
-          if (oldVal !== acc.income) animateValue(incomeVal, oldVal, acc.income, 800);
-        }
-
-        const withdrawalVal = card.querySelector('.withdrawal-display .stat-value');
-        if (withdrawalVal) {
-          const oldVal = parseInt(withdrawalVal.textContent.replace(/[^0-9]/g, '')) || 0;
-          if (oldVal !== acc.withdrawal) animateValue(withdrawalVal, oldVal, acc.withdrawal, 800);
-        }
-
-        const balanceVal = card.querySelector('.balance-display .stat-value');
-        if (balanceVal) {
-          const oldVal = parseInt(balanceVal.textContent.replace(/[^0-9]/g, '')) || 0;
-          if (oldVal !== acc.balance) animateValue(balanceVal, oldVal, acc.balance, 800);
         }
       });
-      // Re-attach action buttons if they were replaced by status updates (template)
-      // Note: This is generally not needed if only content is updated, not the buttons themselves.
-      // However, if the buttons are dynamically added/removed or their HTML is replaced,
-      // these calls ensure event listeners are re-bound.
-      attachPlayButtons();
-      attachSyncButtons();
-      attachMoreButtons(); // Added this line
     })
     .catch(err => {
-      console.error('Error polling status:', err);
+      console.error('Polling error:', err);
     });
-}
-
-function autoSyncStaleAccounts() {
-  const today = new Date().toISOString().slice(0, 10);
-  const cards = document.querySelectorAll('.account-card[data-phone]');
-  const staleAccounts = [];
-
-  cards.forEach(card => {
-    const lastSync = card.dataset.lastSync || '';
-    const phone = card.dataset.phone;
-    if (phone && lastSync !== today) {
-      staleAccounts.push({ card, phone });
-    }
-  });
-
-  if (staleAccounts.length === 0) return;
-
-  console.log(`Found ${staleAccounts.length} stale accounts. Starting sequential sync...`);
-
-  // Sync sequentially to avoid IP blocks/resource lag
-  let p = Promise.resolve();
-  staleAccounts.forEach(item => {
-    p = p.then(() => performSync(item.phone, item.card));
-  });
-}
-
-async function performSync(phone, card) {
-  console.log(`Auto-syncing +62${phone}...`);
-  try {
-    const formData = new FormData();
-    formData.append('phone', phone);
-    const res = await fetch('/sync_single', { method: 'POST', body: formData });
-    const data = await res.json();
-
-    // Refresh UI after sync to show queue change
-    setTimeout(updateStatusRealTime, 500);
-
-    return data;
-  } catch (e) {
-    console.error(`Auto-sync failed for ${phone}:`, e);
-  }
 }
 
 // Initial setup on load
 document.addEventListener('DOMContentLoaded', function () {
-  autoSyncStaleAccounts();
   updateStatusRealTime(); // Run immediately on load
-  setInterval(updateStatusRealTime, 5000); // Poll every 5 seconds (more responsive)
-
-  // Auto-sync all on load
-  setTimeout(performAutoSyncAll, 1500);
-
-  // Request permission on first click
-  document.addEventListener('click', requestNotificationPermission, { once: true });
+  setInterval(() => {
+    if (!isPolling) updateStatusRealTime();
+  }, 5000);
 
   // Initial progress for existing cards
   document.querySelectorAll('.account-card').forEach(card => {
@@ -778,7 +587,9 @@ function initSettings() {
     'setting-wifi',
     'setting-timeout',
     'setting-viewport',
-    'setting-loglevel'
+    'setting-loglevel',
+    'setting-telegram-token',
+    'setting-telegram-chat-id'
   ];
 
   settingsInputs.forEach(id => {
@@ -829,6 +640,44 @@ function initSettings() {
       }
     });
   }
+
+  // Telegram Test
+  const btnTestTele = document.getElementById('btn-test-telegram');
+  if (btnTestTele) {
+    btnTestTele.addEventListener('click', function () {
+      const token = document.getElementById('setting-telegram-token').value;
+      const chatId = document.getElementById('setting-telegram-chat-id').value;
+
+      if (!token || !chatId) {
+        showToast('Token & Chat ID wajib diisi!', 'error');
+        return;
+      }
+
+      btnTestTele.disabled = true;
+      btnTestTele.textContent = 'Mengirim... ⌛';
+
+      fetch('/settings/test_telegram', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ telegram_token: token, telegram_chat_id: chatId })
+      })
+        .then(res => res.json())
+        .then(data => {
+          btnTestTele.disabled = false;
+          btnTestTele.textContent = 'Tes Telegram ✈️';
+          if (data.status === 'success') {
+            showToast(data.message, 'success');
+          } else {
+            showToast(data.message, 'error');
+          }
+        })
+        .catch(err => {
+          btnTestTele.disabled = false;
+          btnTestTele.textContent = 'Tes Telegram ✈️';
+          showToast('Error: ' + err, 'error');
+        });
+    });
+  }
 }
 
 function saveSettings() {
@@ -836,7 +685,9 @@ function saveSettings() {
     auto_reconnect_wifi: document.getElementById('setting-wifi').checked,
     timeout: parseInt(document.getElementById('setting-timeout').value),
     viewport: document.getElementById('setting-viewport').value,
-    log_level: document.getElementById('setting-loglevel').value
+    log_level: document.getElementById('setting-loglevel').value,
+    telegram_token: document.getElementById('setting-telegram-token').value,
+    telegram_chat_id: document.getElementById('setting-telegram-chat-id').value
   };
 
   console.log('Saving settings:', settings);

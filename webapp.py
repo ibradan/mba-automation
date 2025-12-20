@@ -12,6 +12,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 import queue
 import fcntl
+import requests
 
 
 app = Flask(__name__)
@@ -31,6 +32,7 @@ ACTIVE_JOBS_LOCK = threading.Lock()
 def worker():
     """Background worker to process automation jobs serially."""
     while True:
+        job = None
         try:
             job = JOB_QUEUE.get()
             if job is None:
@@ -39,19 +41,51 @@ def worker():
             cmd = job.get('cmd')
             log_file = job.get('log_file')
             phone_display = job.get('phone_display')
+            is_sync = job.get('is_sync', False)
             
-            logger.info(f"QUEUE: Starting job for {phone_display}")
+            logger.info(f"QUEUE: Starting job for {phone_display} (Sync={is_sync})")
+            
+            with ACTIVE_JOBS_LOCK:
+                global ACTIVE_JOBS
+                ACTIVE_JOBS += 1
             
             try:
-                with ACTIVE_JOBS_LOCK:
-                    global ACTIVE_JOBS
-                    ACTIVE_JOBS += 1
-                
                 # Open file for writing
                 with open(log_file, "w") as f:
                     # Run synchronously - creating a BLOCKING call here
-                    # This ensures only one browser instance runs at a time
                     subprocess.run(cmd, cwd=os.path.dirname(__file__), stdout=f, stderr=subprocess.STDOUT)
+                
+                # Send Telegram Notification
+                try:
+                    # Reload accounts to get the latest progress update from the CLI run
+                    accounts_data = data_manager.load_accounts()
+                    norm_p = normalize_phone(phone_display)
+                    acc_info = next((a for a in accounts_data if normalize_phone(a.get('phone', '')) == norm_p), None)
+                    
+                    if acc_info:
+                        today_str = datetime.datetime.now().strftime('%Y-%m-%d')
+                        prog = acc_info.get('daily_progress', {}).get(today_str, {})
+                        
+                        # Format as currency-like string
+                        def fmt_rp(val):
+                            try: return f"{int(float(val or 0)):,}".replace(',', '.')
+                            except: return str(val or 0)
+
+                        header = "🔄 <b>Sync Selesai!</b>" if is_sync else "✅ <b>Tugas Selesai!</b>"
+                        msg = (
+                            f"{header} ({phone_display})\n\n"
+                            f"📊 Progress: <b>{prog.get('completed', 0)}/{prog.get('total', 60)}</b> ({prog.get('percentage', 0)}%)\n"
+                            f"💰 Modal: <code>Rp {fmt_rp(prog.get('income'))}</code>\n"
+                            f"💵 Saldo: <code>Rp {fmt_rp(prog.get('balance'))}</code>\n"
+                            f"🧧 Pendapatan: <code>Rp {fmt_rp(prog.get('withdrawal'))}</code>\n\n"
+                            f"<i>Automasi sukses dijalankan! 🔥</i>"
+                        )
+                        data_manager.send_telegram_msg(msg)
+                    else:
+                        data_manager.send_telegram_msg(f"✅ <b>Tugas Selesai!</b>\nAkun: <code>{phone_display}</code>\nStatus: Berhasil.")
+                except Exception as tele_e:
+                    logger.error(f"Failed to send detailed Telegram: {tele_e}")
+                    data_manager.send_telegram_msg(f"✅ <b>Tugas Selesai!</b>\nAkun: <code>{phone_display}</code>")
                 
                 logger.info(f"QUEUE: Finished job for {phone_display}")
             except Exception as e:
@@ -59,10 +93,12 @@ def worker():
             finally:
                 with ACTIVE_JOBS_LOCK:
                     ACTIVE_JOBS -= 1
-                JOB_QUEUE.task_done()
                 
         except Exception as e:
             logger.exception(f"Worker exception: {e}")
+        finally:
+            if job is not None:
+                JOB_QUEUE.task_done()
 
 # Start worker thread
 worker_thread = threading.Thread(target=worker, daemon=True)
@@ -116,8 +152,12 @@ class DataManager:
     def save_settings(self, settings):
         """Save settings to JSON file with error handling."""
         try:
-            with open(self.settings_file, 'w') as f:
+            temp_file = self.settings_file + '.tmp'
+            with open(temp_file, 'w') as f:
                 json.dump(settings, f, indent=2)
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(temp_file, self.settings_file)
             return True
         except Exception as e:
             logger.error(f"Failed to save settings: {e}")
@@ -208,6 +248,34 @@ class DataManager:
     def write_accounts(self, accounts):
         """Legacy wrapper for simple overwrite."""
         return self.atomic_update_accounts(lambda _: accounts)
+
+    def send_telegram_msg(self, message):
+        """Send a message via Telegram Bot API using settings."""
+        settings = self.load_settings()
+        token = settings.get('telegram_token')
+        chat_id = settings.get('telegram_chat_id')
+        
+        if not token or not chat_id:
+            logger.warning("Telegram NOT SENT: Missing token or chat_id in settings")
+            return False
+            
+        try:
+            url = f"https://api.telegram.org/bot{token}/sendMessage"
+            payload = {
+                "chat_id": chat_id,
+                "text": message,
+                "parse_mode": "HTML"
+            }
+            resp = requests.post(url, json=payload, timeout=10)
+            if resp.status_code == 200:
+                logger.info("Telegram message sent successfully")
+                return True
+            else:
+                logger.error(f"Telegram failed: {resp.status_code} - {resp.text}")
+                return False
+        except Exception as e:
+            logger.error(f"Telegram exception: {e}")
+            return False
 
 data_manager = DataManager()
 
@@ -366,6 +434,31 @@ def save_settings():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+
+@app.route("/settings/test_telegram", methods=["POST"])
+def test_telegram():
+    """Endpoint to test Telegram configuration."""
+    try:
+        data = request.get_json()
+        token = data.get('telegram_token')
+        chat_id = data.get('telegram_chat_id')
+        
+        if not token or not chat_id:
+             return jsonify({"status": "error", "message": "Bot Token dan Chat ID wajib diisi!"})
+            
+        url = f"https://api.telegram.org/bot{token}/sendMessage"
+        payload = {
+            "chat_id": chat_id,
+            "text": "<b>Koneksi Berhasil!</b>\n\nNotifikasi Ternak Uang sudah terhubung ke Telegram agan. 🔥",
+            "parse_mode": "HTML"
+        }
+        resp = requests.post(url, json=payload, timeout=10)
+        if resp.status_code == 200:
+            return jsonify({"status": "success", "message": "Pesan tes terkirim ke Telegram!"})
+        else:
+            return jsonify({"status": "error", "message": f"Gagal: {resp.text}"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route("/export_accounts", methods=["GET"])
 def export_accounts():
@@ -558,7 +651,8 @@ def index():
                     JOB_QUEUE.put({
                         'cmd': cmd,
                         'log_file': log_file,
-                        'phone_display': phone
+                        'phone_display': phone,
+                        'is_sync': False
                     })
                     
                     started += 1
@@ -805,7 +899,8 @@ def _trigger_run_for_account(acc):
         JOB_QUEUE.put({
             'cmd': cmd,
             'log_file': log_file,
-            'phone_display': phone_display
+            'phone_display': phone_display,
+            'is_sync': False
         })
         logger.info("Queued scheduled job logging to %s", log_file)
         return True
@@ -857,8 +952,13 @@ def _scheduler_loop():
                         logger.warning("Invalid schedule format for %s: %s", acc.get('phone', 'unknown'), sched)
                         continue
                         
-                    if last_dt and last_dt >= scheduled_dt:
-                        continue
+                    if last_dt:
+                        # Prevent double triggering within the same day if last run matches schedule
+                        # (allowing for a 1-minute drift margin)
+                         scheduled_ts = scheduled_dt.timestamp()
+                         last_ts_val = last_dt.timestamp()
+                         if last_ts_val >= scheduled_ts - 5: # -5s margin
+                             continue
                         
                     # Trigger
                     ok = _trigger_run_for_account(acc)
@@ -1195,7 +1295,8 @@ def _handle_single_run(req, sync_only=False):
         JOB_QUEUE.put({
             'cmd': cmd,
             'log_file': log_file,
-            'phone_display': phone_display
+            'phone_display': phone_display,
+            'is_sync': sync_only
         })
         
         return jsonify({"ok": True, "msg": "Job queued"})

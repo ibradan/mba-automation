@@ -13,7 +13,7 @@
   <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}" />
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon-192.png') }}" />
   <title>TERNAK UANG</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=23" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=24" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     /* Staggered entry for cards */
@@ -254,6 +254,29 @@
             </div>
 
             <hr class="settings-divider">
+            <div class="settings-header" style="font-size: 11px; opacity: 0.7; margin-bottom: 8px;">Telegram
+              Notification</div>
+
+            <div class="settings-item-vertical">
+              <span>Bot Token</span>
+              <input type="password" id="setting-telegram-token" class="settings-input" placeholder="123456:ABC..."
+                value="{{ settings.get('telegram_token', '') }}">
+            </div>
+
+            <div class="settings-item-vertical">
+              <span>Chat ID</span>
+              <input type="text" id="setting-telegram-chat-id" class="settings-input" placeholder="987654321"
+                value="{{ settings.get('telegram_chat_id', '') }}">
+            </div>
+
+            <div style="padding: 0 12px 10px;">
+              <button type="button" id="btn-test-telegram" class="btn-small"
+                style="width: 100%; justify-content: center; background: #0088cc; color: white; border: none;">
+                Tes Telegram ✈️
+              </button>
+            </div>
+
+            <hr class="settings-divider">
 
             <!-- Export/Import -->
             <div class="settings-actions">
@@ -265,21 +288,10 @@
             <hr class="settings-divider">
 
             <div style="padding: 0 12px 12px; display: flex; flex-direction: column; gap: 8px;">
-              <button type="button" onclick="testNotification()" class="btn-small"
-                style="width: 100%; justify-content: center; background: #2563eb; color: white; border: none; padding: 10px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;">
-                Tes Pop-up Notifikasi
-              </button>
-              <button type="button" onclick="forceResetApp()" class="btn-small"
-                style="width: 100%; justify-content: center; background: #64748b; color: white; border: none; padding: 8px; border-radius: 8px; font-size: 11px; opacity: 0.8;">
-                Paksa Update Aplikasi
-              </button>
             </div>
 
             <hr class="settings-divider">
 
-            <p style="font-size: 10px; color: #64748b; margin-top: 6px; text-align: center; line-height: 1.4;">
-              Klik untuk izin & tes suara/getar
-            </p>
 
             <hr class="settings-divider">
 
@@ -845,16 +857,7 @@
   </template>
 
   <!-- ================= SCRIPTS ================= -->
-  <script src="{{ url_for('static', filename='js/main.js') }}?v=26"></script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}?v=4")
-          .then(reg => console.log('Service Worker terdaftar!', reg))
-          .catch(err => console.error('Service Worker gagal!', err));
-      });
-    }
-  </script>
+  <script src="{{ url_for('static', filename='js/main.js') }}?v=30"></script>
 </body>
 
 </html>

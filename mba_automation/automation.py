@@ -1,12 +1,32 @@
+import os
+import time
 from typing import Optional, Tuple
 from playwright.sync_api import Playwright, Page, TimeoutError as PlaywrightTimeoutError
-from .scraper import scrape_income, scrape_withdrawal, scrape_balance
+from .scraper import scrape_income, scrape_withdrawal, scrape_balance, try_close_popups
 
 VIEWPORTS = {
     "iPhone 12": {"width": 390, "height": 844},
     "Pixel 5": {"width": 393, "height": 851},
     "Samsung S21": {"width": 360, "height": 800}
 }
+
+def smart_click(page: Page, selector: str, role: str = None, name: str = None, retries: int = 3, timeout: int = 5000):
+    """Reliable clicking with retries and visibility checks."""
+    for i in range(retries):
+        try:
+            if role and name:
+                el = page.get_by_role(role, name=name)
+            else:
+                el = page.locator(selector).first
+            
+            el.wait_for(state="visible", timeout=timeout)
+            el.click(timeout=timeout)
+            return True
+        except Exception:
+            if i == retries - 1:
+                return False
+            page.wait_for_timeout(500)
+    return False
 
 
 def login(page: Page, phone: str, password: str, timeout: int = 30) -> bool:
@@ -17,43 +37,34 @@ def login(page: Page, phone: str, password: str, timeout: int = 30) -> bool:
     try:
         # Normalize phone: strip '62' prefix if present
         phone_for_login = phone[2:] if phone.startswith('62') else phone
-        print(f"Logging in as {phone} (using: {phone_for_login})...")
+        print(f"Logging in as {phone}...")
         
-        page.goto("https://mba7.com/#/login", wait_until="domcontentloaded", timeout=timeout*1000)
+        page.goto("https://mba7.com/#/login", wait_until="networkidle", timeout=timeout*1000)
+        try_close_popups(page)
 
-        page.get_by_role("textbox", name="Nomor Telepon").click()
         page.get_by_role("textbox", name="Nomor Telepon").fill(phone_for_login)
-
-        page.get_by_role("textbox", name="Kata Sandi").click()
         page.get_by_role("textbox", name="Kata Sandi").fill(password)
+        
+        smart_click(page, "button", role="button", name="Masuk")
 
-        page.get_by_role("button", name="Masuk").click()
-
-        # Checkbox (kalau ada)
-        try:
-            page.get_by_role("checkbox", name=" Tidak ada lagi yang diminta").click()
-        except PlaywrightTimeoutError:
-            pass
-
-        # Setelah login: tombol "Mengonfirmasi" muncul 2x
-        for i in range(2):
-            try:
-                page.get_by_role("button", name="Mengonfirmasi").click()
+        # After login: confirm buttons might appear
+        for _ in range(3):
+            if smart_click(page, "button", role="button", name="Mengonfirmasi", timeout=2000):
                 page.wait_for_timeout(500)
-                print(f"Mengonfirmasi login ke-{i+1} OK")
-            except PlaywrightTimeoutError:
-                print(f"Mengonfirmasi login ke-{i+1} nggak muncul (gapapa, lanjut).")
+            else:
                 break
         
-        # Verify login success by waiting for URL change or home element
+        # Verify login
         try:
             page.wait_for_url("**/#/**", timeout=10000)
-            page.wait_for_timeout(2000)
-            print("Login successful.")
             return True
         except Exception:
-            print("Warning: Login verification timed out, but proceeding...")
-            return True
+            # If we are on home page elements, consider success
+            return page.locator(".iconfont.icon-lipin").count() > 0
+
+    except Exception as e:
+        print(f"Login failed: {e}")
+        return False
 
     except Exception as e:
         print(f"Login failed: {e}")
@@ -70,35 +81,14 @@ def perform_tasks(page: Page, iterations: int, review_text: Optional[str] = None
 
     # Navigate UI to get to the task list
     try:
-        page.locator(".van-badge__wrapper.van-icon.van-icon-undefined.iconfont.icon-lipin").click()
-    except PlaywrightTimeoutError:
-        pass
-
-    try:
-        page.locator("i").nth(4).click()
-    except PlaywrightTimeoutError:
-        pass
-
-    # Some extra clicks from original flow — wrapped in try/except
-    for name in ["signIn.submit", "Mengonfirmasi", ""]:
-        try:
-            page.get_by_role("button", name=name).click()
-        except PlaywrightTimeoutError:
-            pass
-
-    try:
-        page.locator("i").first.click()
-    except PlaywrightTimeoutError:
-        pass
-
-    # Masuk menu tiket
-    try:
-        page.locator(
-            ".van-badge__wrapper.van-icon.van-icon-undefined.item-icon.iconfont.icon-ticket"
-        ).click()
-        page.wait_for_timeout(1000)  # Wait for page to load
-    except PlaywrightTimeoutError:
-        pass
+        smart_click(page, ".icon-lipin")
+        smart_click(page, "i:nth-child(5)", timeout=2000) # Fallback nth child
+        
+        # Ticket menu
+        smart_click(page, ".icon-ticket")
+        page.wait_for_selector(".van-progress__pivot", timeout=10000)
+    except Exception as e:
+        print(f"Navigation error: {e}")
 
     # ========== SCRAPE ACTUAL PROGRESS FROM PAGE ==========
     try:
