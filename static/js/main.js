@@ -3,11 +3,23 @@ let autoSaveTimeout;
 let isSaving = false;
 let NOTIFIED_TODAY = new Set(); // Tracks phones notified for 100% completion
 
-// Request notification permission on first interaction
+// Request notification permission
 function requestNotificationPermission() {
-  if (!("Notification" in window)) return;
+  if (!("Notification" in window)) {
+    showToast("Browser agan gak support notifikasi ❌", "error");
+    return;
+  }
+
   if (Notification.permission === "default") {
-    Notification.requestPermission();
+    Notification.requestPermission().then(permission => {
+      if (permission === "granted") {
+        showToast("Izin diberikan! Silakan tes lagi. ✅", "success");
+      } else {
+        showToast("Izin ditolak. Cek settingan Chrome agan. ❌", "error");
+      }
+    });
+  } else if (Notification.permission === "denied") {
+    showToast("Izin diblokir. Riset permission di Chrome gan! ❌", "error");
   }
 }
 
@@ -34,9 +46,23 @@ function showNativeNotification(title, body) {
 }
 
 function testNotification() {
-  requestNotificationPermission();
-  showNativeNotification("Tes Notifikasi Berhasil! 🚀", "Ganteng banget kan notifikasinya gan? Siap pantau cuan! 🔥");
-  showToast("Mengirim tes notifikasi...", "info");
+  if (!window.isSecureContext) {
+    showToast("Gagal: Harus pakai HTTPS atau localhost! ❌", "error");
+    return;
+  }
+
+  if (!("Notification" in window)) {
+    showToast("Browser tidak suport Notifikasi ❌", "error");
+    return;
+  }
+
+  if (Notification.permission === "granted") {
+    showToast("Mengirim tes notifikasi... 🔔", "info");
+    showNativeNotification("Tes Notifikasi Berhasil! 🚀", "Ganteng banget kan notifikasinya gan? Siap pantau cuan! 🔥");
+  } else {
+    showToast("Minta izin dulu gan... Klik Izinkan!", "info");
+    requestNotificationPermission();
+  }
 }
 
 function autoSave() {
