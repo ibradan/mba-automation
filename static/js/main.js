@@ -14,16 +14,29 @@ function requestNotificationPermission() {
 function showNativeNotification(title, body) {
   if (!("Notification" in window) || Notification.permission !== "granted") return;
 
-  try {
-    const n = new Notification(title, {
-      body: body,
-      icon: '/static/icon-192.png',
-      badge: '/static/icon-192.png'
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.ready.then(registration => {
+      registration.showNotification(title, {
+        body: body,
+        icon: '/static/icon-192.png',
+        badge: '/static/icon-192.png',
+        vibrate: [200, 100, 200],
+        tag: 'ternak-uang-alert',
+        renotify: true
+      });
     });
-    n.onclick = () => { window.focus(); n.close(); };
-  } catch (e) {
-    console.error("Notification error:", e);
+  } else {
+    // Fallback for non-SW browsers
+    try {
+      new Notification(title, { body: body, icon: '/static/icon-192.png' });
+    } catch (e) { console.error("Notification fallback error:", e); }
   }
+}
+
+function testNotification() {
+  requestNotificationPermission();
+  showNativeNotification("Tes Notifikasi Berhasil! 🚀", "Ganteng banget kan notifikasinya gan? Siap pantau cuan! 🔥");
+  showToast("Mengirim tes notifikasi...", "info");
 }
 
 function autoSave() {
