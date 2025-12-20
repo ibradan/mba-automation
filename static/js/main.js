@@ -32,34 +32,31 @@ function showNativeNotification(title, body) {
     return;
   }
 
-  // Use ServiceWorker for better Android support
-  if ('serviceWorker' in navigator) {
-    // Timeout to prevent hanging if SW isn't ready
-    const swTimeout = setTimeout(() => {
-      console.warn("SW ready timeout, using fallback...");
-      showToast("SW Timeout, pakai fallback... ⚠️", "info");
-      new Notification(title, { body: body, icon: '/static/icon-192.png' });
-    }, 3000);
+  const options = {
+    body: body,
+    icon: '/static/icon-192.png',
+    badge: '/static/icon-192.png',
+    vibrate: [200, 100, 200],
+    tag: 'ternak-uang-alert',
+    renotify: true
+  };
 
-    navigator.serviceWorker.ready.then(registration => {
-      clearTimeout(swTimeout);
-      console.log("ServiceWorker ready, showing notification...");
-      registration.showNotification(title, {
-        body: body,
-        icon: '/static/icon-192.png',
-        badge: '/static/icon-192.png',
-        vibrate: [200, 100, 200],
-        tag: 'ternak-uang-alert',
-        renotify: true
-      }).catch(err => {
-        showToast("SW Error: " + err, "error");
+  // IMMEDIATE FIRE: Try standard notification first
+  try {
+    const n = new Notification(title, options);
+    console.log("Standard notification fired");
+    showToast("Notifikasi terkirim! 💎", "success");
+  } catch (e) {
+    console.warn("Standard notification failed, trying SW...", e);
+    // FALLBACK: Use ServiceWorker if standard fails (some mobile browsers require this)
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then(registration => {
+        registration.showNotification(title, options).catch(err => {
+          showToast("SW Error: " + err, "error");
+        });
       });
-    });
-  } else {
-    try {
-      new Notification(title, { body: body, icon: '/static/icon-192.png' });
-    } catch (e) {
-      showToast("Gagal: " + e, "error");
+    } else {
+      showToast("Gagal total: " + e, "error");
     }
   }
 }
