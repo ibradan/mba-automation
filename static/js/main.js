@@ -24,10 +24,21 @@ function requestNotificationPermission() {
 }
 
 function showNativeNotification(title, body) {
-  if (!("Notification" in window) || Notification.permission !== "granted") return;
+  console.log("Attempting notification:", title);
+  if (!("Notification" in window)) {
+    console.error("Notification API not supported");
+    return;
+  }
+
+  if (Notification.permission !== "granted") {
+    console.warn("Notification permission not granted:", Notification.permission);
+    showToast("Izin notifikasi belum aktif! ❌", "error");
+    return;
+  }
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.ready.then(registration => {
+      console.log("ServiceWorker ready, showing notification...");
       registration.showNotification(title, {
         body: body,
         icon: '/static/icon-192.png',
@@ -35,13 +46,21 @@ function showNativeNotification(title, body) {
         vibrate: [200, 100, 200],
         tag: 'ternak-uang-alert',
         renotify: true
+      }).then(() => {
+        console.log("Notification shown successfully via SW");
+      }).catch(err => {
+        console.error("SW notification error:", err);
+        showToast("Error SW: " + err, "error");
       });
     });
   } else {
-    // Fallback for non-SW browsers
+    console.log("No ServiceWorker, using fallback Notification...");
     try {
       new Notification(title, { body: body, icon: '/static/icon-192.png' });
-    } catch (e) { console.error("Notification fallback error:", e); }
+    } catch (e) {
+      console.error("Notification fallback error:", e);
+      showToast("Gagal fallback: " + e, "error");
+    }
   }
 }
 
