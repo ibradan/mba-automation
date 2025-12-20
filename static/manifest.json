@@ -4,8 +4,8 @@
     "description": "MBA7 Automation Dashboard",
     "start_url": "/",
     "display": "standalone",
-    "background_color": "#0f172a",
-    "theme_color": "#1e293b",
+    "background_color": "#f4f7fe",
+    "theme_color": "#2e59d9",
     "icons": [
         {
             "src": "/static/icon-192.png",

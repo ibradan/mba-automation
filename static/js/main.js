@@ -1,6 +1,30 @@
 // Auto-save functionality
 let autoSaveTimeout;
 let isSaving = false;
+let NOTIFIED_TODAY = new Set(); // Tracks phones notified for 100% completion
+
+// Request notification permission on first interaction
+function requestNotificationPermission() {
+  if (!("Notification" in window)) return;
+  if (Notification.permission === "default") {
+    Notification.requestPermission();
+  }
+}
+
+function showNativeNotification(title, body) {
+  if (!("Notification" in window) || Notification.permission !== "granted") return;
+
+  try {
+    const n = new Notification(title, {
+      body: body,
+      icon: '/static/icon-192.png',
+      badge: '/static/icon-192.png'
+    });
+    n.onclick = () => { window.focus(); n.close(); };
+  } catch (e) {
+    console.error("Notification error:", e);
+  }
+}
 
 function autoSave() {
   if (isSaving) return;
@@ -333,6 +357,10 @@ function updateStatusRealTime() {
           progressDiv.classList.remove('progress-complete', 'progress-partial', 'progress-low');
           if (acc.status === 'ran') {
             progressDiv.classList.add('progress-complete');
+            if (acc.pct >= 100 && !NOTIFIED_TODAY.has(acc.phone)) {
+              NOTIFIED_TODAY.add(acc.phone);
+              showNativeNotification("Tugas Selesai! ✅", `Akun ${display} sudah menyelesaikan ${acc.completed}/${acc.total} tugas.`);
+            }
           }
           else if (acc.status === 'due') progressDiv.classList.add('progress-partial');
           else progressDiv.classList.add('progress-low');
@@ -440,6 +468,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Auto-sync all on load
   setTimeout(performAutoSyncAll, 1500);
+
+  // Request permission on first click
+  document.addEventListener('click', requestNotificationPermission, { once: true });
 
   // Initial progress for existing cards
   document.querySelectorAll('.account-card').forEach(card => {
