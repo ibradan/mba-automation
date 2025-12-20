@@ -76,11 +76,38 @@ function testNotification() {
   }
 
   if (Notification.permission === "granted") {
-    showToast("Mengirim tes notifikasi... 🔔", "info");
-    showNativeNotification("Tes Notifikasi Berhasil! 🚀", "Ganteng banget kan notifikasinya gan? Siap pantau cuan! 🔥");
+    showToast("Mengirim Sinyal Notifikasi... 🛰️", "info");
+    showNativeNotification("Koneksi Berhasil! 💎", "Notifikasi Ternak Uang sudah aktif dan siap tempur gan! 🔥");
   } else {
     showToast("Minta izin dulu gan... Klik Izinkan!", "info");
     requestNotificationPermission();
+  }
+}
+
+async function forceResetApp() {
+  if (confirm("Reset & Update Aplikasi? \n\nIni akan menghapus cache dan memaksa download versi terbaru.")) {
+    showToast("Cleaning system... 🧹", "info");
+
+    // Unregister all SW
+    if ('serviceWorker' in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      for (let registration of registrations) {
+        await registration.unregister();
+      }
+    }
+
+    // Clear all caches
+    if ('caches' in window) {
+      const cacheNames = await caches.keys();
+      for (let name of cacheNames) {
+        await caches.delete(name);
+      }
+    }
+
+    showToast("Update complete! Reloading... 🚀", "success");
+    setTimeout(() => {
+      window.location.reload(true);
+    }, 1000);
   }
 }
 

@@ -1,6 +1,7 @@
 self.addEventListener('install', (e) => {
+    self.skipWaiting();
     e.waitUntil(
-        caches.open('ternak-uang-v3').then((cache) => {
+        caches.open('ternak-uang-v4').then((cache) => {
             return cache.addAll([
                 '/',
                 '/static/css/style.css',
