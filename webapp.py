@@ -12,7 +12,10 @@ import logging
 from logging.handlers import RotatingFileHandler
 import queue
 import fcntl
-import requests
+try:
+    import requests
+except ImportError:
+    requests = None
 
 
 app = Flask(__name__)
@@ -57,34 +60,42 @@ def worker():
                 
                 # Send Telegram Notification (Skip if it's just a sync job)
                 if not is_sync:
-                    try:
-                        # Reload accounts to get the latest progress update from the CLI run
-                        accounts_data = data_manager.load_accounts()
-                        norm_p = normalize_phone(phone_display)
-                        acc_info = next((a for a in accounts_data if normalize_phone(a.get('phone', '')) == norm_p), None)
-                        
-                        if acc_info:
-                            today_str = datetime.datetime.now().strftime('%Y-%m-%d')
-                            prog = acc_info.get('daily_progress', {}).get(today_str, {})
+                    def _send_tele_safe():
+                        try:
+                            # Reload accounts to get the latest progress update from the CLI run
+                            # We create a new DataManager instance here to avoid lock contention if needed,
+                            # but utilizing the thread-safe read from main instance is also okay.
+                            # For simplicity, let's just use the logic directly.
                             
-                            # Format as currency-like string
-                            def fmt_rp(val):
-                                try: return f"{int(float(val or 0)):,}".replace(',', '.')
-                                except: return str(val or 0)
+                            # Note: data_manager methods use a lock.
+                            accounts_data = data_manager.load_accounts()
+                            norm_p = normalize_phone(phone_display)
+                            acc_info = next((a for a in accounts_data if normalize_phone(a.get('phone', '')) == norm_p), None)
+                            
+                            if acc_info:
+                                today_str = datetime.datetime.now().strftime('%Y-%m-%d')
+                                prog = acc_info.get('daily_progress', {}).get(today_str, {})
+                                
+                                # Format as currency-like string
+                                def fmt_rp(val):
+                                    try: return f"{int(float(val or 0)):,}".replace(',', '.')
+                                    except: return str(val or 0)
 
-                            header = "✅ <b>Tugas Selesai!</b>"
-                            msg = (
-                                f"{header} ({phone_display})\n\n"
-                                f"📊 Progress: <b>{prog.get('completed', 0)}/{prog.get('total', 60)}</b> ({prog.get('percentage', 0)}%)\n"
-                                f"💵 Saldo: <code>Rp {fmt_rp(prog.get('balance'))}</code>\n\n"
-                                f"<i>Automasi sukses dijalankan! 🔥</i>"
-                            )
-                            data_manager.send_telegram_msg(msg)
-                        else:
-                            data_manager.send_telegram_msg(f"✅ <b>Tugas Selesai!</b>\nAkun: <code>{phone_display}</code>\nStatus: Berhasil.")
-                    except Exception as tele_e:
-                        logger.error(f"Failed to send detailed Telegram: {tele_e}")
-                        data_manager.send_telegram_msg(f"✅ <b>Tugas Selesai!</b>\nAkun: <code>{phone_display}</code>")
+                                header = "✅ <b>Tugas Selesai!</b>"
+                                msg = (
+                                    f"{header} ({phone_display})\n\n"
+                                    f"📊 Progress: <b>{prog.get('completed', 0)}/{prog.get('total', 60)}</b> ({prog.get('percentage', 0)}%)\n"
+                                    f"💵 Saldo: <code>Rp {fmt_rp(prog.get('balance'))}</code>\n\n"
+                                    f"<i>Automasi sukses dijalankan! 🔥</i>"
+                                )
+                                data_manager.send_telegram_msg(msg)
+                            else:
+                                data_manager.send_telegram_msg(f"✅ <b>Tugas Selesai!</b>\nAkun: <code>{phone_display}</code>\nStatus: Berhasil.")
+                        except Exception as tele_e:
+                            logger.error(f"Failed to send detailed Telegram: {tele_e}")
+                    
+                    # Fire and forget thread
+                    threading.Thread(target=_send_tele_safe, daemon=True).start()
                 
                 logger.info(f"QUEUE: Finished job for {phone_display}")
             except Exception as e:
@@ -250,6 +261,10 @@ class DataManager:
 
     def send_telegram_msg(self, message):
         """Send a message via Telegram Bot API using settings."""
+        if requests is None:
+            logger.warning("Telegram NOT SENT: requests module not installed.")
+            return False
+
         settings = self.load_settings()
         token = settings.get('telegram_token')
         chat_id = settings.get('telegram_chat_id')
