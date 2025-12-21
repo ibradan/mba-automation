@@ -1,4 +1,5 @@
 from playwright.sync_api import Page
+import re
 
 def try_close_popups(page: Page):
     """Helper to dismiss common overlays that might block scraping."""
@@ -56,7 +57,6 @@ def scrape_record_page(page: Page, url_suffix: str, record_type: str, timeout: i
                         amount_text = amount_el.text_content(timeout=1000) if amount_el.count() > 0 else "0"
                         if amount_text:
                             # Improved regex cleaning for financial strings
-                            import re
                             cleaned = re.sub(r'[^\d.,]', '', amount_text)
                             # Standardize to dot decimal: handle "1.234.567" or "1,234.56"
                             if ',' in cleaned and '.' in cleaned:
@@ -100,7 +100,6 @@ def scrape_balance(page: Page, timeout: int) -> float:
             if balance_text:
                 clean_text = balance_text.replace(".", "").replace(",", ".").strip()
                 # Remove any remaining non-numeric characters except dot
-                import re
                 clean_text = re.sub(r'[^\d.]', '', clean_text)
                 return float(clean_text)
         except Exception as e:

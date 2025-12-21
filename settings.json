@@ -2,5 +2,7 @@
   "auto_reconnect_wifi": true,
   "timeout": 30,
   "viewport": "iPhone 12",
-  "log_level": "INFO"
+  "log_level": "INFO",
+  "telegram_token": "",
+  "telegram_chat_id": ""
 }
