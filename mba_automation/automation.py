@@ -79,14 +79,14 @@ def perform_tasks(page: Page, iterations: int, review_text: Optional[str] = None
     tasks_completed = 0
     tasks_total = iterations
 
-    # Navigate UI to get to the task list
+    # Navigate to grab page directly (where first Mendapatkan button is)
+    print("Navigating to grab page...")
     try:
-        smart_click(page, ".icon-lipin")
-        smart_click(page, "i:nth-child(5)", timeout=2000) # Fallback nth child
-        
-        # Ticket menu
-        smart_click(page, ".icon-ticket")
-        page.wait_for_selector(".van-progress__pivot", timeout=10000)
+        page.goto("https://mba7.com/#/grab", timeout=30000)
+        page.wait_for_timeout(3000)  # Wait for page to load
+        from .scraper import try_close_popups
+        try_close_popups(page)
+        print("Grab page loaded successfully")
     except Exception as e:
         print(f"Navigation error: {e}")
 
@@ -111,20 +111,30 @@ def perform_tasks(page: Page, iterations: int, review_text: Optional[str] = None
     loop_count = 0
     try:
         if tasks_completed < tasks_total:
+            # Click Mendapatkan button on grab page (button 1)
             try:
-                page.get_by_role("button", name="Mendapatkan").click()
-                print("Klik Mendapatkan (list) OK")
-            except PlaywrightTimeoutError:
-                print("Tombol 'Mendapatkan' di halaman list nggak ketemu.")
-                raise Exception("Button 'Mendapatkan' (list) not found")
+                # Use specific CSS selector for first Mendapatkan button on /grab page
+                btn = page.locator("#app > div > div.van-config-provider.provider-box > div.main-wrapper.travel-bg > div.div-flex-center > button").first
+                btn.wait_for(state="visible", timeout=15000)
+                btn.click()
+                print("Klik Mendapatkan (grab page) OK")
+            except Exception as e:
+                print(f"Tombol 'Mendapatkan' di halaman grab nggak ketemu: {e}")
+                raise Exception("Button 'Mendapatkan' (grab) not found")
 
+            # Wait for navigation to work page
             page.wait_for_url("**/work**", timeout=10000)
+            page.wait_for_timeout(2000)  # Wait for page to load
 
+            # Click Mendapatkan button on work/detail page (button 2)
             try:
-                page.get_by_role("button", name="Mendapatkan").click()
+                # Try text-based selector since van-tab ID might be dynamic
+                btn = page.locator("button:has-text('Mendapatkan')").first
+                btn.wait_for(state="visible", timeout=15000)
+                btn.click()
                 print("Klik Mendapatkan (detail) OK")
-            except PlaywrightTimeoutError:
-                print("Tombol 'Mendapatkan' di halaman detail nggak ketemu.")
+            except Exception as e:
+                print(f"Tombol 'Mendapatkan' di halaman detail nggak ketemu: {e}")
                 raise Exception("Button 'Mendapatkan' (detail) not found")
 
             try:
