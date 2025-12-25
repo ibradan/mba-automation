@@ -386,6 +386,15 @@ function updateStatusRealTime() {
             }
           }
         }
+
+        // Update financial stats (Modal, Saldo, Pendapatan)
+        const modalEl = card.querySelector('.income-display .stat-value');
+        const saldoEl = card.querySelector('.balance-display .stat-value');
+        const profitEl = card.querySelector('.withdrawal-display .stat-value');
+
+        if (modalEl) modalEl.textContent = 'Rp ' + formatNumber(acc.income || 0);
+        if (saldoEl) saldoEl.textContent = 'Rp ' + formatNumber(acc.balance || 0);
+        if (profitEl) profitEl.textContent = 'Rp ' + formatNumber(acc.withdrawal || 0);
       });
 
       // Update Global Dashboard
