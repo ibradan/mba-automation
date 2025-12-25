@@ -195,13 +195,26 @@ def main():
                         print("⚠️ No internet connection detected. Waiting 30s...")
                         time.sleep(30)
                 
+                def on_progress(c, t):
+                    """Callback for real-time progress updates."""
+                    current_run_data['completed'] = c
+                    current_run_data['total'] = t
+                    # Print without newline to show activity
+                    # print(".", end="", flush=True) 
+                    
+                    # Throttle: Save every 5 tasks to reduce I/O
+                    if c > 0 and c % 5 == 0:
+                        print(f" [Saving progress: {c}/{t}]")
+                        save_progress()
+
                 try:
                     c, t, i, w, b = automation_run(
                         playwright, phone=phone, password=password, 
                         headless=final_headless, slow_mo=args.slow_mo, 
                         iterations=args.iterations, review_text=args.review, 
                         viewport_name=args.viewport, timeout=args.timeout, 
-                        sync_only=args.sync
+                        sync_only=args.sync,
+                        progress_callback=on_progress
                     )
                     
                     # Update global data for persistence

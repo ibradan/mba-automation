@@ -1,6 +1,6 @@
 import os
 import time
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Callable
 from playwright.sync_api import Playwright, Page, TimeoutError as PlaywrightTimeoutError
 from .scraper import scrape_income, scrape_withdrawal, scrape_balance, try_close_popups
 
@@ -109,7 +109,7 @@ def login(page: Page, context, phone: str, password: str, timeout: int = 30) -> 
         return False
 
 
-def perform_tasks(page: Page, iterations: int, review_text: Optional[str] = None) -> Tuple[int, int]:
+def perform_tasks(page: Page, iterations: int, review_text: Optional[str] = None, progress_callback: Optional[Callable[[int, int], None]] = None) -> Tuple[int, int]:
     """
     Executes the main automation loop: checking progress, submitting reviews.
     Returns (tasks_completed, tasks_total).
@@ -250,6 +250,13 @@ def perform_tasks(page: Page, iterations: int, review_text: Optional[str] = None
                             k_btn.click()
                             loop_count += 1
                             consecutive_failures = 0 # Reset failure count
+                            
+                            # CALLBACK TRIGGER
+                            if progress_callback:
+                                try:
+                                    progress_callback(tasks_completed + loop_count, tasks_total)
+                                except Exception as e:
+                                    print(f"Callback error: {e}")
                         else:
                              print("Tombol Kirim tidak muncul (mungkin delay)")
                     else:
@@ -309,7 +316,7 @@ def perform_tasks(page: Page, iterations: int, review_text: Optional[str] = None
     return tasks_completed, tasks_total
 
 
-def run(playwright: Playwright, phone: str, password: str, headless: bool = False, slow_mo: int = 200, iterations: int = 30, review_text: Optional[str] = None, viewport_name: str = "iPhone 12", timeout: int = 30, sync_only: bool = False) -> Tuple[int, int, float, float, float]:
+def run(playwright: Playwright, phone: str, password: str, headless: bool = False, slow_mo: int = 200, iterations: int = 30, review_text: Optional[str] = None, viewport_name: str = "iPhone 12", timeout: int = 30, sync_only: bool = False, progress_callback: Optional[Callable[[int, int], None]] = None) -> Tuple[int, int, float, float, float]:
     browser = playwright.chromium.launch(headless=headless, slow_mo=slow_mo)
     
     vp = VIEWPORTS.get(viewport_name, VIEWPORTS["iPhone 12"])
@@ -353,7 +360,7 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
         # ========== PERFORM TASKS ==========
         tasks_completed, tasks_total = 0, iterations
         if not sync_only:
-            tasks_completed, tasks_total = perform_tasks(page, iterations, review_text)
+            tasks_completed, tasks_total = perform_tasks(page, iterations, review_text, progress_callback)
         else:
             print("Sync only mode: checking current progress...")
             try:
