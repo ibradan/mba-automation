@@ -332,11 +332,11 @@ function updateStatusRealTime() {
 
         // Update progress bar
         const fill = card.querySelector('.progress-fill');
-        const text = card.querySelector('.progress-text');
+        const text = card.querySelector('.progress-value');
         if (fill && text) {
           const pct = acc.pct || 0;
           fill.style.width = pct + '%';
-          text.textContent = `${acc.completed}/${acc.total} (${pct}%)`;
+          text.textContent = `${acc.completed}/${acc.total}`;
 
           fill.classList.remove('progress-complete', 'progress-partial', 'progress-low');
           if (acc.status === 'ran') {
@@ -412,7 +412,7 @@ document.addEventListener('DOMContentLoaded', function () {
   updateStatusRealTime(); // Run immediately on load
   setInterval(() => {
     if (!isPolling) updateStatusRealTime();
-  }, 5000);
+  }, 2000);
 
   // Initial progress for existing cards
   document.querySelectorAll('.account-card').forEach(card => {
