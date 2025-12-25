@@ -420,10 +420,16 @@ def api_accounts():
                 except: pass
 
         display_stats = progress if progress else {}
-        if not display_stats and it.get('daily_progress'):
+        if not display_stats or (display_stats.get('balance', 0) == 0 and display_stats.get('income', 0) == 0):
              dp = it.get('daily_progress', {})
-             sorted_dates = sorted(dp.keys(), reverse=True)
-             display_stats = dp[sorted_dates[0]]
+             if dp:
+                 sorted_dates = sorted(dp.keys(), reverse=True)
+                 for d in sorted_dates:
+                     if dp[d].get('balance', 0) > 0 or dp[d].get('income', 0) > 0:
+                         display_stats = dp[d]
+                         break
+                 if not display_stats:
+                     display_stats = dp[sorted_dates[0]]
 
         results.append({
             "phone": phone,
@@ -845,22 +851,18 @@ def index():
                             except Exception:
                                 status = ''
 
-                    # Determine stats for display: prefer today's, otherwise latest
-                    display_stats = {}
-                    if pct > 0: # simplified check: if we have progress, we have data for today
-                        display_stats = progress
-                    elif progress: # or if progress exists but pct is 0 (started but low progress?)
-                        display_stats = progress
-                    else:
-                        # Check past data in daily_progress
-                        # daily_progress keys are YYYY-MM-DD
-                        dp = it.get('daily_progress', {})
-                        if dp:
-                            # sort dates descending
-                            sorted_dates = sorted(dp.keys(), reverse=True)
-                            # pick the first one
-                            latest_date = sorted_dates[0]
-                            display_stats = dp[latest_date]
+                    # Determine stats for display: prefer today's, otherwise latest non-zero
+                    display_stats = progress if progress else {}
+                    if not display_stats or (display_stats.get('balance', 0) == 0 and display_stats.get('income', 0) == 0):
+                         dp = it.get('daily_progress', {})
+                         if dp:
+                             sorted_dates = sorted(dp.keys(), reverse=True)
+                             for d in sorted_dates:
+                                 if dp[d].get('balance', 0) > 0 or dp[d].get('income', 0) > 0:
+                                     display_stats = dp[d]
+                                     break
+                             if not display_stats:
+                                 display_stats = dp[sorted_dates[0]]
 
                     saved_accounts.append({
                         "phone_display": display, 
