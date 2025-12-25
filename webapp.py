@@ -16,6 +16,7 @@ try:
     import requests
 except ImportError:
     requests = None
+from utils import crypto
 
 
 app = Flask(__name__)
@@ -182,7 +183,12 @@ class DataManager:
                 with open(self.accounts_file, 'r') as f:
                     try:
                         fcntl.flock(f, fcntl.LOCK_SH)
-                        return json.load(f)
+                        data = json.load(f)
+                        # Decrypt passwords on load
+                        for acc in data:
+                            if 'password' in acc:
+                                acc['password'] = crypto.decrypt_password(acc['password'])
+                        return data
                     finally:
                         fcntl.flock(f, fcntl.LOCK_UN)
             except Exception as e:
@@ -213,7 +219,17 @@ class DataManager:
                         except json.JSONDecodeError:
                             accounts = []
                         
+                        # Decrypt BEFORE passing to update function
+                        for acc in accounts:
+                            if 'password' in acc:
+                                acc['password'] = crypto.decrypt_password(acc['password'])
+                        
                         new_accounts = update_fn(accounts)
+                        
+                        # Encrypt BEFORE saving
+                        for acc in new_accounts:
+                            if 'password' in acc:
+                                acc['password'] = crypto.encrypt_password(acc['password'])
                         
                         f.seek(0)
                         f.truncate()
@@ -434,7 +450,7 @@ def api_accounts():
 
 
 @app.route("/api/logs/<phone_display>")
-def api_logs(phone_display):
+def api_phone_logs(phone_display):
     """Get the latest log content for a specific phone number."""
     try:
         # normalize to get the CLI format used in filenames

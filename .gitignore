@@ -25,3 +25,8 @@ logs/
 
 # macOS
 .DS_Store
+
+# Security & Secrets
+secret.key
+sessions/
+backups/

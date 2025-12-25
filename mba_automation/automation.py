@@ -29,16 +29,50 @@ def smart_click(page: Page, selector: str, role: str = None, name: str = None, r
     return False
 
 
-def login(page: Page, phone: str, password: str, timeout: int = 30) -> bool:
+def get_session_path(phone: str) -> str:
+    """Returns the path for the session storage file."""
+    # Ensure directory exists
+    session_dir = os.path.join(os.path.dirname(__file__), "..", "sessions")
+    os.makedirs(session_dir, exist_ok=True)
+    
+    # Normalize phone for filename
+    norm = phone[2:] if phone.startswith('62') else phone
+    return os.path.join(session_dir, f"{norm}.json")
+
+
+def login(page: Page, context, phone: str, password: str, timeout: int = 30) -> bool:
     """
     Handles login logic including phone number normalization and popup handling.
+    Attempts to restore session if available.
     Returns True if login appears successful, False otherwise.
     """
+    session_path = get_session_path(phone)
+    
+    # 1. Try to restore session
+    if os.path.exists(session_path):
+        print(f"Restoring session from {session_path}...")
+        # Note: In Playwright sync, we load storage_state when creating context. 
+        # But if we are already here, the context might have been created without state 
+        # if the file didn't exist at start (or we are in a retry/reload loop).
+        # However, 'run' function now handles initial loading.
+        # Here we just verify if we are already logged in.
+
     try:
         # Normalize phone: strip '62' prefix if present
         phone_for_login = phone[2:] if phone.startswith('62') else phone
-        print(f"Logging in as {phone}...")
         
+        # Check if already logged in (session restored)
+        page.goto("https://mba7.com/#/mine", wait_until="domcontentloaded", timeout=timeout*1000)
+        try_close_popups(page)
+        
+        # Verify if we are logged in by checking specific element
+        # .icon-lipin is usually present on authenticated pages
+        # or check for "Saldo Rekening" text
+        if page.locator(".iconfont.icon-lipin").count() > 0 or page.get_by_text("Saldo Rekening").is_visible():
+            print("Session restored successfully (Already logged in).")
+            return True
+        
+        print(f"Session invalid or expired. Logging in as {phone}...")
         page.goto("https://mba7.com/#/login", wait_until="networkidle", timeout=timeout*1000)
         try_close_popups(page)
 
@@ -57,10 +91,18 @@ def login(page: Page, phone: str, password: str, timeout: int = 30) -> bool:
         # Verify login
         try:
             page.wait_for_url("**/#/**", timeout=10000)
-            return True
+            success = True
         except Exception:
             # If we are on home page elements, consider success
-            return page.locator(".iconfont.icon-lipin").count() > 0
+            success = page.locator(".iconfont.icon-lipin").count() > 0
+
+        if success:
+             # Save storage state
+             print(f"Login success. Saving session to {session_path}...")
+             context.storage_state(path=session_path)
+             return True
+        
+        return False
 
     except Exception as e:
         print(f"Login failed: {e}")
@@ -271,7 +313,22 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
     browser = playwright.chromium.launch(headless=headless, slow_mo=slow_mo)
     
     vp = VIEWPORTS.get(viewport_name, VIEWPORTS["iPhone 12"])
-    context = browser.new_context(viewport=vp)
+    
+    # Check for existing session
+    session_path = get_session_path(phone)
+    storage_state = session_path if os.path.exists(session_path) else None
+    
+    if storage_state:
+        print(f"Attempting to load session from {storage_state}")
+    
+    # Create context with storage_state if available
+    try:
+        context = browser.new_context(viewport=vp, storage_state=storage_state)
+    except Exception as e:
+        print(f"Failed to load session (corrupt?): {e}")
+        # Fallback to no session
+        context = browser.new_context(viewport=vp)
+
     page = context.new_page()
 
     # Set timeout (convert to ms)
@@ -288,7 +345,8 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
 
     try:
         # ========== LOGIN ==========
-        if not login(page, phone, password, timeout):
+        # Login now handles restoration check AND saving to 'context'
+        if not login(page, context, phone, password, timeout):
             print("Login failed, aborting run.")
             return 0, iterations, 0.0, 0.0, 0.0
 
