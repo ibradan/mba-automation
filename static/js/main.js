@@ -315,7 +315,17 @@ function updateStatusRealTime() {
         else queueBadge.classList.remove('active');
       }
 
+      // Aggregation Variables
+      let totalModal = 0;
+      let totalSaldo = 0;
+      let totalPendapatan = 0;
+
       accounts.forEach(acc => {
+        // Accumulate Totals
+        totalModal += (acc.income || 0);
+        totalSaldo += (acc.balance || 0);
+        totalPendapatan += (acc.withdrawal || 0);
+
         // Find the card by phone number
         const card = document.querySelector(`.account-card[data-phone="${acc.phone_display}"]`);
         if (!card) return;
@@ -377,6 +387,20 @@ function updateStatusRealTime() {
           }
         }
       });
+
+      // Update Global Dashboard
+      const dash = document.getElementById('global-dashboard');
+      if (dash && accounts.length > 0) {
+        dash.style.display = 'block';
+
+        // Animate/Update Values
+        document.getElementById('total-modal').textContent = 'Rp ' + formatNumber(totalModal);
+        document.getElementById('total-balance').textContent = 'Rp ' + formatNumber(totalSaldo);
+        document.getElementById('total-income').textContent = 'Rp ' + formatNumber(totalPendapatan);
+
+        // Render/Update Chart
+        renderGlobalChart(totalModal, totalSaldo, totalPendapatan);
+      }
     })
     .catch(err => {
       console.error('Polling error:', err);
@@ -775,6 +799,110 @@ function toggleChart(btn) {
   }
 }
 
+// ================= LOG VIEWER LOGIC =================
+let logPollInterval;
+let currentLogPhone = null;
+
+function openLog(btn) {
+  const card = btn.closest('.account-card');
+  if (!card) return;
+
+  const phoneDisplay = card.querySelector('.phone-display').textContent.trim();
+  if (!phoneDisplay) {
+    showToast('Nomor HP tidak ditemukan.', 'error');
+    return;
+  }
+
+  // Normalized phone from display (e.g. "812..." or "62812...")
+  // The API expects whatever is in the UI display
+  currentLogPhone = phoneDisplay;
+
+  const modal = document.getElementById('log-modal');
+  const title = document.getElementById('terminal-title-text');
+  const content = document.getElementById('terminal-content');
+
+  // Set title
+  title.textContent = `root@mba-automation:~/logs/${phoneDisplay}.log`;
+  content.innerHTML = '<div class="log-line"><span class="log-timestamp">[SYSTEM]</span> Connecting to log stream...</div>';
+
+  modal.classList.add('show');
+
+  // Start polling
+  pollLog();
+  logPollInterval = setInterval(pollLog, 2000);
+}
+
+function closeLog() {
+  const modal = document.getElementById('log-modal');
+  modal.classList.remove('show');
+  clearInterval(logPollInterval);
+  currentLogPhone = null;
+}
+
+async function pollLog() {
+  if (!currentLogPhone) return;
+
+  try {
+    const res = await fetch(`/api/logs/${currentLogPhone}`);
+    if (res.status === 404) {
+      document.getElementById('terminal-content').innerHTML = '<div class="log-line text-yellow-500">[SYSTEM] Log file not found. waiting for process to start...</div>';
+      return;
+    }
+
+    const text = await res.text();
+    const contentDiv = document.getElementById('terminal-content');
+
+    // Simple diff check to avoid unnecessary DOM updates? 
+    // For now, full replace is safer to ensure we get new lines correctly, 
+    // but implies scrolling to bottom every time.
+
+    // Parse text to HTML lines for styling
+    const htmlLines = text.split('\n').map(line => {
+      if (!line) return '';
+      // Try to extract timestamp if present (Standard python logging)
+      // Format: 2024-12-25 23:00:01,123 INFO message
+      const match = line.match(/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) (.*)/);
+      if (match) {
+        return `<div class="log-line"><span class="log-timestamp">[${match[1]}]</span> ${escapeHtml(match[2])}</div>`;
+      }
+      return `<div class="log-line">${escapeHtml(line)}</div>`;
+    }).join('');
+
+    // Check if user was at bottom before update
+    const isAtBottom = contentDiv.scrollHeight - contentDiv.scrollTop <= contentDiv.clientHeight + 50;
+
+    contentDiv.innerHTML = htmlLines;
+
+    if (isAtBottom) {
+      contentDiv.scrollTop = contentDiv.scrollHeight;
+    }
+
+  } catch (err) {
+    console.error("Log poll error", err);
+  }
+}
+
+function escapeHtml(text) {
+  const map = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  };
+  return text.replace(/[&<>"']/g, function (m) { return map[m]; });
+}
+
+// Close log modal on outside click
+const logModal = document.getElementById('log-modal');
+if (logModal) {
+  logModal.addEventListener('click', function (e) {
+    if (e.target === this) {
+      closeLog();
+    }
+  });
+}
+
 function renderChart(row, canvas) {
   try {
     const historyStr = row.dataset.history;
@@ -1037,23 +1165,86 @@ function initTilt(card) {
   });
 }
 
-function fireConfetti() {
-  const colors = ['#2e59d9', '#00ba9d', '#ff9f0a', '#ff3b30', '#00c2ff', '#ffffff'];
-  const particleCount = 100;
+let globalChartInstance = null;
 
-  for (let i = 0; i < particleCount; i++) {
-    const p = document.createElement('div');
-    p.className = 'confetti-particle';
-    p.style.left = Math.random() * 100 + 'vw';
-    p.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-    p.style.width = Math.random() * 10 + 5 + 'px';
-    p.style.height = p.style.width;
-    p.style.animationDelay = Math.random() * 2 + 's';
-    p.style.opacity = Math.random();
+function renderGlobalChart(totalModal, totalSaldo, totalPendapatan) {
+  const ctx = document.getElementById('globalChart');
+  if (!ctx) return;
 
-    document.body.appendChild(p);
-
-    // Cleanup
-    setTimeout(() => p.remove(), 5000);
+  if (globalChartInstance) {
+    globalChartInstance.data.datasets[0].data = [totalModal, totalSaldo, totalPendapatan];
+    globalChartInstance.update();
+    return;
   }
+
+  globalChartInstance = new Chart(ctx, {
+    type: 'bar', // Using Bar chart for clear comparison
+    data: {
+      labels: ['Modal', 'Saldo', 'Pendapatan'],
+      datasets: [{
+        label: 'Financial Overview',
+        data: [totalModal, totalSaldo, totalPendapatan],
+        backgroundColor: [
+          'rgba(245, 158, 11, 0.7)', // Amber for Modal
+          'rgba(6, 182, 212, 0.7)',  // Cyan for Saldo
+          'rgba(16, 185, 129, 0.7)'  // Green for Pendapatan
+        ],
+        borderColor: [
+          'rgba(245, 158, 11, 1)',
+          'rgba(6, 182, 212, 1)',
+          'rgba(16, 185, 129, 1)'
+        ],
+        borderWidth: 1,
+        borderRadius: 8,
+        barThickness: 50
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          callbacks: {
+            label: function (context) {
+              let label = context.dataset.label || '';
+              if (label) {
+                label += ': ';
+              }
+              if (context.parsed.y !== null) {
+                label += new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(context.parsed.y);
+              }
+              return label;
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: {
+            color: 'rgba(0, 0, 0, 0.05)'
+          },
+          ticks: {
+            callback: function (value, index, values) {
+              if (value >= 1000000) return 'Rp ' + (value / 1000000).toFixed(1) + 'jt';
+              if (value >= 1000) return 'Rp ' + (value / 1000).toFixed(0) + 'k';
+              return value;
+            }
+          }
+        },
+        x: {
+          grid: {
+            display: false
+          }
+        }
+      },
+      animation: {
+        duration: 1500,
+        easing: 'easeOutQuart'
+      }
+    }
+  });
 }

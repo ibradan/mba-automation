@@ -433,6 +433,46 @@ def api_accounts():
     })
 
 
+@app.route("/api/logs/<phone_display>")
+def api_logs(phone_display):
+    """Get the latest log content for a specific phone number."""
+    try:
+        # normalize to get the CLI format used in filenames
+        norm = normalize_phone(phone_display)
+        if not norm:
+            return "Invalid phone number", 400
+        
+        # Logic matches _format_phone_for_cli
+        phone_cli = norm[2:] if norm.startswith('62') else norm
+        
+        log_dir = os.path.join(os.path.dirname(__file__), "logs")
+        if not os.path.exists(log_dir):
+            return "No logs available yet.", 404
+            
+        # Find files matching pattern
+        prefix = f"automation_{phone_cli}_"
+        candidates = []
+        for f in os.listdir(log_dir):
+            if f.startswith(prefix) and f.endswith(".log"):
+                candidates.append(os.path.join(log_dir, f))
+        
+        if not candidates:
+            return "Log file not found for this account.", 404
+            
+        # Get the most recently modified file
+        latest_log = max(candidates, key=os.path.getmtime)
+        
+        # Read content
+        with open(latest_log, 'r', encoding='utf-8', errors='replace') as f:
+            content = f.read()
+            
+        return content, 200, {'Content-Type': 'text/plain'}
+        
+    except Exception as e:
+        logger.error(f"Log API Error: {e}")
+        return str(e), 500
+
+
 @app.route("/settings/get", methods=["GET"])
 def get_settings():
     return jsonify(data_manager.load_settings())

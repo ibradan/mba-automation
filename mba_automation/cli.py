@@ -99,6 +99,19 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 signal.signal(signal.SIGTERM, signal_handler)
 
+
+def check_internet_connection():
+    """Simple check for internet connectivity."""
+    try:
+        # connect to a reliable DNS server (Google DNS)
+        # We don't need to send data, just establish connection
+        import socket
+        socket.create_connection(("8.8.8.8", 53), timeout=3)
+        return True
+    except OSError:
+        pass
+    return False
+
 def main():
     parser = argparse.ArgumentParser(description="MBA7 automation CLI")
     # allow multiple phones via repeated --phone or comma-separated --phones
@@ -176,6 +189,11 @@ def main():
                 attempt += 1
                 if attempt > 1:
                     print(f"🔄 Retry attempt {attempt}/{max_retries} for {phone}...")
+                    
+                    # Connection Check
+                    if not check_internet_connection():
+                        print("⚠️ No internet connection detected. Waiting 30s...")
+                        time.sleep(30)
                 
                 try:
                     c, t, i, w, b = automation_run(

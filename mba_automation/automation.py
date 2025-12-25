@@ -66,10 +66,6 @@ def login(page: Page, phone: str, password: str, timeout: int = 30) -> bool:
         print(f"Login failed: {e}")
         return False
 
-    except Exception as e:
-        print(f"Login failed: {e}")
-        return False
-
 
 def perform_tasks(page: Page, iterations: int, review_text: Optional[str] = None) -> Tuple[int, int]:
     """
@@ -82,30 +78,43 @@ def perform_tasks(page: Page, iterations: int, review_text: Optional[str] = None
     # Navigate to grab page directly (where first Mendapatkan button is)
     print("Navigating to grab page...")
     try:
-        page.goto("https://mba7.com/#/grab", timeout=30000)
+        page.goto("https://mba7.com/#/grab", timeout=45000) # Increased timeout
         page.wait_for_timeout(3000)  # Wait for page to load
         from .scraper import try_close_popups
         try_close_popups(page)
         print("Grab page loaded successfully")
     except Exception as e:
         print(f"Navigation error: {e}")
+        # Retry once
+        try:
+             print("Retrying navigation...")
+             page.reload()
+             page.wait_for_timeout(5000)
+             try_close_popups(page)
+        except: pass
 
     # ========== SCRAPE ACTUAL PROGRESS FROM PAGE ==========
     try:
-        # Get progress indicator element
-        progress_element = page.locator(".van-progress__pivot").first
-        progress_text = progress_element.text_content(timeout=3000)
-        print(f"Progress from page: {progress_text}")
-        
-        # Parse "60/60" format
-        if progress_text and "/" in progress_text:
-            parts = progress_text.split("/")
-            tasks_completed = int(parts[0].strip())
-            tasks_total = int(parts[1].strip())
-            print(f"Parsed progress: {tasks_completed}/{tasks_total}")
+        # Retry reading progress
+        for _ in range(3):
+            try:
+                # Get progress indicator element
+                progress_element = page.locator(".van-progress__pivot").first
+                if progress_element.is_visible(timeout=3000):
+                    progress_text = progress_element.text_content(timeout=1000)
+                    print(f"Progress from page: {progress_text}")
+                    
+                    # Parse "60/60" format
+                    if progress_text and "/" in progress_text:
+                        parts = progress_text.split("/")
+                        tasks_completed = int(parts[0].strip())
+                        tasks_total = int(parts[1].strip())
+                        print(f"Parsed progress: {tasks_completed}/{tasks_total}")
+                        break
+            except: 
+                page.wait_for_timeout(1000)
     except Exception as e:
         print(f"Could not read progress from page: {e}")
-        # Will use loop counting as fallback
 
     # ========== PERTAMA KALI ISI REVIEW ==========
     loop_count = 0
@@ -119,8 +128,18 @@ def perform_tasks(page: Page, iterations: int, review_text: Optional[str] = None
                 btn.click()
                 print("Klik Mendapatkan (grab page) OK")
             except Exception as e:
-                print(f"Tombol 'Mendapatkan' di halaman grab nggak ketemu: {e}")
-                raise Exception("Button 'Mendapatkan' (grab) not found")
+                print(f"Tombol 'Mendapatkan' (Grab) not found: {e}. Refreshing page...")
+                page.reload()
+                page.wait_for_timeout(5000)
+                try_close_popups(page)
+                # Retry click after refresh
+                try:
+                     btn = page.locator("#app > div > div.van-config-provider.provider-box > div.main-wrapper.travel-bg > div.div-flex-center > button").first
+                     btn.wait_for(state="visible", timeout=10000)
+                     btn.click()
+                     print("Klik Mendapatkan (grab page) OK (After Retry)")
+                except:
+                     raise Exception("Button 'Mendapatkan' (grab) not found after retry")
 
             # Wait for navigation to work page
             page.wait_for_url("**/work**", timeout=10000)
@@ -141,19 +160,22 @@ def perform_tasks(page: Page, iterations: int, review_text: Optional[str] = None
                 page.get_by_text("Sedang Berlangsung").nth(1).click()
             except PlaywrightTimeoutError:
                 print("'Sedang Berlangsung' ke-2 nggak ketemu.")
-                raise Exception("'Sedang Berlangsung' 2 not found")
+                # Fallback: try looking for the first one if 2nd not found
+                # raise Exception("'Sedang Berlangsung' 2 not found")
+                pass
 
             try:
                 page.get_by_role("radio", name="").click()
             except PlaywrightTimeoutError:
                 pass
 
-            page.get_by_role("textbox", name="Harap masukkan ulasan Anda di").click()
-            # use provided review_text if given, otherwise default to 'bagus'
-            text_to_fill = review_text if (review_text and len(review_text.strip())>0) else "bagus"
-            page.get_by_role("textbox", name="Harap masukkan ulasan Anda di").fill(text_to_fill)
-
-            page.get_by_role("button", name="Kirim").click()
+            try:
+                page.get_by_role("textbox", name="Harap masukkan ulasan Anda di").click()
+                # use provided review_text if given, otherwise default to 'bagus'
+                text_to_fill = review_text if (review_text and len(review_text.strip())>0) else "bagus"
+                page.get_by_role("textbox", name="Harap masukkan ulasan Anda di").fill(text_to_fill)
+                page.get_by_role("button", name="Kirim").click()
+            except: pass
 
             try:
                 page.get_by_role("button", name="Mengonfirmasi").click()
@@ -167,23 +189,45 @@ def perform_tasks(page: Page, iterations: int, review_text: Optional[str] = None
             print(f"Tasks completed: {tasks_completed + 1}/{tasks_total}. Remaining loops: {remaining_iterations}")
             
             loop_count = 1 # We already did one
+            
+            consecutive_failures = 0
+            
             for i in range(remaining_iterations):
                 print(f"Loop ke-{i+1} (Total progress: {tasks_completed + i + 2}/{tasks_total})")
-                page.wait_for_timeout(1250)
+                page.wait_for_timeout(1000) # Slight delay
 
                 try:
-                    page.get_by_text("Sedang Berlangsung").nth(1).click()
-                    page.get_by_role("button", name="Kirim").click()
-                    loop_count += 1  # Count loop iterations
+                    # Robust clicking: find element, ensuring it's enabled
+                    el = page.get_by_text("Sedang Berlangsung").nth(1)
+                    if el.is_visible():
+                        el.click()
+                        
+                        # Wait for Kirim button
+                        k_btn = page.get_by_role("button", name="Kirim")
+                        if k_btn.is_visible(timeout=2000):
+                            k_btn.click()
+                            loop_count += 1
+                            consecutive_failures = 0 # Reset failure count
+                        else:
+                             print("Tombol Kirim tidak muncul (mungkin delay)")
+                    else:
+                        print("Elemen utama hidden/hilang")
+                        consecutive_failures += 1
+                        
                 except PlaywrightTimeoutError:
-                    print("Elemen utama nggak ketemu, berhenti loop.")
-                    break
+                    print("Elemen utama nggak ketemu (Timeout).")
+                    consecutive_failures += 1
+                
+                # Self-healing: if too many consecutive failures, refresh and trying to recover would be complex here as state is lost
+                # Instead, we break early to trigger the outer retry loop in cli.py which is safer
+                if consecutive_failures >= 3:
+                     print("Terlalu banyak kegagalan berturut-turut. Breaking loop untuk restart.")
+                     break
 
                 try:
-                    page.get_by_role("button", name="Mengonfirmasi").click()
-                except PlaywrightTimeoutError:
-                    print("Konfirmasi nggak muncul di loop ini (gapapa).")
-                    continue
+                    page.get_by_role("button", name="Mengonfirmasi").click(timeout=1500)
+                except:
+                    pass
         else:
             print(f"All tasks already completed ({tasks_completed}/{tasks_total}). Skipping automation.")
             loop_count = 0
@@ -200,10 +244,12 @@ def perform_tasks(page: Page, iterations: int, review_text: Optional[str] = None
     try:
         # Go to ticket page to be sure
         page.locator(".van-badge__wrapper.van-icon.van-icon-undefined.item-icon.iconfont.icon-ticket").click()
-        page.wait_for_timeout(500)
+        page.wait_for_timeout(1000)
+        from .scraper import try_close_popups
+        try_close_popups(page)
         
         progress_element = page.locator(".van-progress__pivot").first
-        progress_text = progress_element.text_content(timeout=3000)
+        progress_text = progress_element.text_content(timeout=5000)
         print(f"Final progress from page: {progress_text}")
         
         if progress_text and "/" in progress_text:
