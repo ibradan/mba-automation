@@ -3,7 +3,6 @@ import subprocess
 import sys
 import os
 import shlex
-import shutil
 import datetime
 import json
 import re
@@ -999,22 +998,8 @@ def _scheduler_loop():
                     sched = acc.get('schedule')
                     if not sched:
                         continue
-                    
-                    # Parse schedule time
-                    try:
-                        hh, mm = (int(x) for x in sched.split(':'))
-                        scheduled_dt = datetime.datetime.combine(now.date(), datetime.time(hh, mm))
-                    except Exception:
-                        logger.warning("Invalid schedule format for %s: %s", acc.get('phone', 'unknown'), sched)
+                    if sched != now_hm:
                         continue
-
-                    # Catch-Up Logic:
-                    # Trigger IF:
-                    # 1. Current time is PAST the scheduled time (now >= scheduled_dt)
-                    # 2. It hasn't run today yet
-                    
-                    if now < scheduled_dt:
-                        continue # Not time yet
 
                     # Check last run
                     last_ts = acc.get('last_run_ts')
@@ -1023,34 +1008,36 @@ def _scheduler_loop():
                          try: last_dt = datetime.datetime.fromisoformat(last_ts)
                          except: pass
                     elif acc.get('last_run'):
+                         # legacy
                          try:
                              d = datetime.date.fromisoformat(acc.get('last_run'))
                              last_dt = datetime.datetime.combine(d, datetime.time(0,0))
                          except: pass
-                    
-                    # Has it run today?
-                    already_run_today = False
-                    if last_dt:
-                        if last_dt.date() == now.date():
-                            already_run_today = True
-                            
-                            # Safety check: if manually run BEFORE schedule, should we run again?
-                            # Standard logic: sched is "daily task". If done today, skip.
-                            # Exception: maybe user wants exact time run? 
-                            # For robustness, "Done is Done". If it ran at 8am manually, auto-run at 9am is redundant.
-                    
-                    if already_run_today:
-                        continue
 
+                    # Schedule time today
+                    try:
+                        hh, mm = (int(x) for x in sched.split(':'))
+                        scheduled_dt = datetime.datetime.combine(now.date(), datetime.time(hh, mm))
+                    except Exception:
+                        logger.warning("Invalid schedule format for %s: %s", acc.get('phone', 'unknown'), sched)
+                        continue
+                        
+                    if last_dt:
+                        # Prevent double triggering within the same day if last run matches schedule
+                        # (allowing for a 1-minute drift margin)
+                         scheduled_ts = scheduled_dt.timestamp()
+                         last_ts_val = last_dt.timestamp()
+                         if last_ts_val >= scheduled_ts - 5: # -5s margin
+                             continue
+                        
                     # Trigger
-                    logger.info(f"SCHEDULER: Triggering catch-up/regular run for {acc.get('phone')} (Sched: {sched})")
                     ok = _trigger_run_for_account(acc)
                     if ok:
                         acc['last_run_ts'] = datetime.datetime.now().isoformat()
                         if 'last_run' in acc: del acc['last_run']
                         any_triggered = True
                 
-                return accounts if any_triggered else accounts
+                return accounts if any_triggered else accounts # if no change, atomic update detects equality? no, we need to return list.
 
             # Special handling: only write if needed. 
             # But _atomic_update_accounts always writes. 
@@ -1484,26 +1471,9 @@ def api_logs():
 # ================= BACKGROUND THREADS STARTUP =================
 # We start threads at module level but check if already running 
 # to ensure they work both in 'python webapp.py' and 'gunicorn'.
-
-def acquire_wake_lock():
-    """Attempt to acquire Termux wake lock to keep CPU running."""
-    try:
-        # Check if termux-wake-lock command exists
-        if shutil.which("termux-wake-lock"):
-            subprocess.run(["termux-wake-lock"], check=False)
-            logger.info("Termux Wake Lock acquired.")
-        else:
-            logger.info("Termux Wake Lock not available (not Termux environment?).")
-    except Exception as e:
-        logger.warning(f"Failed to acquire wake lock: {e}")
-
 def _start_background_threads():
     # Only start if not already started (useful for some dev servers)
     if not getattr(app, '_threads_started', False):
-        
-        # 0. Acquire Wake Lock (Immortal Mode)
-        acquire_wake_lock()
-
         # 1. Start worker thread (processes the JOB_QUEUE)
         # (Worker thread is actually started at line 60-61, which is fine)
         

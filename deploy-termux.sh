@@ -24,7 +24,6 @@ scp -P ${TERMUX_PORT} -r mba_automation "${TERMUX_IP}:${REMOTE_PATH}/"
 scp -P ${TERMUX_PORT} -r templates "${TERMUX_IP}:${REMOTE_PATH}/"
 scp -P ${TERMUX_PORT} -r static "${TERMUX_IP}:${REMOTE_PATH}/"
 scp -P ${TERMUX_PORT} -r utils "${TERMUX_IP}:${REMOTE_PATH}/"
-scp -P ${TERMUX_PORT} termux_boot.sh "${TERMUX_IP}:${REMOTE_PATH}/"
 scp -P ${TERMUX_PORT} webapp.py "${TERMUX_IP}:${REMOTE_PATH}/webapp.py"
 
 echo "✅ File copy complete."
