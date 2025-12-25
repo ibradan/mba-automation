@@ -109,13 +109,24 @@ def login(page: Page, context, phone: str, password: str, timeout: int = 30) -> 
         return False
 
 
-def perform_tasks(page: Page, iterations: int, review_text: Optional[str] = None) -> Tuple[int, int]:
+def perform_tasks(page: Page, context, phone: str, password: str, iterations: int, review_text: Optional[str] = None, progress_callback=None) -> Tuple[int, int]:
     """
     Executes the main automation loop: checking progress, submitting reviews.
     Returns (tasks_completed, tasks_total).
     """
     tasks_completed = 0
     tasks_total = iterations
+
+    def resurrect_session():
+        """Helper to re-login if session is lost."""
+        print("⚠️ Session lost! Attempting to resurrect...")
+        if login(page, context, phone, password):
+            print("🚀 Session resurrected! Navigating back to grab...")
+            page.goto("https://mba7.com/#/grab", timeout=45000)
+            page.wait_for_timeout(3000)
+            try_close_popups(page)
+            return True
+        return False
 
     # Navigate to grab page directly (where first Mendapatkan button is)
     print("Navigating to grab page...")
@@ -127,18 +138,26 @@ def perform_tasks(page: Page, iterations: int, review_text: Optional[str] = None
         print("Grab page loaded successfully")
     except Exception as e:
         print(f"Navigation error: {e}")
-        # Retry once
-        try:
-             print("Retrying navigation...")
-             page.reload()
-             page.wait_for_timeout(5000)
-             try_close_popups(page)
-        except: pass
+        # Detect if we were sent to login
+        if "login" in page.url:
+            resurrect_session()
+        else:
+            # Retry once
+            try:
+                 print("Retrying navigation...")
+                 page.reload()
+                 page.wait_for_timeout(5000)
+                 try_close_popups(page)
+            except: pass
 
     # ========== SCRAPE ACTUAL PROGRESS FROM PAGE ==========
     try:
         # Retry reading progress
         for _ in range(3):
+            # Check for logout mid-scrape
+            if "login" in page.url:
+                resurrect_session()
+
             try:
                 # Get progress indicator element
                 progress_element = page.locator(".van-progress__pivot").first
@@ -152,6 +171,12 @@ def perform_tasks(page: Page, iterations: int, review_text: Optional[str] = None
                         tasks_completed = int(parts[0].strip())
                         tasks_total = int(parts[1].strip())
                         print(f"Parsed progress: {tasks_completed}/{tasks_total}")
+                        
+                        # Initial callback
+                        if progress_callback:
+                            try: progress_callback(tasks_completed, tasks_total)
+                            except: pass
+                        
                         break
             except: 
                 page.wait_for_timeout(1000)
@@ -161,6 +186,9 @@ def perform_tasks(page: Page, iterations: int, review_text: Optional[str] = None
     # ========== PERTAMA KALI ISI REVIEW ==========
     loop_count = 0
     try:
+        if "login" in page.url:
+            resurrect_session()
+
         if tasks_completed < tasks_total:
             # Click Mendapatkan button on grab page (button 1)
             try:
@@ -170,18 +198,24 @@ def perform_tasks(page: Page, iterations: int, review_text: Optional[str] = None
                 btn.click()
                 print("Klik Mendapatkan (grab page) OK")
             except Exception as e:
-                print(f"Tombol 'Mendapatkan' (Grab) not found: {e}. Refreshing page...")
-                page.reload()
-                page.wait_for_timeout(5000)
-                try_close_popups(page)
-                # Retry click after refresh
-                try:
-                     btn = page.locator("#app > div > div.van-config-provider.provider-box > div.main-wrapper.travel-bg > div.div-flex-center > button").first
-                     btn.wait_for(state="visible", timeout=10000)
-                     btn.click()
-                     print("Klik Mendapatkan (grab page) OK (After Retry)")
-                except:
-                     raise Exception("Button 'Mendapatkan' (grab) not found after retry")
+                if "login" in page.url:
+                    resurrect_session()
+                    # Retry once after resurrection
+                    btn = page.locator("#app > div > div.van-config-provider.provider-box > div.main-wrapper.travel-bg > div.div-flex-center > button").first
+                    btn.click()
+                else:
+                    print(f"Tombol 'Mendapatkan' (Grab) not found: {e}. Refreshing page...")
+                    page.reload()
+                    page.wait_for_timeout(5000)
+                    try_close_popups(page)
+                    # Retry click after refresh
+                    try:
+                         btn = page.locator("#app > div > div.van-config-provider.provider-box > div.main-wrapper.travel-bg > div.div-flex-center > button").first
+                         btn.wait_for(state="visible", timeout=10000)
+                         btn.click()
+                         print("Klik Mendapatkan (grab page) OK (After Retry)")
+                    except:
+                         raise Exception("Button 'Mendapatkan' (grab) not found after retry")
 
             # Wait for navigation to work page
             page.wait_for_url("**/work**", timeout=10000)
@@ -195,6 +229,10 @@ def perform_tasks(page: Page, iterations: int, review_text: Optional[str] = None
                 btn.click()
                 print("Klik Mendapatkan (detail) OK")
             except Exception as e:
+                if "login" in page.url:
+                    resurrect_session()
+                    # We might need to go back to grab and start again
+                    raise Exception("Redirected to login during detail click")
                 print(f"Tombol 'Mendapatkan' di halaman detail nggak ketemu: {e}")
                 raise Exception("Button 'Mendapatkan' (detail) not found")
 
@@ -232,10 +270,21 @@ def perform_tasks(page: Page, iterations: int, review_text: Optional[str] = None
             
             loop_count = 1 # We already did one
             
+            # Update callback after first task
+            if progress_callback:
+                try: progress_callback(tasks_completed + 1, tasks_total)
+                except: pass
+            
             consecutive_failures = 0
             
             for i in range(remaining_iterations):
-                print(f"Loop ke-{i+1} (Total progress: {tasks_completed + i + 2}/{tasks_total})")
+                # CHECK FOR LOGOUT AT START OF EACH LOOP
+                if "login" in page.url:
+                    if not resurrect_session():
+                        break
+
+                current_completed = tasks_completed + i + 2
+                print(f"Loop ke-{i+1} (Total progress: {current_completed}/{tasks_total})")
                 page.wait_for_timeout(1000) # Slight delay
 
                 try:
@@ -250,15 +299,29 @@ def perform_tasks(page: Page, iterations: int, review_text: Optional[str] = None
                             k_btn.click()
                             loop_count += 1
                             consecutive_failures = 0 # Reset failure count
+                            
+                            # CALLBACK HERE for real-time update
+                            if progress_callback:
+                                try: progress_callback(current_completed, tasks_total)
+                                except: pass
+
                         else:
                              print("Tombol Kirim tidak muncul (mungkin delay)")
+                             if "login" in page.url:
+                                 resurrect_session()
                     else:
-                        print("Elemen utama hidden/hilang")
-                        consecutive_failures += 1
+                        if "login" in page.url:
+                            resurrect_session()
+                        else:
+                            print("Elemen utama hidden/hilang")
+                            consecutive_failures += 1
                         
                 except PlaywrightTimeoutError:
-                    print("Elemen utama nggak ketemu (Timeout).")
-                    consecutive_failures += 1
+                    if "login" in page.url:
+                        resurrect_session()
+                    else:
+                        print("Elemen utama nggak ketemu (Timeout).")
+                        consecutive_failures += 1
                 
                 # Self-healing: if too many consecutive failures, refresh and trying to recover would be complex here as state is lost
                 # Instead, we break early to trigger the outer retry loop in cli.py which is safer
@@ -273,22 +336,31 @@ def perform_tasks(page: Page, iterations: int, review_text: Optional[str] = None
         else:
             print(f"All tasks already completed ({tasks_completed}/{tasks_total}). Skipping automation.")
             loop_count = 0
+            # Callback even if skipped
+            if progress_callback:
+                try: progress_callback(tasks_completed, tasks_total)
+                except: pass
 
         print(f"Selesai loop. {loop_count} iterations completed")
         
     except Exception as e:
         print(f"⚠️ Automation loop interrupted: {e}")
+        # Detect logout in catch block too
+        if "login" in page.url:
+            resurrect_session()
         print("Proceeding to scrape data anyway...")
 
     print(f"Selesai loop. {loop_count} iterations completed")
     
     # Re-scrape progress from page to get final count
     try:
+        # Check login before final scrape
+        if "login" in page.url:
+            resurrect_session()
+
         # Go to ticket page to be sure
         page.locator(".van-badge__wrapper.van-icon.van-icon-undefined.item-icon.iconfont.icon-ticket").click()
-        page.wait_for_timeout(1000)
-        from .scraper import try_close_popups
-        try_close_popups(page)
+        try_close_popups(page) # Should be available in scope or via import if function
         
         progress_element = page.locator(".van-progress__pivot").first
         progress_text = progress_element.text_content(timeout=5000)
@@ -306,10 +378,15 @@ def perform_tasks(page: Page, iterations: int, review_text: Optional[str] = None
             tasks_completed = min(tasks_completed + loop_count, tasks_total)
             print(f"Using fallback progress calculation: {tasks_completed}/{tasks_total}")
 
+    # Final callback
+    if progress_callback:
+        try: progress_callback(tasks_completed, tasks_total)
+        except: pass
+
     return tasks_completed, tasks_total
 
 
-def run(playwright: Playwright, phone: str, password: str, headless: bool = False, slow_mo: int = 200, iterations: int = 30, review_text: Optional[str] = None, viewport_name: str = "iPhone 12", timeout: int = 30, sync_only: bool = False) -> Tuple[int, int, float, float, float]:
+def run(playwright: Playwright, phone: str, password: str, headless: bool = False, slow_mo: int = 200, iterations: int = 30, review_text: Optional[str] = None, viewport_name: str = "iPhone 12", timeout: int = 30, sync_only: bool = False, progress_callback=None) -> Tuple[int, int, float, float, float]:
     browser = playwright.chromium.launch(headless=headless, slow_mo=slow_mo)
     
     vp = VIEWPORTS.get(viewport_name, VIEWPORTS["iPhone 12"])
@@ -353,7 +430,7 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
         # ========== PERFORM TASKS ==========
         tasks_completed, tasks_total = 0, iterations
         if not sync_only:
-            tasks_completed, tasks_total = perform_tasks(page, iterations, review_text)
+            tasks_completed, tasks_total = perform_tasks(page, context, phone, password, iterations, review_text, progress_callback=progress_callback)
         else:
             print("Sync only mode: checking current progress...")
             try:

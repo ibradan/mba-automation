@@ -195,13 +195,20 @@ def main():
                         print("⚠️ No internet connection detected. Waiting 30s...")
                         time.sleep(30)
                 
+                def on_prog(c, t):
+                    current_run_data.update({
+                        'completed': c,
+                        'total': t
+                    })
+                    save_progress()
+
                 try:
                     c, t, i, w, b = automation_run(
                         playwright, phone=phone, password=password, 
                         headless=final_headless, slow_mo=args.slow_mo, 
                         iterations=args.iterations, review_text=args.review, 
                         viewport_name=args.viewport, timeout=args.timeout, 
-                        sync_only=args.sync
+                        sync_only=args.sync, progress_callback=on_prog
                     )
                     
                     # Update global data for persistence
