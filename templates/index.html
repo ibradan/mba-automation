@@ -493,8 +493,7 @@
             {# Stats Row (Modal & Pendapatan) - AT THE BOTTOM #}
             {% if acc.display_stats %}
             <div class="stats-row" style="position: relative;">
-              {% if acc.display_stats.get('income') %}
-              {% set income = acc.display_stats.income %}
+              {% set income = acc.display_stats.get('income', 0) %}
               {% if acc.phone_display %}
               <a href="{{ url_for('history', phone=acc.phone_display, metric='modal') }}"
                 class="stat-box income-display" style="text-decoration: none;">
@@ -507,10 +506,8 @@
                 <span class="stat-value">Rp {{ "{:,.0f}".format(income).replace(',', '.') }}</span>
               </div>
               {% endif %}
-              {% endif %}
 
-              {% if acc.display_stats.get('balance') %}
-              {% set balance = acc.display_stats.balance %}
+              {% set balance = acc.display_stats.get('balance', 0) %}
               {% if acc.phone_display %}
               <a href="{{ url_for('history', phone=acc.phone_display, metric='saldo') }}"
                 class="stat-box balance-display" style="text-decoration: none;">
@@ -523,10 +520,8 @@
                 <span class="stat-value">Rp {{ "{:,.0f}".format(balance).replace(',', '.') }}</span>
               </div>
               {% endif %}
-              {% endif %}
 
-              {% if acc.display_stats.get('withdrawal') %}
-              {% set withdrawal = acc.display_stats.withdrawal %}
+              {% set withdrawal = acc.display_stats.get('withdrawal', 0) %}
               {% if acc.phone_display %}
               <a href="{{ url_for('history', phone=acc.phone_display, metric='pendapatan') }}"
                 class="stat-box withdrawal-display" style="text-decoration: none;">
@@ -538,7 +533,6 @@
                 <span class="stat-label">Pendapatan</span>
                 <span class="stat-value">Rp {{ "{:,.0f}".format(withdrawal).replace(',', '.') }}</span>
               </div>
-              {% endif %}
               {% endif %}
 
               <button type="button" class="toggle-chart-btn" onclick="toggleChart(this)" title="Lihat Grafik">
