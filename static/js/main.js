@@ -1282,3 +1282,95 @@ function renderGlobalChart(totalModal, totalSaldo, totalPendapatan) {
     }
   });
 }
+
+// ================= PnL CALENDAR LOGIC =================
+let calendarDate = new Date();
+let pnlHistory = {};
+
+async function fetchPnLHistory() {
+    try {
+        const res = await fetch('/api/pnl_history');
+        if (res.ok) {
+            pnlHistory = await res.json();
+            renderPnLCalendar();
+        }
+    } catch (err) {
+        console.error("Failed to fetch PnL History:", err);
+    }
+}
+
+function renderPnLCalendar() {
+    const grid = document.getElementById('pnl-calendar-grid');
+    const monthYearLabel = document.getElementById('current-month-year');
+    const monthlyTotalLabel = document.getElementById('monthly-total-pnl');
+    
+    if (!grid) return;
+    
+    // Setup Dates
+    const year = calendarDate.getFullYear();
+    const month = calendarDate.getMonth();
+    
+    const firstDay = new Date(year, month, 1).getDay();
+    const lastDate = new Date(year, month + 1, 0).getDate();
+    
+    const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+    monthYearLabel.textContent = `${monthNames[month]} ${year}`;
+    
+    grid.innerHTML = '';
+    let monthlyTotal = 0;
+    
+    // Empty slots before first day
+    for (let i = 0; i < firstDay; i++) {
+        const empty = document.createElement('div');
+        empty.className = 'calendar-day empty';
+        grid.appendChild(empty);
+    }
+    
+    // Format currency
+    const fmt = (val) => new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(val);
+    
+    // Fill days
+    for (let d = 1; d <= lastDate; d++) {
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const income = pnlHistory[dateStr] || 0;
+        monthlyTotal += income;
+        
+        const dayEl = document.createElement('div');
+        dayEl.className = 'calendar-day';
+        if (income > 0) dayEl.classList.add('positive');
+        
+        const isToday = new Date().toISOString().split('T')[0] === dateStr;
+        if (isToday) dayEl.classList.add('today');
+        
+        dayEl.innerHTML = `
+            <span class="day-num">${d}</span>
+            <span class="pnl-value">${income > 0 ? '+' + fmt(income) : ''}</span>
+        `;
+        
+        grid.appendChild(dayEl);
+    }
+    
+    monthlyTotalLabel.textContent = `Rp ${fmt(monthlyTotal)}`;
+}
+
+// Global initialization for Calendar
+document.addEventListener('DOMContentLoaded', () => {
+    fetchPnLHistory();
+    
+    const prevBtn = document.getElementById('prev-month');
+    const nextBtn = document.getElementById('next-month');
+    
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+            calendarDate.setMonth(calendarDate.getMonth() - 1);
+            renderPnLCalendar();
+        });
+    }
+    
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            calendarDate.setMonth(calendarDate.getMonth() + 1);
+            renderPnLCalendar();
+        });
+    }
+});

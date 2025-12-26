@@ -320,6 +320,52 @@
     <!-- ================= MAIN FORM ================= -->
     <form method="post" id="automation-form">
 
+      <!-- ================= PnL CALENDAR ================= -->
+      <section class="pnl-calendar-section">
+        <div class="calendar-card glass-panel">
+          <div class="calendar-header">
+            <div class="calendar-title">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+              <span>Kalender Panen 💰</span>
+            </div>
+            <div class="calendar-nav">
+              <button type="button" id="prev-month" class="btn-cal-nav">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+              </button>
+              <span id="current-month-year">Desember 2025</span>
+              <button type="button" id="next-month" class="btn-cal-nav">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="calendar-grid-container">
+            <div class="calendar-days-header">
+              <span>Min</span><span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span>
+            </div>
+            <div id="pnl-calendar-grid" class="calendar-grid">
+              <!-- Grid will be populated by JS -->
+            </div>
+          </div>
+          <div class="calendar-footer">
+            <div class="footer-stat">
+              <span class="dot-indicator green"></span>
+              <span class="label">Total Panen Bulan Ini:</span>
+              <span id="monthly-total-pnl" class="value">Rp 0</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- ===== ROWS WRAPPER ===== -->
       <div id="rows">
         {%- if saved and saved|length > 0 %}
