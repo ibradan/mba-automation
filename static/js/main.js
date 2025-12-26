@@ -271,11 +271,8 @@ function animateValue(el, start, end, duration) {
     const elapsed = currentTime - startTime;
     const progress = Math.min(elapsed / duration, 1);
 
-    // Elastic Out effect
-    const c4 = (2 * Math.PI) / 3;
-    const ease = progress === 0 ? 0 : progress === 1 ? 1
-      : Math.pow(2, -10 * progress) * Math.sin((progress * 10 - 0.75) * c4) + 1;
-
+    // Cubic Ease Out (Simpler & More Professional)
+    const ease = 1 - Math.pow(1 - progress, 3);
     const current = Math.floor(start + (end - start) * ease);
 
     el.textContent = 'Rp ' + formatNumber(current);
@@ -469,6 +466,24 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }
   });
+
+  // QUICK ACTION FAB LOGIC
+  const fabRunAll = document.getElementById('fab-run-all');
+  const fabAddAcc = document.getElementById('fab-add-acc');
+
+  if (fabRunAll) {
+    fabRunAll.addEventListener('click', () => {
+      const runAllBtn = document.getElementById('run-all-btn');
+      if (runAllBtn) runAllBtn.click();
+    });
+  }
+
+  if (fabAddAcc) {
+    fabAddAcc.addEventListener('click', () => {
+      const addRowBtn = document.getElementById('add-row');
+      if (addRowBtn) addRowBtn.click();
+    });
+  }
 
   // Initial progress for existing cards
   document.querySelectorAll('.account-card').forEach(card => {
