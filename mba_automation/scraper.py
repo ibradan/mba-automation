@@ -86,24 +86,69 @@ def scrape_withdrawal(page: Page, timeout: int = 30) -> float:
 
 def scrape_balance(page: Page, timeout: int) -> float:
     """Scrapes balance with retries and popup handling."""
-    for attempt in range(2):
-        try:
-            print(f"  Scraping balance (attempt {attempt+1})...")
-            page.goto("https://mba7.com/#/me", timeout=timeout*1000)
-            page.wait_for_timeout(2000)
-            try_close_popups(page)
-            
-            balance_el = page.locator(".user-balance").first
-            balance_el.wait_for(state="visible", timeout=15000)
-            balance_text = balance_el.text_content(timeout=5000)
-            
-            if balance_text:
-                clean_text = balance_text.replace(".", "").replace(",", ".").strip()
-                # Remove any remaining non-numeric characters except dot
-                clean_text = re.sub(r'[^\d.]', '', clean_text)
-                return float(clean_text)
-        except Exception as e:
-            print(f"  Attempt {attempt+1} failed: {e}")
-            if attempt == 0: page.reload()
+    # Try both /mine and /me as the profile page URL
+    urls = ["https://mba7.com/#/mine", "https://mba7.com/#/me"]
+    
+    for url in urls:
+        for attempt in range(2):
+            try:
+                print(f"  Scraping balance from {url} (attempt {attempt+1})...")
+                page.goto(url, timeout=timeout*1000)
+                page.wait_for_timeout(2500)
+                try_close_popups(page)
+                
+                # Try multiple selectors for balance
+                selectors = [".user-balance", ".balance-amount", ".amount-value"]
+                balance_el = None
+                for selector in selectors:
+                    el = page.locator(selector).first
+                    if el.count() > 0 and el.is_visible(timeout=2000):
+                        balance_el = el
+                        break
+                
+                if not balance_el:
+                    # Fallback: look for text "Saldo Rekening" and get next sibling or parent's child
+                    # This is a bit more complex but can be very robust
+                    print("  Primary selectors failed, trying text-based search...")
+                    if page.get_by_text("Saldo Rekening").count() > 0:
+                        # In many mobile sites, the value is near the label
+                        balance_text = page.locator("body").text_content()
+                        # Use regex to find number after "Saldo Rekening"
+                        match = re.search(r'Saldo Rekening\s*Rp\s*([\d.,]+)', balance_text)
+                        if match:
+                            balance_text = match.group(1)
+                        else:
+                            continue
+                    else:
+                        continue
+                else:
+                    balance_text = balance_el.text_content(timeout=5000)
+                
+                if balance_text:
+                    print(f"  Raw balance text: {balance_text}")
+                    # Robust cleaning: remove everything except digits, commas and dots
+                    cleaned = re.sub(r'[^\d.,]', '', balance_text)
+                    
+                    # Standardize to dot decimal: handle "1.234.567" or "1,234.56"
+                    if ',' in cleaned and '.' in cleaned:
+                        if cleaned.rfind(',') > cleaned.rfind('.'):
+                            cleaned = cleaned.replace('.', '').replace(',', '.')
+                        else:
+                            cleaned = cleaned.replace(',', '')
+                    elif ',' in cleaned:
+                        cleaned = cleaned.replace(',', '.')
+                    elif cleaned.count('.') > 1:
+                        # Multiple dots mean they are thousands separators (eg 1.000.000)
+                        cleaned = cleaned.replace('.', '')
+                        
+                    try: 
+                        val = float(cleaned)
+                        if val > 0: 
+                            print(f"  Successfully scraped balance: {val}")
+                            return val
+                    except: pass
+            except Exception as e:
+                print(f"  Attempt {attempt+1} at {url} failed: {e}")
+                if attempt == 0: page.reload()
             
     return 0.0

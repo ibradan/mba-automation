@@ -107,10 +107,6 @@ function removeRow(btn) {
   forceSave(); // Save immediately after removing
 }
 
-function performAutoSyncAll() {
-  console.log("Auto-sync all requested...");
-  // This is now disabled per user request to avoid auto-queuing on refresh
-}
 
 function updateAccountNumbers() {
   const rows = document.querySelectorAll('.row-item');
@@ -214,7 +210,7 @@ async function performAutoSyncAll() {
     if (lastSyncTs) {
       const lastSyncDate = new Date(lastSyncTs);
       if (now - lastSyncDate < COOLDOWN_MS) {
-        console.log(`Skipping auto-sync for +62${phone} (Cooldown active)`);
+        // console.log(`Skipping auto-sync for +62${phone} (Cooldown active)`);
         continue;
       }
     }
@@ -230,19 +226,16 @@ async function performAutoSyncAll() {
       const res = await fetch('/sync_single', { method: 'POST', body: formData });
       const data = await res.json();
       if (data.ok) {
-        showToast('Auto-sync queued: +62' + phone, 'success');
+        showToast('Auto-sync queued: +62' + phone, 'info');
         card.dataset.lastSyncTs = now.toISOString();
-        card.classList.add('is-syncing'); // Add pulsing glow
-        // Wait 1.5s for a gentler sequence
-        await new Promise(r => setTimeout(r, 1500));
+        // Pulsing glow is handled by updateStatusRealTime polling
       }
     } catch (err) {
       console.error('Auto-sync failed for', phone, err);
     }
-  }
 
-  if (syncCount > 0) {
-    showToast(`Auto-sync started for ${syncCount} accounts`, 'info');
+    // Slight delay between queueing each account for gentler sequence
+    await new Promise(r => setTimeout(r, 1000));
   }
 }
 
@@ -419,6 +412,11 @@ function updateStatusRealTime() {
 // Initial setup on load
 document.addEventListener('DOMContentLoaded', function () {
   updateStatusRealTime(); // Run immediately on load
+
+  // Auto-sync trigger on load and periodically
+  performAutoSyncAll();
+  setInterval(performAutoSyncAll, 5 * 60 * 1000); // Check every 5 minutes
+
   setInterval(() => {
     if (!isPolling) updateStatusRealTime();
   }, 2000);

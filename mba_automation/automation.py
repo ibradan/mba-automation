@@ -464,7 +464,24 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
         withdrawal = scrape_withdrawal(page, timeout)
 
         print("Scraping balance from profile...")
-        balance = scrape_balance(page, timeout)
+        if sync_only:
+            # STABLE SYNC: Double-check logic to ensure balance isn't changing
+            print("  Performing STABLE SYNC check (Double Scrape)...")
+            b1 = scrape_balance(page, timeout)
+            
+            # Initial wait
+            page.wait_for_timeout(5000)
+            b2 = scrape_balance(page, timeout)
+            
+            if abs(b1 - b2) > 0.01:
+                print(f"  Balance unstable (diff: {b2-b1}). Waiting for final check...")
+                page.wait_for_timeout(5000)
+                balance = scrape_balance(page, timeout)
+            else:
+                print("  Balance stable.")
+                balance = b2
+        else:
+            balance = scrape_balance(page, timeout)
         
         # Return progress with income, withdrawal, and balance
         print(f"Returning final progress: {tasks_completed}/{tasks_total}")

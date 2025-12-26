@@ -420,11 +420,16 @@ def api_accounts():
                 except: pass
 
         display_stats = progress if progress else {}
-        if not display_stats:
+        if not display_stats or (display_stats.get('balance', 0) == 0 and display_stats.get('income', 0) == 0):
              dp = it.get('daily_progress', {})
              if dp:
                  sorted_dates = sorted(dp.keys(), reverse=True)
-                 display_stats = dp[sorted_dates[0]]
+                 for d in sorted_dates:
+                     if dp[d].get('balance', 0) > 0 or dp[d].get('income', 0) > 0:
+                         display_stats = dp[d]
+                         break
+                 if not display_stats or (display_stats.get('balance', 0) == 0 and display_stats.get('income', 0) == 0):
+                     display_stats = dp[sorted_dates[0]]
 
         results.append({
             "phone": phone,
@@ -848,11 +853,16 @@ def index():
 
                     # Determine stats for display: prefer today's, otherwise latest
                     display_stats = progress if progress else {}
-                    if not display_stats:
+                    if not display_stats or (display_stats.get('balance', 0) == 0 and display_stats.get('income', 0) == 0):
                          dp = it.get('daily_progress', {})
                          if dp:
                              sorted_dates = sorted(dp.keys(), reverse=True)
-                             display_stats = dp[sorted_dates[0]]
+                             for d in sorted_dates:
+                                 if dp[d].get('balance', 0) > 0 or dp[d].get('income', 0) > 0:
+                                     display_stats = dp[d]
+                                     break
+                             if not display_stats or (display_stats.get('balance', 0) == 0 and display_stats.get('income', 0) == 0):
+                                 display_stats = dp[sorted_dates[0]]
 
                     saved_accounts.append({
                         "phone_display": display, 
