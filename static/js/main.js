@@ -481,23 +481,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
-  // QUICK ACTION FAB LOGIC
-  const fabRunAll = document.getElementById('fab-run-all');
-  const fabAddAcc = document.getElementById('fab-add-acc');
-
-  if (fabRunAll) {
-    fabRunAll.addEventListener('click', () => {
-      const runAllBtn = document.getElementById('run-all-btn');
-      if (runAllBtn) runAllBtn.click();
-    });
-  }
-
-  if (fabAddAcc) {
-    fabAddAcc.addEventListener('click', () => {
-      const addRowBtn = document.getElementById('add-row');
-      if (addRowBtn) addRowBtn.click();
-    });
-  }
 
   // Initial progress for existing cards
   document.querySelectorAll('.account-card').forEach(card => {
