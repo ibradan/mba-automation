@@ -5,6 +5,7 @@ from playwright.sync_api import Playwright, Page, TimeoutError as PlaywrightTime
 from .scraper import scrape_income, scrape_withdrawal, scrape_balance, try_close_popups
 from .reviews import REVIEWS
 import random
+from datetime import date
 
 VIEWPORTS = {
     "iPhone 12": {"width": 390, "height": 844},
@@ -251,14 +252,19 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
             except PlaywrightTimeoutError:
                 pass
 
+            # Determine identifying review for the day if not provided
+            daily_seed = f"{date.today()}-{phone}"
+            daily_rand = random.Random(daily_seed)
+            daily_review = daily_rand.choice(REVIEWS)
+
             try:
                 page.get_by_role("textbox", name="Harap masukkan ulasan Anda di").click()
-                # Use provided review_text if given, otherwise pick random from library
+                # Use provided review_text if given, otherwise pick daily consistent review
                 if review_text and len(review_text.strip()) > 0:
                     text_to_fill = review_text
                 else:
-                    text_to_fill = random.choice(REVIEWS)
-                    print(f"Using random smart review: {text_to_fill}")
+                    text_to_fill = daily_review
+                    print(f"Using daily consistent review: {text_to_fill}")
                 
                 page.get_by_role("textbox", name="Harap masukkan ulasan Anda di").fill(text_to_fill)
                 page.get_by_role("button", name="Kirim").click()
