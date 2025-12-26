@@ -718,76 +718,49 @@
   </div>
   </form>
 
-  <!-- ================= GLOBAL FINANCIAL DASHBOARD ================= -->
-  <div id="global-dashboard" class="dashboard-section glass-container" style="display: none;">
-    <div class="section-header">
-      <h2 class="section-title-gradient">Financial Overview</h2>
-      <p class="section-subtitle">Laporan Akumulasi Kekayaan Antar Akun 💎</p>
+  <!-- ================= GLOBAL FINANCIAL DASHBOARD (Unified Master Card) ================= -->
+  <div id="global-dashboard" class="account-card global-master-card"
+    style="display: none; margin-bottom: 40px; border-color: var(--primary);">
+    <div class="progress-delete-row">
+      <div class="account-number" style="background: var(--primary);">0</div>
+      <div class="master-label" style="font-weight: 800; color: var(--text); letter-spacing: -0.5px;">GRAND TOTAL
+        OVERVIEW 🏦</div>
+      <div class="live-indicator-wrapper" style="margin-left: auto;">
+        <span class="live-indicator"><span class="pulse-dot"></span> LIVE</span>
+      </div>
     </div>
 
-    <div class="dashboard-grid">
+    <div class="stats-row" style="margin-top: 5px;">
       <!-- Total Modal -->
-      <div class="dash-card modal-card glass-glow" title="Total akumulasi modal yang di-investasikan di semua akun">
-        <div class="dash-icon-wrapper">
-          <div class="dash-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
-              <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
-              <line x1="6" y1="6" x2="6.01" y2="6"></line>
-              <line x1="6" y1="18" x2="6.01" y2="18"></line>
-            </svg>
-          </div>
-          <div class="icon-pulse"></div>
-        </div>
-        <div class="dash-content">
-          <span class="dash-label">Total Modal</span>
-          <span class="dash-value animate-value" id="total-modal">Rp 0</span>
-        </div>
+      <div class="stat-box income-display glass-glow" title="Total akumulasi modal yang di-investasikan di semua akun">
+        <span class="stat-label">Total Modal</span>
+        <span class="stat-value animate-value" id="total-modal">Rp 0</span>
       </div>
 
       <!-- Total Saldo -->
-      <div class="dash-card saldo-card glass-glow" title="Total saldo yang tersedia saat ini di semua akun">
-        <div class="dash-icon-wrapper">
-          <div class="dash-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-            </svg>
-          </div>
-          <div class="icon-pulse"></div>
-        </div>
-        <div class="dash-content">
-          <span class="dash-label">Total Saldo</span>
-          <span class="dash-value animate-value" id="total-balance">Rp 0</span>
-        </div>
+      <div class="stat-box balance-display glass-glow" title="Total saldo yang tersedia saat ini di semua akun">
+        <span class="stat-label">Total Saldo</span>
+        <span class="stat-value animate-value" id="total-balance">Rp 0</span>
       </div>
 
       <!-- Total Pendapatan -->
-      <div class="dash-card profit-card glass-glow" title="Total pendapatan/penarikan yang sudah berhasil diproses">
-        <div class="dash-icon-wrapper">
-          <div class="dash-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="12" y1="1" x2="12" y2="23"></line>
-              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-            </svg>
-          </div>
-          <div class="icon-pulse"></div>
-        </div>
-        <div class="dash-content">
-          <span class="dash-label">Total Pendapatan</span>
-          <span class="dash-value animate-value" id="total-income">Rp 0</span>
-        </div>
+      <div class="stat-box withdrawal-display glass-glow"
+        title="Total pendapatan/penarikan yang sudah berhasil diproses">
+        <span class="stat-label">Pendapatan</span>
+        <span class="stat-value animate-value" id="total-income">Rp 0</span>
       </div>
+
+      <button type="button" class="toggle-chart-btn" onclick="toggleGlobalChart(this)" title="Lihat Grafik Akumulasi">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </button>
     </div>
 
-    <!-- Chart Section -->
-    <div class="global-chart-container glass-card">
-      <div class="chart-header">
-        <h3>Trend Akumulasi</h3>
-        <span class="live-indicator"><span class="pulse-dot"></span> Live Analytics</span>
-      </div>
-      <div class="global-chart-wrapper">
-        <canvas id="globalChart"></canvas>
-      </div>
+    <!-- Global Chart Section -->
+    <div id="global-chart-wrapper" class="chart-wrapper"
+      style="display: none; margin-top: 15px; border-top: 1px dashed var(--border); padding-top: 15px;">
+      <canvas id="globalChart"></canvas>
     </div>
   </div>
 

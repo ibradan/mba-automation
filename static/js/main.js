@@ -351,6 +351,20 @@ function updateStatusRealTime() {
           }
         }
 
+        // SMART WITHDRAWAL ALERT (Phase 5)
+        const today = new Date().getDay(); // 0=Sun, 1=Mon, ..., 3=Wed, 4=Thu
+        const level = (acc.level || '').toUpperCase();
+        let isWdDay = false;
+
+        if (level === 'E3' && today === 3) isWdDay = true;
+        if ((level === 'E2' || level === 'E1') && today === 4) isWdDay = true;
+
+        if (isWdDay) {
+          card.classList.add('is-withdrawal-day');
+        } else {
+          card.classList.remove('is-withdrawal-day');
+        }
+
         // Update Syncing Spinner & Button State
         const syncBtn = card.querySelector('.sync-btn');
         if (syncBtn) {
@@ -843,6 +857,22 @@ if (addRowBtn) {
     addRowBtn.classList.add('clicked');
     setTimeout(() => addRowBtn.classList.remove('clicked'), 240);
   });
+}
+// ================= MASTER CHART TOGGLE =================
+function toggleGlobalChart(btn) {
+  const chartWrapper = document.getElementById('global-chart-wrapper');
+  if (!chartWrapper) return;
+
+  const isHidden = chartWrapper.style.display === 'none';
+  chartWrapper.style.display = isHidden ? 'block' : 'none';
+
+  if (isHidden) {
+    btn.classList.add('active');
+    // The global chart is typically rendered on load/update, 
+    // but we can trigger a resize or re-render if needed here.
+  } else {
+    btn.classList.remove('active');
+  }
 }
 // ================= CHART TOGGLE & RENDER =================
 function toggleChart(btn) {
