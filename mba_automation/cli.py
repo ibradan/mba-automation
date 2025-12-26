@@ -7,6 +7,7 @@ import re
 import os
 import argparse
 import time
+import gc
 from playwright.sync_api import sync_playwright
 from .automation import run as automation_run
 
@@ -157,6 +158,19 @@ def main():
 
     # run automation sequentially for each phone
     with sync_playwright() as playwright:
+        # SYSTEM CLEANUP: Delete logs older than 3 days
+        LOGS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'logs'))
+        if os.path.exists(LOGS_DIR):
+            print("🧹 Cleaning up old logs...")
+            now = time.time()
+            for f in os.listdir(LOGS_DIR):
+                f_path = os.path.join(LOGS_DIR, f)
+                if os.path.isfile(f_path) and os.stat(f_path).st_mtime < now - 3 * 86400:
+                    try: 
+                        os.remove(f_path)
+                        print(f"  Removed old log: {f}")
+                    except: pass
+
         # Decide final headless setting: CLI flag > env var > default True
         env_headless = os.getenv("MBA_HEADLESS")
         def env_bool(v):
@@ -226,6 +240,8 @@ def main():
                         if phone != phones[-1]:
                             print("❄️ Cooling down for 15s...")
                             time.sleep(15)
+                        # Explicit Memory Flush
+                        gc.collect()
                         break
                     
                     print(f"⚠️ Incomplete: {c}/{t}. Retrying in 5s...")

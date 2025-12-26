@@ -400,7 +400,18 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
 
 
 def run(playwright: Playwright, phone: str, password: str, headless: bool = False, slow_mo: int = 200, iterations: int = 30, review_text: Optional[str] = None, viewport_name: str = "iPhone 12", timeout: int = 30, sync_only: bool = False, progress_callback=None) -> Tuple[int, int, float, float, float]:
-    browser = playwright.chromium.launch(headless=headless, slow_mo=slow_mo)
+    browser = playwright.chromium.launch(
+        headless=headless, 
+        slow_mo=slow_mo,
+        args=[
+            "--disable-gpu",
+            "--disable-dev-shm-usage",
+            "--no-first-run",
+            "--no-default-browser-check",
+            "--js-flags=\"--max-old-space-size=256\"",
+            "--disable-blink-features=AutomationControlled"
+        ]
+    )
     
     vp = VIEWPORTS.get(viewport_name, VIEWPORTS["iPhone 12"])
     
