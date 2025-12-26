@@ -3,6 +3,8 @@ import time
 from typing import Optional, Tuple
 from playwright.sync_api import Playwright, Page, TimeoutError as PlaywrightTimeoutError
 from .scraper import scrape_income, scrape_withdrawal, scrape_balance, try_close_popups
+from .reviews import REVIEWS
+import random
 
 VIEWPORTS = {
     "iPhone 12": {"width": 390, "height": 844},
@@ -251,8 +253,13 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
 
             try:
                 page.get_by_role("textbox", name="Harap masukkan ulasan Anda di").click()
-                # use provided review_text if given, otherwise default to 'bagus'
-                text_to_fill = review_text if (review_text and len(review_text.strip())>0) else "bagus"
+                # Use provided review_text if given, otherwise pick random from library
+                if review_text and len(review_text.strip()) > 0:
+                    text_to_fill = review_text
+                else:
+                    text_to_fill = random.choice(REVIEWS)
+                    print(f"Using random smart review: {text_to_fill}")
+                
                 page.get_by_role("textbox", name="Harap masukkan ulasan Anda di").fill(text_to_fill)
                 page.get_by_role("button", name="Kirim").click()
             except: pass
