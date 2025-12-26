@@ -222,6 +222,10 @@ def main():
                     
                     if args.sync or (c >= t and t > 0):
                         print(f"✅ {'SYNC' if args.sync else 'SUCCESS'} for {phone}")
+                        # COOL DOWN: Give the CPU a break before next account
+                        if phone != phones[-1]:
+                            print("❄️ Cooling down for 15s...")
+                            time.sleep(15)
                         break
                     
                     print(f"⚠️ Incomplete: {c}/{t}. Retrying in 5s...")

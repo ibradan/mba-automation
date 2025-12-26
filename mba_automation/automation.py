@@ -411,9 +411,11 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
     # Set timeout (convert to ms)
     page.set_default_timeout(timeout * 1000) 
 
-    # OPTIMIZATION: Block heavy resources (images, fonts, media) to save RAM/CPU
+    # OPTIMIZATION: Block heavy resources to save RAM, CPU, and Battery
     def intercept_route(route):
-        if route.request.resource_type in ["image", "media", "font"]:
+        # Strictly block images, media, and fonts
+        # Blocking stylesheets can be risky for selectors but fonts/images/media are safe
+        if route.request.resource_type in ["image", "media", "font", "manifest", "other"]:
             route.abort()
         else:
             route.continue_()

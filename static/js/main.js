@@ -415,11 +415,38 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Auto-sync trigger on load and periodically
   performAutoSyncAll();
-  setInterval(performAutoSyncAll, 5 * 60 * 1000); // Check every 5 minutes
 
-  setInterval(() => {
-    if (!isPolling) updateStatusRealTime();
-  }, 2000);
+  let pollingIntervalId = null;
+  let autoSyncIntervalId = setInterval(performAutoSyncAll, 5 * 60 * 1000); // Check every 5 minutes
+
+  const startPolling = (ms) => {
+    if (pollingIntervalId) clearInterval(pollingIntervalId);
+    pollingIntervalId = setInterval(() => {
+      if (!isPolling) updateStatusRealTime();
+    }, ms);
+  };
+
+  // Start with default 2s polling
+  startPolling(2000);
+
+  // SMART POLLING: Slow down when tab is hidden to save battery/thermal
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      console.log("Tab hidden: Entering low-power polling mode (60s)");
+      startPolling(60000); // Slow down to 1 minute
+      if (autoSyncIntervalId) {
+        clearInterval(autoSyncIntervalId);
+        autoSyncIntervalId = null;
+      }
+    } else {
+      console.log("Tab visible: Entering high-performance mode (2s)");
+      updateStatusRealTime();
+      startPolling(2000);
+      if (!autoSyncIntervalId) {
+        autoSyncIntervalId = setInterval(performAutoSyncAll, 5 * 60 * 1000);
+      }
+    }
+  });
 
   // Initial progress for existing cards
   document.querySelectorAll('.account-card').forEach(card => {
