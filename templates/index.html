@@ -317,6 +317,53 @@
     {% endif %}
     {% endwith %}
 
+    <!-- ================= FINANCIAL OVERVIEW (Master Card) ================= -->
+    <div id="global-dashboard" class="account-card global-master-card"
+      style="display: none; margin-bottom: 40px; border-color: var(--primary);">
+      <div class="progress-delete-row">
+        <div class="account-number" style="background: var(--primary);">0</div>
+        <div class="master-label" style="font-weight: 800; color: var(--text); letter-spacing: -0.5px;">FINANCIAL
+          OVERVIEW 🏦</div>
+        <div class="live-indicator-wrapper" style="margin-left: auto;">
+          <span class="live-indicator"><span class="pulse-dot"></span> LIVE</span>
+        </div>
+      </div>
+
+      <div class="stats-row" style="margin-top: 5px;">
+        <!-- Total Modal -->
+        <div class="stat-box income-display glass-glow"
+          title="Total akumulasi modal yang di-investasikan di semua akun">
+          <span class="stat-label">Total Modal</span>
+          <span class="stat-value animate-value" id="total-modal">Rp 0</span>
+        </div>
+
+        <!-- Total Saldo -->
+        <div class="stat-box balance-display glass-glow" title="Total saldo yang tersedia saat ini di semua akun">
+          <span class="stat-label">Total Saldo</span>
+          <span class="stat-value animate-value" id="total-balance">Rp 0</span>
+        </div>
+
+        <!-- Total Pendapatan -->
+        <div class="stat-box withdrawal-display glass-glow"
+          title="Total pendapatan/penarikan yang sudah berhasil diproses">
+          <span class="stat-label">Pendapatan</span>
+          <span class="stat-value animate-value" id="total-income">Rp 0</span>
+        </div>
+
+        <button type="button" class="toggle-chart-btn" onclick="toggleGlobalChart(this)" title="Lihat Grafik Akumulasi">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Global Chart Section -->
+      <div id="global-chart-wrapper" class="chart-wrapper"
+        style="display: none; margin-top: 15px; border-top: 1px dashed var(--border); padding-top: 15px;">
+        <canvas id="globalChart"></canvas>
+      </div>
+    </div>
+
     <!-- ================= MAIN FORM ================= -->
     <form method="post" id="automation-form">
 
@@ -718,51 +765,6 @@
   </div>
   </form>
 
-  <!-- ================= GLOBAL FINANCIAL DASHBOARD (Unified Master Card) ================= -->
-  <div id="global-dashboard" class="account-card global-master-card"
-    style="display: none; margin-bottom: 40px; border-color: var(--primary);">
-    <div class="progress-delete-row">
-      <div class="account-number" style="background: var(--primary);">0</div>
-      <div class="master-label" style="font-weight: 800; color: var(--text); letter-spacing: -0.5px;">GRAND TOTAL
-        OVERVIEW 🏦</div>
-      <div class="live-indicator-wrapper" style="margin-left: auto;">
-        <span class="live-indicator"><span class="pulse-dot"></span> LIVE</span>
-      </div>
-    </div>
-
-    <div class="stats-row" style="margin-top: 5px;">
-      <!-- Total Modal -->
-      <div class="stat-box income-display glass-glow" title="Total akumulasi modal yang di-investasikan di semua akun">
-        <span class="stat-label">Total Modal</span>
-        <span class="stat-value animate-value" id="total-modal">Rp 0</span>
-      </div>
-
-      <!-- Total Saldo -->
-      <div class="stat-box balance-display glass-glow" title="Total saldo yang tersedia saat ini di semua akun">
-        <span class="stat-label">Total Saldo</span>
-        <span class="stat-value animate-value" id="total-balance">Rp 0</span>
-      </div>
-
-      <!-- Total Pendapatan -->
-      <div class="stat-box withdrawal-display glass-glow"
-        title="Total pendapatan/penarikan yang sudah berhasil diproses">
-        <span class="stat-label">Pendapatan</span>
-        <span class="stat-value animate-value" id="total-income">Rp 0</span>
-      </div>
-
-      <button type="button" class="toggle-chart-btn" onclick="toggleGlobalChart(this)" title="Lihat Grafik Akumulasi">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="6 9 12 15 18 9"></polyline>
-        </svg>
-      </button>
-    </div>
-
-    <!-- Global Chart Section -->
-    <div id="global-chart-wrapper" class="chart-wrapper"
-      style="display: none; margin-top: 15px; border-top: 1px dashed var(--border); padding-top: 15px;">
-      <canvas id="globalChart"></canvas>
-    </div>
-  </div>
 
   </div>
 
