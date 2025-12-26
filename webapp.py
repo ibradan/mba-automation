@@ -455,32 +455,6 @@ def api_accounts():
     })
 
 
-@app.route('/api/pnl_history')
-def api_pnl_history():
-    """Returns aggregated daily income (PnL) for all accounts."""
-    accounts = data_manager.load_accounts()
-    pnl_data = {}
-    
-    for acc in accounts:
-        dp = acc.get('daily_progress', {})
-        for date_str, stats in dp.items():
-            income = stats.get('income', 0)
-            try:
-                income = float(income)
-            except:
-                income = 0.0
-                
-            if date_str not in pnl_data:
-                pnl_data[date_str] = 0.0
-            pnl_data[date_str] += income
-            
-    # Round to 2 decimal places
-    for date_str in pnl_data:
-        pnl_data[date_str] = round(pnl_data[date_str], 2)
-        
-    return jsonify(pnl_data)
-
-
 @app.route("/api/logs/<phone_display>")
 def api_phone_logs(phone_display):
     """Get the latest log content for a specific phone number."""
