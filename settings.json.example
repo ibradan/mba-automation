@@ -1,0 +1,6 @@
+{
+    "headless": true,
+    "log_level": "INFO",
+    "telegram_token": "",
+    "telegram_chat_id": ""
+}

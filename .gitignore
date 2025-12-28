@@ -30,3 +30,4 @@ logs/
 secret.key
 sessions/
 backups/
+settings.json
