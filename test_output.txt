@@ -1,0 +1,22 @@
+test_compact_css_applied (test_frontend_js.TestFrontendJS) ... ok
+test_css_no_gradients_and_phone_inline (test_frontend_js.TestFrontendJS) ... ok
+test_footer_removed (test_frontend_js.TestFrontendJS) ... ok
+test_index_contains_event_handlers (test_frontend_js.TestFrontendJS) ... ok
+test_no_empty_footer_tag_index (test_frontend_js.TestFrontendJS) ... ok
+test_no_stray_closing_brace_in_toggle (test_frontend_js.TestFrontendJS) ... ok
+test_remove_buttons_use_minus (test_frontend_js.TestFrontendJS) ... ok
+test_review_template_no_sunday (test_frontend_js.TestFrontendJS) ... ok
+test_templates_no_inline_style_attributes (test_frontend_js.TestFrontendJS) ... ok
+test_data_manager_write_and_load_accounts_atomic (test_webapp_utils.TestWebappUtils) ... ok
+test_format_phone_for_cli (test_webapp_utils.TestWebappUtils) ... ok
+test_logger_configured (test_webapp_utils.TestWebappUtils) ... ok
+test_normalize_phone_variants (test_webapp_utils.TestWebappUtils) ... ok
+test_phone_display (test_webapp_utils.TestWebappUtils) ... ok
+test_schedule_regex (test_webapp_utils.TestWebappUtils) ... ok
+test_trigger_run_missing_password (test_webapp_utils.TestWebappUtils) ... ok
+test_trigger_run_queues_job (test_webapp_utils.TestWebappUtils) ... ok
+
+----------------------------------------------------------------------
+Ran 17 tests in 0.020s
+
+OK

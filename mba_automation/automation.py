@@ -7,11 +7,7 @@ from .reviews import REVIEWS
 import random
 from datetime import date
 
-VIEWPORTS = {
-    "iPhone 12": {"width": 390, "height": 844},
-    "Pixel 5": {"width": 393, "height": 851},
-    "Samsung S21": {"width": 360, "height": 800}
-}
+
 
 def smart_click(page: Page, selector: str, role: str = None, name: str = None, retries: int = 3, timeout: int = 5000):
     """Reliable clicking with retries and visibility checks."""
@@ -399,7 +395,7 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
     return tasks_completed, tasks_total
 
 
-def run(playwright: Playwright, phone: str, password: str, headless: bool = False, slow_mo: int = 200, iterations: int = 30, review_text: Optional[str] = None, viewport_name: str = "iPhone 12", timeout: int = 30, sync_only: bool = False, progress_callback=None) -> Tuple[int, int, float, float, float]:
+def run(playwright: Playwright, phone: str, password: str, headless: bool = False, slow_mo: int = 200, iterations: int = 30, review_text: Optional[str] = None, sync_only: bool = False, progress_callback=None) -> Tuple[int, int, float, float, float]:
     browser = playwright.chromium.launch(
         headless=headless, 
         slow_mo=slow_mo,
@@ -413,7 +409,8 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
         ]
     )
     
-    vp = VIEWPORTS.get(viewport_name, VIEWPORTS["iPhone 12"])
+    # Default professional mobile viewport
+    vp = {"width": 390, "height": 844}
     
     # Check for existing session
     session_path = get_session_path(phone)
@@ -433,6 +430,7 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
     page = context.new_page()
 
     # Set timeout (convert to ms)
+    timeout = 30
     page.set_default_timeout(timeout * 1000) 
 
     # OPTIMIZATION: Block heavy resources to save RAM, CPU, and Battery

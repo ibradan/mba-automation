@@ -1,145 +1,64 @@
-# MBA7 Playwright Automation (Workspace)
+# MBA7 Playwright Automation (Termux Focus)
 
-This workspace contains the cleaned project for the MBA7 Playwright automation.
+This project is optimized for running automation tasks directly on Android using **Termux**. It provides a web UI and a CLI for managing and executing automation scripts.
 
-Follow the same setup as before:
+## Termux Quick Start
+
+The easiest way to get started is to use the provided setup script:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-python -m playwright install
+chmod +x setup-termux.sh
+./setup-termux.sh
 ```
 
-Run the web UI:
+### Running the Web UI
+
+To start the dashboard:
 
 ```bash
+source .venv/bin/activate
 python webapp.py
-
-Run unit tests (added to validate phone helpers and account file IO):
-
-```bash
-source .venv/bin/activate
-python -m unittest discover -s tests -p "test_*.py" -v
 ```
 
-Notes about recent robustness improvements:
-- Account file reads and writes are now protected with a lock and use atomic writes to avoid concurrent corruption.
-- Routes that update accounts now use the safe helpers to avoid race conditions with the scheduler.
-- Schedule input is validated (HH:MM, 00:00-23:59) before being saved.
-- Background CLI runs now use a normalized display phone format consistently and Popen errors are logged instead of crashing requests.
+Access the UI at: `http://localhost:5000` (from your phone) or `http://<PHONE_IP>:5000` (from other devices on the same network).
 
-Uploading to GitHub (private repository)
---------------------------------------
+### Running in Background
 
-Before pushing to GitHub, make sure you do not accidentally commit secrets (passwords, accounts, logs). This project contains `accounts.json` and `runs.log` which may include sensitive data.
+To prevent Android from killing the automation when you close the app:
+1. Run `termux-wake-lock` in a Termux session.
+2. Disable battery optimization for Termux in your Android settings.
+3. For persistent background services, consider using `termux-services`.
 
-1) Recommended: use the provided helper (requires GitHub CLI `gh` and that you're authenticated):
+---
 
-```bash
-# make sure gh is authenticated with your account
-gh auth login
+## CLI Usage
 
-# create a private repo on your account and push everything in this folder
-./scripts/create_private_repo.sh <repo-name> [--org <org-name>] [--description "desc"]
-```
-
-2) Manual approach using a private repo you create on github.com:
-
-```bash
-# create a new private repo on github.com (UI) and note the remote URL
-# then run:
-./scripts/manual_push.sh git@github.com:<you>/<repo>.git
-```
-
-3) Safety notes
-- The repository's `.gitignore` already excludes `accounts.json` and `runs.log` by default. If you have already previously added these files to the git index, remove them before pushing:
-
-```bash
-git rm --cached accounts.json runs.log || true
-git commit -m "chore: remove secrets from index" || true
-```
-
-```
-
-Or run the CLI directly:
+Run the CLI directly for specific accounts:
 
 ```bash
 # single phone
-python -m mba_automation.cli --phone 82129002163 --password "[REDACTED_PASSWORD]"
+python -m mba_automation.cli --phone 82129002163 --password "YOUR_PASSWORD"
 
-# multiple phones (repeat --phone or use --phones comma-separated)
-python -m mba_automation.cli --phone 82129002163 --phone 82211223344 --password "[REDACTED_PASSWORD]"
-python -m mba_automation.cli --phones 82129002163,82211223344 --password "[REDACTED_PASSWORD]"
-
-Web UI note: the form supports multiple rows of inputs. Each row should include `NO HP`, `PASSWORD`, and `LEVEL` (jumlah tugas). The form sends `phone[]`, `password[]`, and `level[]` arrays and will start one background process per filled row.
-
-Level mapping (used by the web UI):
-
-- `E1` = 15 tugas
-- `E2` = 30 tugas (default)
-- `E3` = 60 tugas
-
-Each row's `LEVEL` selects one of the above values; the web UI will pass the mapped tugas count to the CLI.
-
-Headless behavior
------------------
-
-- Browsers now run in headless mode by default both for CLI and the Web UI (scheduled runs are always headless).
-- Set environment variable `MBA_HEADLESS=0` (or `false`, `no`) to change default; CLI flags `--headless` and `--no-headless` can override the default.
-
-Weekend / Sunday behaviour
---------------------------
-
-- Sunday is considered a holiday: scheduled runs will NOT execute on Sundays and the review editor does not include Sunday (Minggu) anymore. Use schedules on Mon–Sat only.
+# multiple phones
+python -m mba_automation.cli --phones 82129002163,82211223344 --password "YOUR_PASSWORD"
 ```
 
-Raspberry Pi Zero 2 W Setup
----------------------------
+---
 
-The **Raspberry Pi Zero 2 W** (512MB RAM) requires specific configuration to run this automation.
+## Configuration
 
-### 1. Requirements
+- `accounts.json`: Stores account credentials and status.
+- `settings.json`: Application settings (headless mode, telegram bot, etc.).
+- `logs/`: Individual execution logs for each phone number.
 
-- **Raspberry Pi Zero 2 W** (Zero 1 is NOT supported)
-- **microSD Card**: Minimum 16GB
-- **OS**: [Raspberry Pi OS Lite (64-bit)](https://www.raspberrypi.com/software/operating-systems/entry/raspberry-pi-os-lite-64-bit/)
-    - **IMPORTANT**: You **MUST** use the 64-bit version. Playwright does not support 32-bit Linux.
+## Technical Notes
 
-### 2. Deployment
+- **Robustness**: Account file reads and writes are protected with locks and use atomic writes.
+- **Headless Mode**: Defaults to headless. Override with `MBA_HEADLESS=0` or `--no-headless`.
+- **Sunday Holiday**: Scheduled runs do NOT execute on Sundays.
 
-1.  **Configure IP**: Edit `deploy-raspi.sh` on your computer and set the correct `RASPI_IP`.
-2.  **Deploy**: Run the script to copy files to your Pi.
-    ```bash
-    ./deploy-raspi.sh
-    ```
-3.  **Setup Check**: SSH into your Pi.
-    ```bash
-    ssh pi@<RASPI_IP>
-    ```
+---
 
-### 3. One-Time Setup (On the Pi)
+## Legacy Documentation
 
-Once logged into the Pi, run the setup script. This will:
-- Expand SWAP memory to 2GB (Critical for proper function with limited RAM).
-- Install system dependencies and Python.
-- Install Chromium browser (Playwright).
-- Create and start the systemd service.
-
-```bash
-# Make executable (if not already)
-chmod +x setup-raspi.sh
-
-# Run setup
-./setup-raspi.sh
-```
-
-### 4. Verification
-
-After setup, check the service status:
-
-```bash
-sudo systemctl status mba-automation
-```
-
-Access the UI at: `http://<RASPI_IP>:5000`
+Documentation for Raspberry Pi and VPS deployment has been moved to the `legacy/` directory.

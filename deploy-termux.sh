@@ -19,13 +19,20 @@ echo "🚀 Deploying to Termux at ${TERMUX_IP}:${TERMUX_PORT}..."
 
 # Copy files
 echo "📤 Copying files..."
-scp -P ${TERMUX_PORT} requirements.txt "${TERMUX_IP}:${REMOTE_PATH}/requirements.txt"
-scp -P ${TERMUX_PORT} -r mba_automation "${TERMUX_IP}:${REMOTE_PATH}/"
-scp -P ${TERMUX_PORT} -r templates "${TERMUX_IP}:${REMOTE_PATH}/"
-scp -P ${TERMUX_PORT} -r static "${TERMUX_IP}:${REMOTE_PATH}/"
-scp -P ${TERMUX_PORT} -r utils "${TERMUX_IP}:${REMOTE_PATH}/"
-scp -P ${TERMUX_PORT} webapp.py "${TERMUX_IP}:${REMOTE_PATH}/webapp.py"
+scp -r -P ${TERMUX_PORT} \
+    requirements.txt \
+    requirements-termux.txt \
+    setup-termux.sh \
+    setup-proot.sh \
+    start.sh \
+    webapp.py \
+    mba_automation \
+    templates \
+    static \
+    utils \
+    "${TERMUX_IP}:${REMOTE_PATH}/"
+
 
 echo "✅ File copy complete."
-echo "⚠️  NOTE: You may need to manual restart the python script in Termux manually since there is no systemd."
-echo "👉 Run in Termux: pkill -f webapp.py && python webapp.py &"
+echo "📱 To start the app in Termux, run:"
+echo "👉 bash start.sh"

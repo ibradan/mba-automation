@@ -703,9 +703,6 @@ attachScheduleButtons();
 // ================= SETTINGS LOGIC =================
 function initSettings() {
   const settingsInputs = [
-    'setting-wifi',
-    'setting-timeout',
-    'setting-viewport',
     'setting-loglevel',
     'setting-telegram-token',
     'setting-telegram-chat-id'
@@ -828,9 +825,71 @@ function saveSettings() {
     .catch(err => console.error('Error saving settings:', err));
 }
 
+// ================= PWA INSTALL LOGIC =================
+let deferredPrompt;
+
+function initPWA() {
+  // 1. Register Service Worker (REQUIRED for PWA)
+  if ('serviceWorker' in navigator) {
+    // Register from ROOT to ensure scope covers the whole app
+    navigator.serviceWorker.register('/sw.js')
+      .then((reg) => console.log('Service Worker Registered at scope:', reg.scope))
+      .catch((err) => console.error('Service Worker Registration Failed:', err));
+  }
+
+  const installBtn = document.getElementById('btn-install-app');
+  if (!installBtn) return;
+
+  // Show button ALWAYS (don't wait for beforeinstallprompt)
+  installBtn.style.display = 'flex';
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    console.log("PWA Install capability detected - prompt ready");
+  });
+
+  installBtn.addEventListener('click', (e) => {
+    if (deferredPrompt) {
+      // Browser supports install prompt
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('User accepted the A2HS prompt');
+          showToast('Aplikasi sedang diinstall...', 'success');
+        } else {
+          console.log('User dismissed the A2HS prompt');
+        }
+        deferredPrompt = null;
+      });
+    } else {
+      // Fallback: Show manual instructions
+      const msg = `CARA INSTALL APLIKASI:
+
+1. Klik tombol titik tiga (⋮) di pojok kanan atas browser
+2. Pilih "Install app" atau "Add to Home screen"
+3. Ikuti petunjuk yang muncul
+
+CATATAN:
+• Pastikan akses via Chrome (bukan browser lain)
+• Jika tidak ada opsi install, coba tutup & buka ulang halaman ini
+• Aplikasi mungkin sudah terinstall`;
+
+      alert(msg);
+      console.log('Manual install instructions shown');
+    }
+  });
+
+  window.addEventListener('appinstalled', (evt) => {
+    console.log('INSTALL: Success');
+    showToast('Aplikasi berhasil diinstall!', 'success');
+  });
+}
+
 // Initialize settings listeners
 document.addEventListener('DOMContentLoaded', function () {
   initSettings();
+  initPWA();
 });
 
 // ================= ADD-ROW MICRO INTERACTION =================

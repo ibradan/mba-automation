@@ -1,5 +1,0 @@
-playwright-core>=1.40.0
-python-dotenv>=1.0.0
-Flask>=2.0.0
-gunicorn>=21.2.0
-cryptography>=41.0.0

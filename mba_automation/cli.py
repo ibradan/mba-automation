@@ -127,8 +127,6 @@ def main():
     parser.add_argument("--slow-mo", type=int, default=200, help="Playwright slowMo in ms")
     parser.add_argument("--iterations", type=int, default=30, help="Number of review loops")
     parser.add_argument("--review", type=str, default=None, help="Optional review text to submit")
-    parser.add_argument("--viewport", type=str, default="iPhone 12", help="Device viewport name (e.g., 'iPhone 12')")
-    parser.add_argument("--timeout", type=int, default=30, help="Navigation timeout in seconds")
     parser.add_argument("--sync", action="store_true", help="Sync financial data only (skips tasks loop)")
     args = parser.parse_args()
 
@@ -221,7 +219,6 @@ def main():
                         playwright, phone=phone, password=password, 
                         headless=final_headless, slow_mo=args.slow_mo, 
                         iterations=args.iterations, review_text=args.review, 
-                        viewport_name=args.viewport, timeout=args.timeout, 
                         sync_only=args.sync, progress_callback=on_prog
                     )
                     

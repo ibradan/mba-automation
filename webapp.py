@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory
 import subprocess
 import sys
 import os
@@ -21,6 +21,16 @@ from utils import crypto
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET", "please-change-this")
+
+# PWA Routes (must be at root for proper scope)
+@app.route('/sw.js')
+def service_worker():
+    return send_from_directory('static', 'sw.js')
+
+@app.route('/manifest.json')
+def manifest():
+    return send_from_directory('static', 'manifest.json')
+
 
 LOG_FILE = os.path.join(os.path.dirname(__file__), "runs.log")
 ACCOUNTS_FILE = os.path.join(os.path.dirname(__file__), "accounts.json")
@@ -701,12 +711,7 @@ def index():
                     flash(f"Nomor HP tidak valid: {phone}, dilewati.", "error")
                     continue
 
-                # Load settings
-                settings = data_manager.load_settings()
-                timeout = settings.get('timeout', 30)
-                viewport = settings.get('viewport', 'iPhone 12')
-
-                cmd = [sys.executable, "-m", "mba_automation.cli", "--phone", phone_for_cli, "--password", pwd, "--iterations", str(iterations), "--timeout", str(timeout), "--viewport", viewport]
+                cmd = [sys.executable, "-m", "mba_automation.cli", "--phone", phone_for_cli, "--password", pwd, "--iterations", str(iterations)]
                 if review_text:
                     cmd.extend(["--review", review_text])
                 if headless:
@@ -1310,12 +1315,7 @@ def _handle_single_run(req, sync_only=False):
 
     phone_display = phone # already stripped in form
     
-    # Load settings
-    settings = data_manager.load_settings()
-    timeout = settings.get('timeout', 30)
-    viewport = settings.get('viewport', 'iPhone 12')
-    
-    cmd = [sys.executable, "-m", "mba_automation.cli", "--phone", phone_display, "--password", pwd, "--iterations", str(iterations), "--timeout", str(timeout), "--viewport", viewport]
+    cmd = [sys.executable, "-m", "mba_automation.cli", "--phone", phone_display, "--password", pwd, "--iterations", str(iterations)]
     
     # Always headless for single run unless valid reason not to? 
     # Actually, for debugging user might want headful single run.
