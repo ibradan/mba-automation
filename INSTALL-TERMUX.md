@@ -22,7 +22,7 @@ proot-distro install ubuntu
 
 ### 3️⃣ Download Aplikasi
 ```bash
-# Buat folder projects
+# Buat folder projects (kalau belum ada)
 mkdir -p ~/projects
 cd ~/projects
 
