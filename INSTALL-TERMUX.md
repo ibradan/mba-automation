@@ -33,10 +33,7 @@ cd mba-automation
 
 ### 4️⃣ Setup Environment
 ```bash
-# Copy template settings
-cp settings.json.example settings.json
-
-# Setup Ubuntu Proot environment
+# Setup Ubuntu Proot environment (auto-creates settings.json)
 bash setup-proot.sh
 ```
 *(Proses ini bisa 5-10 menit, sabar ya...)*

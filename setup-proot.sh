@@ -26,10 +26,17 @@ source .venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
 
-# 5. Create default settings if not exist
+# 5. Create settings.json from template if not exist
 if [ ! -f "settings.json" ]; then
-    echo '{"headless": true}' > settings.json
-    echo "✅ Default settings.json created."
+    if [ -f "settings.json.example" ]; then
+        cp settings.json.example settings.json
+        echo "✅ Settings created from template (settings.json.example)"
+    else
+        echo '{"headless": true, "log_level": "INFO", "telegram_token": "", "telegram_chat_id": ""}' > settings.json
+        echo "✅ Default settings.json created"
+    fi
+else
+    echo "ℹ️  settings.json already exists, skipping..."
 fi
 
 echo "🎉 Setup complete!"
