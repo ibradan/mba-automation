@@ -10,14 +10,8 @@ Aplikasi automasi untuk menjalankan task harian secara otomatis di Android mengg
 
 ### 2️⃣ Setup Awal Termux
 ```bash
-# Update package manager
-pkg update && pkg upgrade -y
-
-# Install dependencies
-pkg install -y proot-distro git openssh
-
-# Install Ubuntu environment
-proot-distro install ubuntu
+# Install semua dependencies sekaligus
+pkg update && pkg upgrade -y && pkg install -y proot-distro git openssh && proot-distro install ubuntu
 ```
 
 ### 3️⃣ Download Aplikasi
