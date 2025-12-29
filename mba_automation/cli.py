@@ -21,6 +21,8 @@ current_run_data = {
     'income': 0.0,
     'withdrawal': 0.0,
     'balance': 0.0,
+    'points': 0.0,
+    'calendar': [],
     'is_sync': False
 }
 
@@ -62,6 +64,8 @@ def save_progress():
                         final_income = data['income'] if (data['income'] > 0 or not existing) else existing.get('income', 0.0)
                         final_withdrawal = data['withdrawal'] if (data['withdrawal'] > 0 or not existing) else existing.get('withdrawal', 0.0)
                         final_balance = data['balance'] if (data['balance'] > 0 or not existing) else existing.get('balance', 0.0)
+                        final_points = data['points'] if (data['points'] > 0 or not existing) else existing.get('points', 0.0)
+                        final_calendar = data['calendar'] if (len(data['calendar']) > 0 or not existing) else existing.get('calendar', [])
 
                         acc['daily_progress'][today] = {
                             'date': today,
@@ -70,7 +74,9 @@ def save_progress():
                             'percentage': int((final_completed / final_total) * 100) if final_total > 0 else 0,
                             'income': final_income,
                             'withdrawal': final_withdrawal,
-                            'balance': final_balance
+                            'balance': final_balance,
+                            'points': final_points,
+                            'calendar': final_calendar
                         }
                         
                         ts = datetime.datetime.now().isoformat()
@@ -192,6 +198,8 @@ def main():
                 'income': 0.0,
                 'withdrawal': 0.0,
                 'balance': 0.0,
+                'points': 0.0,
+                'calendar': [],
                 'is_sync': args.sync
             })
             
@@ -215,7 +223,7 @@ def main():
                     save_progress()
 
                 try:
-                    c, t, i, w, b = automation_run(
+                    c, t, i, w, b, p, cal = automation_run(
                         playwright, phone=phone, password=password, 
                         headless=final_headless, slow_mo=args.slow_mo, 
                         iterations=args.iterations, review_text=args.review, 
@@ -228,7 +236,9 @@ def main():
                         'total': t,
                         'income': i,
                         'withdrawal': w,
-                        'balance': b
+                        'balance': b,
+                        'points': p,
+                        'calendar': cal
                     })
                     
                     if args.sync or (c >= t and t > 0):

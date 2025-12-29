@@ -2096,3 +2096,88 @@ a.stat-box {
     padding: 15px;
   }
 }
+
+/* ================= ATTENDANCE CALENDAR ================= */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  text-align: center;
+}
+
+.cal-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: var(--bg-body);
+  font-size: 0.85rem;
+  color: var(--text-light);
+  font-weight: 500;
+}
+
+.cal-day.attended {
+  background: rgba(28, 200, 138, 0.1);
+  /* Green tint */
+  color: #1cc88a;
+  /* Green */
+  font-weight: 700;
+  border: 1px solid rgba(28, 200, 138, 0.2);
+}
+
+.calendar-toggle.active {
+  background: var(--bg-body) !important;
+  color: var(--primary) !important;
+  border-color: var(--primary) !important;
+}
+
+/* Mini Calendar */
+.mini-calendar-container.active {
+  border-color: var(--primary) !important;
+  background: #f0f9ff !important;
+}
+
+.mini-day {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  padding: 2px 0;
+  transition: all 0.2s;
+}
+
+.mini-day.today {
+  background: var(--text);
+  color: #fff !important;
+}
+
+.mini-day.today span {
+  color: #fff !important;
+}
+
+.mini-day.attended:not(.today) {
+  background: rgba(28, 200, 138, 0.1);
+  color: #1cc88a;
+}
+
+.mini-day.attended.today {
+  /* Combined state: Today + Attended */
+  background: #1cc88a;
+  color: #fff;
+}
+
+/* Missed Days (Red) */
+.cal-day.missed,
+.mini-day.missed {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  /* Red */
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.cal-day.missed {
+  font-weight: 700;
+}

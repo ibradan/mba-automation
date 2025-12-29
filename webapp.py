@@ -451,6 +451,8 @@ def api_accounts():
             "income": display_stats.get('income', 0),
             "withdrawal": display_stats.get('withdrawal', 0),
             "balance": display_stats.get('balance', 0),
+            "points": display_stats.get('points', 0),
+            "calendar": display_stats.get('calendar', []),
             "is_syncing": (
                 it.get('is_syncing', False) and 
                 it.get('sync_start_ts') and 

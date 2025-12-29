@@ -2,7 +2,7 @@ import os
 import time
 from typing import Optional, Tuple
 from playwright.sync_api import Playwright, Page, TimeoutError as PlaywrightTimeoutError
-from .scraper import scrape_income, scrape_withdrawal, scrape_balance, try_close_popups
+from .scraper import scrape_income, scrape_withdrawal, scrape_balance, scrape_points, scrape_calendar_data, try_close_popups
 from .reviews import REVIEWS
 import random
 from datetime import date
@@ -106,6 +106,73 @@ def login(page: Page, context, phone: str, password: str, timeout: int = 30) -> 
     except Exception as e:
         print(f"Login failed: {e}")
         return False
+
+
+        return False
+
+
+def perform_checkin(page: Page) -> Tuple[float, list]:
+    """
+    Navigates to points shop, clicks check-in if available, scrapes points and calendar.
+    Returns (points_balance, calendar_days).
+    """
+    points = 0.0
+    calendar = []
+    
+    print("Performing Check-in & Points Scraping...")
+    try:
+        page.goto("https://mba7.com/#/points/shop", timeout=45000)
+        page.wait_for_timeout(3000)
+        try_close_popups(page)
+        
+        # 1. Try to click "signIn.submit" button
+        try:
+            checkin_btn = page.locator("button:has-text('signIn.submit')").first
+            if checkin_btn.is_visible(timeout=3000):
+                print("  Found Check-in button. Clicking...")
+                checkin_btn.click()
+                page.wait_for_timeout(2000)
+                try_close_popups(page)
+                print("  Check-in clicked.")
+            else:
+                print("  Check-in button not found or not visible (maybe already checked in).")
+        except Exception as e:
+            print(f"  Check-in attempt failed: {e}")
+            
+        # 2. Scrape Points
+        points = scrape_points(page)
+        
+        # 3. Open Calendar Popup before scraping
+        # The calendar is triggered by clicking the sign-in-container
+        try:
+            print("  Opening calendar popup...")
+            calendar_opened = False
+            try:
+                btn = page.locator(".sign-in-container").first
+                if btn.is_visible(timeout=3000):
+                    print(f"  Found calendar trigger: .sign-in-container")
+                    btn.click()
+                    page.wait_for_timeout(2000)
+                    # Check if calendar popup appeared
+                    if page.locator(".van-calendar__month-title").is_visible(timeout=3000):
+                        print("  Calendar popup opened successfully")
+                        calendar_opened = True
+            except Exception as e:
+                print(f"  Error clicking sign-in-container: {e}")
+            
+            if not calendar_opened:
+                print("  Warning: Could not open calendar popup, scraping may fail")
+                
+        except Exception as e:
+            print(f"  Error opening calendar: {e}")
+        
+        # 4. Scrape Calendar Data
+        calendar = scrape_calendar_data(page)
+        
+    except Exception as e:
+        print(f"Error in perform_checkin: {e}")
+        
+    return points, calendar
 
 
 def perform_tasks(page: Page, context, phone: str, password: str, iterations: int, review_text: Optional[str] = None, progress_callback=None) -> Tuple[int, int]:
@@ -395,7 +462,7 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
     return tasks_completed, tasks_total
 
 
-def run(playwright: Playwright, phone: str, password: str, headless: bool = False, slow_mo: int = 200, iterations: int = 30, review_text: Optional[str] = None, sync_only: bool = False, progress_callback=None) -> Tuple[int, int, float, float, float]:
+def run(playwright: Playwright, phone: str, password: str, headless: bool = False, slow_mo: int = 200, iterations: int = 30, review_text: Optional[str] = None, sync_only: bool = False, progress_callback=None) -> Tuple[int, int, float, float, float, float, list]:
     browser = playwright.chromium.launch(
         headless=headless, 
         slow_mo=slow_mo,
@@ -449,7 +516,7 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
         # Login now handles restoration check AND saving to 'context'
         if not login(page, context, phone, password, timeout):
             print("Login failed, aborting run.")
-            return 0, iterations, 0.0, 0.0, 0.0
+            return 0, iterations, 0.0, 0.0, 0.0, 0.0, []
 
         # ========== PERFORM TASKS ==========
         tasks_completed, tasks_total = 0, iterations
@@ -506,10 +573,15 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
                 balance = b2
         else:
             balance = scrape_balance(page, timeout)
+
+        # ========== CHECK-IN & POINTS ==========
+        # Always run check-in/points scrape unless explicitly disabled (not yet implemented)
+        # Check-in logic already handles if already checked in
+        points, calendar = perform_checkin(page)
         
-        # Return progress with income, withdrawal, and balance
-        print(f"Returning final progress: {tasks_completed}/{tasks_total}")
-        return tasks_completed, tasks_total, income, withdrawal, balance
+        # Return progress with income, withdrawal, balance, points, and calendar
+        print(f"Returning final progress: {tasks_completed}/{tasks_total}, Points: {points}, Calendar days: {len(calendar)}")
+        return tasks_completed, tasks_total, income, withdrawal, balance, points, calendar
 
     finally:
         context.close()

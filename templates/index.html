@@ -355,7 +355,9 @@
 
         <div class="account-card row-item {{ status_class }}" data-history='{{ acc.daily_progress | tojson | safe }}'
           data-phone="{{ acc.phone_display }}" data-last-sync="{{ acc.last_sync_ts[:10] if acc.last_sync_ts else '' }}"
-          data-last-sync-ts="{{ acc.last_sync_ts if acc.last_sync_ts else '' }}">
+          data-last-sync-ts="{{ acc.last_sync_ts if acc.last_sync_ts else '' }}"
+          data-points="{{ acc.display_stats.get('points', 0) }}" data-calendar='{{ acc.display_stats.get(' calendar',
+          []) | tojson | safe }}'>
           <div class="inputs">
 
             {# Daily Progress Indicator (provided by backend) #}
@@ -506,14 +508,32 @@
               </div>
 
               {# Row 3: Status Info #}
-              <div class="input-row row-3">
-                <div class="schedule-status" style="width: 100%; text-align: center;">
-                  {% if acc.schedule %}
-                  Otomatis jam {{ acc.schedule }}
-                  {% else %}
-                  Belum ada jadwal
-                  {% endif %}
+              <div class="input-row row-3"
+                style="justify-content: space-between; align-items: stretch; gap: 12px; padding-top: 8px;">
+                <!-- Points Display (Finance Style) -->
+                <div class="stat-box points-display"
+                  style="flex: 1; padding: 10px 14px; align-items: flex-start; min-height: auto; border-bottom: 3px solid var(--primary);">
+                  <span class="stat-label">POIN</span>
+                  {% set pts = acc.display_stats.get('points', 0) %}
+                  <span class="stat-value" style="font-size: 1.35rem;">{{ "{:,.0f}".format(pts).replace(',', '.')
+                    }}</span>
                 </div>
+
+                <!-- Mini Calendar Wrapper -->
+                <div class="mini-calendar-container" onclick="toggleCalendar(this)"
+                  style="flex: 1.5; background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
+                  <div class="mini-calendar"
+                    style="display: flex; gap: 4px; width: 100%; justify-content: space-between;">
+                    <!-- Injected via JS -->
+                    <span style="font-size: 0.8rem; color: var(--text-light);">Loading calendar...</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="calendar-dropdown"
+                style="display: none; width: 100%; margin-top: 12px; border-top: 1px dashed var(--border); padding-top: 12px;">
+                <!-- Calendar injected via JS -->
+                <div class="calendar-grid"></div>
               </div>
             </div>
 
@@ -853,18 +873,27 @@
       </button>
     </div>
 
-    <div class="input-row row-3">
-      <button type="button" class="btn btn-secondary schedule-btn" title="Set Jadwal">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" />
-          <path d="M12 7v6l4 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
-            stroke-linejoin="round" />
-        </svg>
-        <span>Jadwal</span>
-      </button>
-      <div class="schedule-status">
-        Program belum jalan otomatis, silahkan isi jadwal
+    <div class="input-row row-3"
+      style="justify-content: space-between; align-items: stretch; gap: 12px; padding-top: 8px;">
+      <!-- Points Display (Finance Style) -->
+      <div class="stat-box points-display"
+        style="flex: 1; padding: 10px 14px; align-items: flex-start; min-height: auto; border-bottom: 3px solid var(--primary);">
+        <span class="stat-label">POIN</span>
+        <span class="stat-value" style="font-size: 1.35rem;">0</span>
       </div>
+
+      <!-- Mini Calendar Wrapper -->
+      <div class="mini-calendar-container" onclick="toggleCalendar(this)"
+        style="flex: 1.5; background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
+        <div class="mini-calendar" style="display: flex; gap: 4px; width: 100%; justify-content: space-between;">
+          <span style="font-size: 0.8rem; color: var(--text-light);">Loading...</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="calendar-dropdown"
+      style="display: none; width: 100%; margin-top: 12px; border-top: 1px dashed var(--border); padding-top: 12px;">
+      <div class="calendar-grid"></div>
     </div>
     </div>
     </div>

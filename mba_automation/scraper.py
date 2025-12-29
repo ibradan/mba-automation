@@ -152,3 +152,90 @@ def scrape_balance(page: Page, timeout: int) -> float:
                 if attempt == 0: page.reload()
             
     return 0.0
+
+def scrape_points(page: Page, timeout: int = 30) -> float:
+    """Scrapes point balance from points/shop page."""
+    try:
+        # Navigate to points shop if not already there
+        if "points/shop" not in page.url:
+             print("  Navigating to points shop...")
+             page.goto("https://mba7.com/#/points/shop", timeout=timeout*1000)
+             page.wait_for_timeout(2500)
+             try_close_popups(page)
+        
+        # Look for points balance
+        # Selector based on user request: <div class="points-balance">80,00 </div>
+        el = page.locator(".points-balance").first
+        if el.is_visible(timeout=5000):
+            text = el.text_content()
+            print(f"  Raw points text: {text}")
+            if text:
+                cleaned = re.sub(r'[^\d.,]', '', text)
+                if ',' in cleaned:
+                    cleaned = cleaned.replace(',', '.')
+                try:
+                    val = float(cleaned)
+                    print(f"  Successfully scraped points: {val}")
+                    return val
+                except: pass
+    except Exception as e:
+        print(f"  Error scraping points: {e}")
+    return 0.0
+
+def scrape_calendar_data(page: Page, timeout: int = 30) -> list:
+    """Scrapes calendar attendance status."""
+    calendar_data = []
+    try:
+        # Assumes we are already on the page with calendar (points/shop)
+        # We need to find valid days. User provided example:
+        # <div class="van-calendar__selected-day" ...>29<div class="van-calendar__bottom-info">Masuk</div></div>
+        
+        # We'll look for days that have "Masuk" or are selected
+        # This might need refinement based on actual structure, but based on snippet:
+        # We want to know which days are "Masuk" (Attended)
+        
+        page.wait_for_selector(".van-calendar__month-title", timeout=5000)
+        
+        month_title = page.locator(".van-calendar__month-title").first.text_content()
+        print(f"  Calendar month: {month_title}")
+        
+        # Iterate over all days
+        # User provided snippet shows class "signed-day" is used for attended days
+        # Also contains <div class="van-calendar__bottom-info">Masuk</div>
+        
+        days = page.locator(".van-calendar__day").all()
+        
+        for day in days:
+            try:
+                # 1. Check for 'signed-day' class (Faster determination)
+                class_attr = day.get_attribute("class") or ""
+                
+                # 2. Check for "Masuk" text
+                text = day.text_content() or ""
+                
+                is_attended = False
+                if "signed-day" in class_attr:
+                    is_attended = True
+                elif "Masuk" in text:
+                    is_attended = True
+                    
+                if is_attended:
+                    # Extract day number
+                    # Text often looks like "1Masuk" or "1"
+                    # We want the first sequence of digits
+                    match = re.search(r'(\d+)', text)
+                    if match:
+                        day_num = int(match.group(1))
+                        # Sanity check: day should be 1-31
+                        if 1 <= day_num <= 31:
+                            calendar_data.append(day_num)
+                            
+            except Exception as e: 
+                pass
+            
+        print(f"  Scraped attendance days: {calendar_data}")
+        
+    except Exception as e:
+        print(f"  Error scraping calendar: {e}")
+    
+    return calendar_data

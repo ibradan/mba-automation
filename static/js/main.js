@@ -400,6 +400,27 @@ function updateStatusRealTime() {
         if (modalEl) modalEl.textContent = 'Rp ' + formatNumber(acc.income || 0);
         if (saldoEl) saldoEl.textContent = 'Rp ' + formatNumber(acc.balance || 0);
         if (profitEl) profitEl.textContent = 'Rp ' + formatNumber(acc.withdrawal || 0);
+
+        // Update Points (New Finance Style)
+        const pointsEl = card.querySelector('.points-display .stat-value');
+        if (pointsEl) {
+          const pts = acc.points || 0;
+          pointsEl.textContent = formatNumber(pts);
+        }
+
+        // Update Calendar Data
+        card.dataset.calendar = JSON.stringify(acc.calendar || []);
+
+        // Render Mini Calendar (Current Week)
+        const miniCal = card.querySelector('.mini-calendar');
+        if (miniCal) renderMiniCalendar(card, miniCal);
+
+        // Refresh full calendar if open
+        const calDropdown = card.querySelector('.calendar-dropdown');
+        if (calDropdown && calDropdown.style.display !== 'none') {
+          const grid = calDropdown.querySelector('.calendar-grid');
+          if (grid) renderCalendar(card, grid);
+        }
       });
 
       // Update Global Dashboard
@@ -1483,3 +1504,110 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
+// ================= ATTENDANCE CALENDAR LOGIC =================
+function toggleCalendar(btn) {
+  const card = btn.closest('.account-card');
+  const dropdown = card.querySelector('.calendar-dropdown');
+  const grid = dropdown.querySelector('.calendar-grid');
+
+  if (!dropdown || !grid) return;
+
+  const isHidden = dropdown.style.display === 'none';
+  if (isHidden) {
+    dropdown.style.display = 'block';
+    renderCalendar(card, grid);
+    btn.classList.add('active');
+  } else {
+    dropdown.style.display = 'none';
+    btn.classList.remove('active');
+  }
+}
+
+function renderCalendar(card, gridContainer) {
+  const rawData = card.dataset.calendar;
+  let attendedDays = [];
+  try {
+    if (rawData) attendedDays = JSON.parse(rawData);
+  } catch (e) { attendedDays = []; }
+
+  // Determine days in current month (rough approx or dynamic)
+  const now = new Date();
+  const currentDay = now.getDate();
+  // Assuming scraped data is for "this month"
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+
+  let html = '';
+
+  for (let i = 1; i <= daysInMonth; i++) {
+    const isAttended = attendedDays.includes(i);
+    const isPast = (i < currentDay);
+
+    let statusClass = '';
+    if (isAttended) {
+      statusClass = 'attended';
+    } else if (isPast) {
+      statusClass = 'missed';
+    }
+
+    if (i === currentDay) statusClass += ' today';
+
+    html += `<div class="cal-day ${statusClass}">${i}</div>`;
+  }
+  gridContainer.innerHTML = html;
+}
+
+function renderMiniCalendar(card, container) {
+  const rawData = card.dataset.calendar;
+  let attendedDays = [];
+  try {
+    if (rawData) attendedDays = JSON.parse(rawData);
+  } catch (e) { attendedDays = []; }
+
+  const now = new Date();
+  const todayDate = now.getDate();
+  const currentDay = now.getDay(); // 0 (Sun) to 6 (Sat)
+
+  // Calculate start of week (Monday)
+  const dayShift = currentDay === 0 ? 6 : currentDay - 1;
+  const mondayDate = new Date(now);
+  mondayDate.setDate(now.getDate() - dayShift);
+
+  let html = '';
+
+  // Generate Mon-Sun
+  const days = ['S', 'S', 'R', 'K', 'J', 'S', 'M'];
+
+  for (let i = 0; i < 7; i++) {
+    const workDate = new Date(mondayDate);
+    workDate.setDate(mondayDate.getDate() + i);
+
+    const dNum = workDate.getDate();
+    const isToday = (dNum === todayDate && workDate.getMonth() === now.getMonth());
+    // Only mark attended if it's the current month AND the day number matches
+    const isAttended = (workDate.getMonth() === now.getMonth() &&
+      workDate.getFullYear() === now.getFullYear() &&
+      attendedDays.includes(dNum));
+    const isPast = (workDate < now && !isToday);
+
+    let statusClass = '';
+    if (isAttended) {
+      statusClass = 'attended';
+    } else if (isPast && workDate.getMonth() === now.getMonth()) {
+      // Mark missed only if it's the same month for visual consistency
+      // or just strictly past
+      statusClass = 'missed';
+    }
+
+    if (isToday) statusClass += ' today';
+
+    // Just showing day number
+    html += `
+         <div class="mini-day ${statusClass}" title="${days[i]}">
+           <span style="font-size: 0.65rem; opacity: 0.7;">${days[i]}</span>
+           <span style="font-weight: 700;">${dNum}</span>
+         </div>
+       `;
+  }
+  container.innerHTML = html;
+}
