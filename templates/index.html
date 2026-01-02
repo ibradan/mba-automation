@@ -357,6 +357,22 @@
       <div id="global-chart-wrapper" class="chart-wrapper"
         style="display: none; margin-top: 15px; border-top: 1px dashed var(--border); padding-top: 15px;">
         <canvas id="globalChart"></canvas>
+        <div style="display: flex; justify-content: center; gap: 8px; margin-top: 8px;">
+          <button type="button" class="chart-nav-btn prev" onclick="shiftGlobalChartDate(event, this, -1)"
+            title="Sebelumnya">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+          </button>
+          <button type="button" class="chart-nav-btn next" onclick="shiftGlobalChartDate(event, this, 1)"
+            title="Selanjutnya" disabled>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
 

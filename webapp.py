@@ -536,6 +536,71 @@ def calculate_estimation(daily_income, current_balance, level_fallback=None):
     }
 
 
+@app.route("/api/global_history")
+def api_global_history():
+    """Aggregate historical data from all accounts for global chart with Forward Fill."""
+    try:
+        accounts = data_manager.load_accounts()
+        aggregated = {}
+        
+        # 1. Collect all unique dates from all accounts
+        all_dates = set()
+        for acc in accounts:
+            all_dates.update(acc.get('daily_progress', {}).keys())
+            
+        if not all_dates:
+            return jsonify({})
+            
+        sorted_dates = sorted(list(all_dates))
+        
+        # 2. Iterative Forward Fill
+        # We track the last known state for EACH account
+        account_states = {} # {phone_norm: {'income': 0, ...}}
+
+        for date_str in sorted_dates:
+            # Stats for this specific date (aggregated across all accounts)
+            day_total_income = 0
+            day_total_balance = 0
+            day_total_withdrawal = 0
+            
+            for acc in accounts:
+                phone = normalize_phone(acc.get('phone', ''))
+                if not phone: continue
+
+                # Check if this account has specific data for this date
+                daily_data = acc.get('daily_progress', {}).get(date_str)
+                
+                if daily_data:
+                    # Update our knowledge of this account's state
+                    account_states[phone] = {
+                        'income': daily_data.get('income', 0),
+                        'balance': daily_data.get('balance', 0),
+                        'withdrawal': daily_data.get('withdrawal', 0)
+                    }
+                
+                # Get the state to use (either just updated, or carried forward)
+                current_state = account_states.get(phone, {
+                    'income': 0, 'balance': 0, 'withdrawal': 0
+                })
+                
+                day_total_income += current_state['income']
+                day_total_balance += current_state['balance']
+                day_total_withdrawal += current_state['withdrawal']
+            
+            # Record the aggregates
+            aggregated[date_str] = {
+                'date': date_str,
+                'income': day_total_income,
+                'balance': day_total_balance,
+                'withdrawal': day_total_withdrawal
+            }
+        
+        return jsonify(aggregated)
+    except Exception as e:
+        logger.error(f"Global history error: {e}")
+        return jsonify({}), 500
+
+
 @app.route("/api/logs/<phone_display>")
 def api_phone_logs(phone_display):
     """Get the latest log content for a specific phone number."""

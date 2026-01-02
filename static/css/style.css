@@ -78,15 +78,15 @@
 
 @keyframes pulsingGlow {
   0% {
-    box-shadow: 0 0 5px rgba(46, 89, 217, 0.2);
+    box-shadow: 0 0 3px rgba(46, 89, 217, 0.15);
   }
 
   50% {
-    box-shadow: 0 0 20px rgba(46, 89, 217, 0.5);
+    box-shadow: 0 0 10px rgba(46, 89, 217, 0.25);
   }
 
   100% {
-    box-shadow: 0 0 5px rgba(46, 89, 217, 0.2);
+    box-shadow: 0 0 3px rgba(46, 89, 217, 0.15);
   }
 }
 
@@ -980,13 +980,13 @@ select:focus {
 .btn-primary {
   background: var(--primary);
   color: white;
-  box-shadow: 0 4px 12px rgba(46, 89, 217, 0.2);
+  box-shadow: 0 2px 6px rgba(46, 89, 217, 0.12);
 }
 
 .btn-primary:hover {
   background: #1e44b3;
   transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(46, 89, 217, 0.3);
+  box-shadow: 0 4px 10px rgba(46, 89, 217, 0.18);
 }
 
 .btn-secondary {
@@ -1639,9 +1639,7 @@ a.stat-box {
   color: var(--primary);
 }
 
-.stat-label {
-  box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
-}
+
 
 .balance-display.glass-glow {
   border-bottom: 4px solid #06b6d4 !important;
@@ -1650,7 +1648,7 @@ a.stat-box {
 .saldo-card .dash-icon {
   background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%);
   color: white;
-  box-shadow: 0 0 15px rgba(6, 182, 212, 0.4);
+  box-shadow: 0 2px 8px rgba(6, 182, 212, 0.15);
 }
 
 .withdrawal-display.glass-glow {
@@ -1660,7 +1658,7 @@ a.stat-box {
 .profit-card .dash-icon {
   background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
   color: white;
-  box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15);
 }
 
 .dash-icon-wrapper {

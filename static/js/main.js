@@ -1259,7 +1259,13 @@ function renderChart(row, canvas) {
               color: '#94a3b8',
               font: { size: 11, family: "'Inter', sans-serif" },
               callback: function (value) {
-                return value.toLocaleString('id-ID');
+                if (value >= 1000000) {
+                  return (value / 1000000).toFixed(1) + 'jt';
+                }
+                if (value >= 1000) {
+                  return (value / 1000).toFixed(0) + 'k';
+                }
+                return value;
               }
             },
             grid: { color: 'rgba(0,0,0,0.03)', borderDash: [5, 5], drawBorder: false },
@@ -1345,47 +1351,207 @@ function initTilt(card) {
 }
 
 let globalChartInstance = null;
+let globalHistoryData = {};
+
+// Fetch global historical data on load
+async function fetchGlobalHistory() {
+  try {
+    const res = await fetch('/api/global_history');
+    if (res.ok) {
+      globalHistoryData = await res.json();
+    }
+  } catch (err) {
+    console.error('Failed to fetch global history:', err);
+  }
+}
 
 function renderGlobalChart(totalModal, totalSaldo, totalPendapatan) {
-  const ctx = document.getElementById('globalChart');
-  if (!ctx) return;
+  const canvas = document.getElementById('globalChart');
+  if (!canvas) return;
 
-  if (globalChartInstance) {
-    globalChartInstance.data.datasets[0].data = [totalModal, totalSaldo, totalPendapatan];
-    globalChartInstance.update();
+  const ctx = canvas.getContext('2d');
+
+  // If no historical data loaded yet, try to load it
+  if (Object.keys(globalHistoryData).length === 0) {
+    fetchGlobalHistory().then(() => {
+      renderGlobalChart(totalModal, totalSaldo, totalPendapatan);
+    });
     return;
   }
 
+  // Update "today" with real-time numbers from polling
+  const todayStr = new Date().toISOString().split('T')[0];
+  globalHistoryData[todayStr] = {
+    income: totalModal,
+    balance: totalSaldo,
+    withdrawal: totalPendapatan
+  };
+
+  const dates = Object.keys(globalHistoryData).sort();
+
+  // PAGINATION (same logic as per-account chart)
+  let endIndex = parseInt(canvas.dataset.endIndex);
+  if (isNaN(endIndex)) endIndex = dates.length;
+  if (endIndex > dates.length) endIndex = dates.length;
+  if (endIndex < 7) endIndex = 7;
+
+  let startIndex = endIndex - 7;
+  if (startIndex < 0) startIndex = 0;
+
+  const slicedDates = dates.slice(startIndex, endIndex);
+
+  // Update nav buttons
+  const wrapper = canvas.closest('.chart-wrapper');
+  if (wrapper) {
+    const prevBtn = wrapper.querySelector('.prev');
+    const nextBtn = wrapper.querySelector('.next');
+    if (prevBtn) prevBtn.disabled = startIndex <= 0;
+    if (nextBtn) nextBtn.disabled = endIndex >= dates.length;
+    canvas.dataset.endIndex = endIndex;
+  }
+
+  const incomeData = [], balanceData = [], withdrawalData = [];
+  slicedDates.forEach(date => {
+    const entry = globalHistoryData[date] || {};
+    incomeData.push(entry.income || 0);
+    balanceData.push(entry.balance || 0);
+    withdrawalData.push(entry.withdrawal || 0);
+  });
+
+  // CHECK: If instance exists and configuration (labels) remains same, update WITHOUT DESTROYING
+  if (globalChartInstance &&
+    JSON.stringify(globalChartInstance.data.labels) === JSON.stringify(slicedDates)) {
+
+    // Check if anything actually changed to avoid redundant updates
+    const currentIncome = JSON.stringify(globalChartInstance.data.datasets[0].data);
+    const newIncome = JSON.stringify(incomeData);
+    const currentBalance = JSON.stringify(globalChartInstance.data.datasets[1].data);
+    const newBalance = JSON.stringify(balanceData);
+    const currentWith = JSON.stringify(globalChartInstance.data.datasets[2].data);
+    const newWith = JSON.stringify(withdrawalData);
+
+    if (currentIncome === newIncome && currentBalance === newBalance && currentWith === newWith) {
+      // Nothing changed, skip
+      return;
+    }
+
+    // Update data in-place
+    globalChartInstance.data.datasets[0].data = incomeData;
+    globalChartInstance.data.datasets[1].data = balanceData;
+    globalChartInstance.data.datasets[2].data = withdrawalData;
+
+    // Update without animation to prevent "jumping"
+    globalChartInstance.update('none');
+    return;
+  }
+
+  // Create gradients matching per-account chart style
+  const modalGradient = ctx.createLinearGradient(0, 0, 0, 300);
+  modalGradient.addColorStop(0, 'rgba(245, 158, 11, 0.3)');
+  modalGradient.addColorStop(1, 'rgba(245, 158, 11, 0.02)');
+
+  const saldoGradient = ctx.createLinearGradient(0, 0, 0, 300);
+  saldoGradient.addColorStop(0, 'rgba(6, 182, 212, 0.3)');
+  saldoGradient.addColorStop(1, 'rgba(6, 182, 212, 0.02)');
+
+  const pendapatanGradient = ctx.createLinearGradient(0, 0, 0, 300);
+  pendapatanGradient.addColorStop(0, 'rgba(16, 185, 129, 0.3)');
+  pendapatanGradient.addColorStop(1, 'rgba(16, 185, 129, 0.02)');
+
+  // Destroy old chart if we are re-initializing (e.g., date shift or first load)
+  if (globalChartInstance) {
+    globalChartInstance.destroy();
+  }
+
+  // Create new chart instance with line chart style
   globalChartInstance = new Chart(ctx, {
-    type: 'bar', // Using Bar chart for clear comparison
+    type: 'line',
     data: {
-      labels: ['Modal', 'Saldo', 'Pendapatan'],
-      datasets: [{
-        label: 'Financial Overview',
-        data: [totalModal, totalSaldo, totalPendapatan],
-        backgroundColor: [
-          'rgba(245, 158, 11, 0.7)', // Amber for Modal
-          'rgba(6, 182, 212, 0.7)',  // Cyan for Saldo
-          'rgba(16, 185, 129, 0.7)'  // Green for Pendapatan
-        ],
-        borderColor: [
-          'rgba(245, 158, 11, 1)',
-          'rgba(6, 182, 212, 1)',
-          'rgba(16, 185, 129, 1)'
-        ],
-        borderWidth: 1,
-        borderRadius: 8,
-        barThickness: 50
-      }]
+      labels: slicedDates,
+      datasets: [
+        {
+          label: 'Modal',
+          data: incomeData,
+          borderColor: '#f59e0b',
+          backgroundColor: modalGradient,
+          borderWidth: 2.5,
+          pointRadius: 4,
+          pointBackgroundColor: '#f59e0b',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointHoverRadius: 7,
+          tension: 0.4,
+          fill: true
+        },
+        {
+          label: 'Saldo',
+          data: balanceData,
+          borderColor: '#06b6d4',
+          backgroundColor: saldoGradient,
+          borderWidth: 2.5,
+          pointRadius: 4,
+          pointBackgroundColor: '#06b6d4',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointHoverRadius: 7,
+          tension: 0.4,
+          fill: true
+        },
+        {
+          label: 'Pendapatan',
+          data: withdrawalData,
+          borderColor: '#10b981',
+          backgroundColor: pendapatanGradient,
+          borderWidth: 2.5,
+          pointRadius: 4,
+          pointBackgroundColor: '#10b981',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointHoverRadius: 7,
+          tension: 0.4,
+          fill: true
+        }
+      ]
     },
     options: {
+      animation: {
+        duration: 2000,
+        easing: 'easeOutQuart',
+        loop: false
+      },
       responsive: true,
       maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false
+      },
       plugins: {
         legend: {
-          display: false
+          position: 'top',
+          align: 'end',
+          labels: {
+            color: '#64748b',
+            font: { size: 12, family: "'Inter', sans-serif", weight: 600 },
+            usePointStyle: true,
+            pointStyle: 'circle',
+            padding: 20,
+            boxWidth: 8,
+            boxHeight: 8
+          }
         },
         tooltip: {
+          enabled: true,
+          backgroundColor: 'rgba(15, 23, 42, 0.95)',
+          titleColor: '#f1f5f9',
+          bodyColor: '#e2e8f0',
+          titleFont: { size: 13, weight: 600, family: "'Inter', sans-serif" },
+          bodyFont: { size: 12, family: "'Inter', sans-serif" },
+          borderColor: 'rgba(255,255,255,0.05)',
+          borderWidth: 1,
+          cornerRadius: 12,
+          padding: 14,
+          displayColors: true,
+          usePointStyle: true,
           callbacks: {
             label: function (context) {
               let label = context.dataset.label || '';
@@ -1393,39 +1559,69 @@ function renderGlobalChart(totalModal, totalSaldo, totalPendapatan) {
                 label += ': ';
               }
               if (context.parsed.y !== null) {
-                label += new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(context.parsed.y);
+                label += 'Rp ' + context.parsed.y.toLocaleString('id-ID');
               }
               return label;
+            },
+            footer: function (tooltipItems) {
+              const chart = tooltipItems[0].chart;
+              const index = tooltipItems[0].dataIndex;
+              const modal = chart.data.datasets[0].data[index];
+              const pendapatan = chart.data.datasets[2].data[index];
+              const profit = pendapatan - modal;
+              const sign = profit > 0 ? '+' : '';
+              return '\nKeuntungan: ' + sign + 'Rp ' + profit.toLocaleString('id-ID');
             }
           }
         }
       },
       scales: {
+        x: {
+          ticks: { color: '#94a3b8', font: { size: 11, family: "'Inter', sans-serif" } },
+          grid: { display: false, drawBorder: false }
+        },
         y: {
-          beginAtZero: true,
-          grid: {
-            color: 'rgba(0, 0, 0, 0.05)'
-          },
           ticks: {
-            callback: function (value, index, values) {
-              if (value >= 1000000) return 'Rp ' + (value / 1000000).toFixed(1) + 'jt';
-              if (value >= 1000) return 'Rp ' + (value / 1000).toFixed(0) + 'k';
+            color: '#94a3b8',
+            font: { size: 11, family: "'Inter', sans-serif" },
+            callback: function (value) {
+              if (value >= 1000000) {
+                return (value / 1000000).toFixed(1) + 'jt';
+              }
+              if (value >= 1000) {
+                return (value / 1000).toFixed(0) + 'k';
+              }
               return value;
             }
-          }
-        },
-        x: {
-          grid: {
-            display: false
-          }
+          },
+          grid: { color: 'rgba(0,0,0,0.03)', borderDash: [5, 5], drawBorder: false },
+          beginAtZero: true
         }
-      },
-      animation: {
-        duration: 1500,
-        easing: 'easeOutQuart'
       }
     }
   });
+
+  canvas.style.height = '300px';
+  canvas.style.width = '100%';
+}
+
+function shiftGlobalChartDate(e, btn, direction) {
+  e.preventDefault();
+  e.stopPropagation();
+
+  const wrapper = btn.closest('.chart-wrapper');
+  const canvas = wrapper.querySelector('canvas');
+  if (!canvas) return;
+
+  let endIndex = parseInt(canvas.dataset.endIndex);
+  if (isNaN(endIndex)) return;
+
+  endIndex += (direction * 7);
+
+  canvas.dataset.endIndex = endIndex;
+
+  // Re-render with new index
+  renderGlobalChart(0, 0, 0); // Will use historical data
 }
 
 // ================= PnL CALENDAR LOGIC =================
@@ -1501,6 +1697,7 @@ function renderPnLCalendar() {
 // Global initialization for Calendar
 document.addEventListener('DOMContentLoaded', () => {
   fetchPnLHistory();
+  fetchGlobalHistory(); // Load global chart history
 
   const prevBtn = document.getElementById('prev-month');
   const nextBtn = document.getElementById('next-month');

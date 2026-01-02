@@ -17,6 +17,7 @@ venv/
 
 # Runtime / logs / data
 runs.log
+webapp.log
 accounts.json
 logs/
 
