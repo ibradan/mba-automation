@@ -26,7 +26,7 @@ current_run_data = {
     'is_sync': False
 }
 
-def normalize_phone(phone):
+def normalize_phone(phone: str) -> str:
     """Standard normalization: ensure starts with 62."""
     if not phone: return ""
     p = re.sub(r'\D', '', str(phone))
@@ -34,7 +34,7 @@ def normalize_phone(phone):
     elif p.startswith('8'): p = '62' + p
     return p
 
-def save_progress():
+def save_progress() -> None:
     """Atomically save current progress to accounts.json."""
     data = current_run_data
     if not data['phone']:
@@ -107,7 +107,7 @@ signal.signal(signal.SIGINT, signal_handler)
 signal.signal(signal.SIGTERM, signal_handler)
 
 
-def check_internet_connection():
+def check_internet_connection() -> bool:
     """Simple check for internet connectivity."""
     try:
         # connect to a reliable DNS server (Google DNS)
@@ -119,7 +119,7 @@ def check_internet_connection():
         pass
     return False
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="MBA7 automation CLI")
     # allow multiple phones via repeated --phone or comma-separated --phones
     parser.add_argument("--phone", dest="phones", action="append", help="Phone number (can be provided multiple times; overrides .env)")

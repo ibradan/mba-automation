@@ -1,7 +1,7 @@
 from playwright.sync_api import Page
 import re
 
-def try_close_popups(page: Page):
+def try_close_popups(page: Page) -> None:
     """Helper to dismiss common overlays that might block scraping."""
     popups = [
         ".van-popup__close-icon", 
@@ -154,16 +154,9 @@ def scrape_balance(page: Page, timeout: int) -> float:
     return 0.0
 
 def scrape_points(page: Page, timeout: int = 30) -> float:
-    """Scrapes point balance from points/shop page."""
+    """Scrapes point balance from points/shop page. Assumes caller has navigated to correct page."""
     try:
-        # Navigate to points shop if not already there
-        if "points/shop" not in page.url:
-             print("  Navigating to points shop...")
-             page.goto("https://mba7.com/#/points/shop", timeout=timeout*1000)
-             page.wait_for_timeout(2500)
-             try_close_popups(page)
-        
-        # Look for points balance
+        # Look for points balance (caller should already be on points/shop page)
         # Selector based on user request: <div class="points-balance">80,00 </div>
         el = page.locator(".points-balance").first
         if el.is_visible(timeout=5000):
@@ -178,23 +171,20 @@ def scrape_points(page: Page, timeout: int = 30) -> float:
                     print(f"  Successfully scraped points: {val}")
                     return val
                 except: pass
+        else:
+            print("  .points-balance element not visible")
     except Exception as e:
         print(f"  Error scraping points: {e}")
     return 0.0
 
 def scrape_calendar_data(page: Page, timeout: int = 30) -> list:
-    """Scrapes calendar attendance status."""
+    """Scrapes calendar attendance status. Assumes calendar popup is already open."""
     calendar_data = []
     try:
-        # Assumes we are already on the page with calendar (points/shop)
-        # We need to find valid days. User provided example:
-        # <div class="van-calendar__selected-day" ...>29<div class="van-calendar__bottom-info">Masuk</div></div>
-        
-        # We'll look for days that have "Masuk" or are selected
-        # This might need refinement based on actual structure, but based on snippet:
-        # We want to know which days are "Masuk" (Attended)
-        
-        page.wait_for_selector(".van-calendar__month-title", timeout=5000)
+        # Check if calendar is actually open
+        if not page.locator(".van-calendar__month-title").first.is_visible(timeout=5000):
+            print("  Calendar not open, returning empty data")
+            return []
         
         month_title = page.locator(".van-calendar__month-title").first.text_content()
         print(f"  Calendar month: {month_title}")

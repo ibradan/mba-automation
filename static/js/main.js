@@ -2,7 +2,7 @@
 let autoSaveTimeout;
 let isSaving = false;
 let isPolling = false;
-let lastTotals = { modal: 0, balance: 0, income: 0 };
+let lastTotals = { modal: 0, balance: 0, income: 0, estimation: 0 };
 
 
 async function forceResetApp() {
@@ -310,12 +310,14 @@ function updateStatusRealTime() {
       let totalModal = 0;
       let totalSaldo = 0;
       let totalPendapatan = 0;
+      let totalEstimation = 0;
 
       accounts.forEach(acc => {
         // Accumulate Totals
         totalModal += (acc.income || 0);
         totalSaldo += (acc.balance || 0);
         totalPendapatan += (acc.withdrawal || 0);
+        totalEstimation += (acc.estimation ? acc.estimation.estimated_balance : 0);
 
         // Find the card by phone number
         const card = document.querySelector(`.account-card[data-phone="${acc.phone_display}"]`);
@@ -401,6 +403,12 @@ function updateStatusRealTime() {
         if (saldoEl) saldoEl.textContent = 'Rp ' + formatNumber(acc.balance || 0);
         if (profitEl) profitEl.textContent = 'Rp ' + formatNumber(acc.withdrawal || 0);
 
+        // Update Estimation
+        const estEl = card.querySelector('.estimation-display .stat-value');
+        if (estEl && acc.estimation) {
+          estEl.textContent = 'Rp ' + formatNumber(acc.estimation.estimated_balance);
+        }
+
         // Update Points (New Finance Style)
         const pointsEl = card.querySelector('.points-display .stat-value');
         if (pointsEl) {
@@ -454,6 +462,13 @@ function updateStatusRealTime() {
           incomeEl.textContent = 'Rp ' + formatNumber(totalPendapatan);
         }
 
+        const estEl = document.getElementById('total-estimation');
+        if (estEl && lastTotals.estimation !== totalEstimation) {
+          animateValue(estEl, lastTotals.estimation, totalEstimation, 1500);
+          lastTotals.estimation = totalEstimation;
+        } else if (estEl) {
+          estEl.textContent = 'Rp ' + formatNumber(totalEstimation);
+        }
         // Render/Update Chart
         renderGlobalChart(totalModal, totalSaldo, totalPendapatan);
       }
@@ -1531,16 +1546,32 @@ function renderCalendar(card, gridContainer) {
     if (rawData) attendedDays = JSON.parse(rawData);
   } catch (e) { attendedDays = []; }
 
-  // Determine days in current month (rough approx or dynamic)
+  // STRICTLY CURRENT MONTH DISPLAY
   const now = new Date();
   const currentDay = now.getDate();
-  // Assuming scraped data is for "this month"
-  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+
+  // Header for month separation clarity (if not present)
+  // Check if header exists, if not create it
+  let header = gridContainer.previousElementSibling;
+
+  // Note: Simple solution - just inject a header div if we can, 
+  // but better to just rely on the grid and date logic for now 
+  // as adding elements might break layout. 
+  // Instead, we will strictly filter the data.
+
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
 
   let html = '';
+  // Add a simple month label row if desired, or relying on external label
+  // For now, let's just fix the "messy" data
 
   for (let i = 1; i <= daysInMonth; i++) {
-    const isAttended = attendedDays.includes(i);
+    // FIX: Only consider attended if day is <= currentDay
+    // This removes "ghost" data from previous months that might appear as future dates (e.g. 30, 31)
+    const canBeAttended = (i <= currentDay);
+    const isAttended = canBeAttended && attendedDays.includes(i);
     const isPast = (i < currentDay);
 
     let statusClass = '';
@@ -1610,4 +1641,29 @@ function renderMiniCalendar(card, container) {
        `;
   }
   container.innerHTML = html;
+}
+
+function renderEstimation(container, est) {
+  if (!est) return;
+
+  const fmt = (val) => new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(val);
+
+  container.innerHTML = `
+    <div class="estimation-box tier-${est.tier.toLowerCase()}">
+      <div class="est-header">
+        <span class="est-title"><i class="fas fa-calculator"></i> Estimasi Penarikan</span>
+        <span class="tier-badge">${est.tier}</span>
+      </div>
+      <div class="est-body">
+         <div class="est-target">
+            Target: <strong>${est.target_day}</strong> (sisa ${est.days_left} hari)
+         </div>
+         <div class="est-total">
+            <span class="label">Estimasi Saldo</span>
+            <span class="value">Rp ${fmt(est.estimated_balance)}</span>
+         </div>
+         <div class="est-note">*Tidak menghitung hari Minggu (libur).</div>
+      </div>
+    </div>
+  `;
 }

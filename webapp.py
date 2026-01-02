@@ -458,13 +458,82 @@ def api_accounts():
                 it.get('sync_start_ts') and 
                 (now - datetime.datetime.fromisoformat(it['sync_start_ts'])).total_seconds() < 300
             ) if it.get('sync_start_ts') else False,
-            "today_label": today_label
+            "today_label": today_label,
+            "estimation": calculate_estimation(
+                display_stats.get('income', 0), 
+                display_stats.get('balance', 0),
+                it.get('level') # Pass fallback level
+            )
         })
     
     return jsonify({
         "accounts": results,
         "queue_size": JOB_QUEUE.qsize() + ACTIVE_JOBS
     })
+
+
+def calculate_estimation(daily_income, current_balance, level_fallback=None):
+    """
+    Calculates financial estimation based on FIXED tier rates.
+    E3: 150,000/day
+    E2: 43,500/day
+    E1: 15,000/day
+    """
+    try:
+        balance = float(current_balance or 0)
+    except:
+        return None
+
+    # Use the fallback level as the primary source for Tier
+    tier = str(level_fallback or "Unknown").upper()
+    
+    # Force fixed income rates based on Tier as requested by user
+    if tier == 'E3':
+        income = 150000
+        target_day_idx = 2 # Wednesday
+        target_day_name = 'Rabu'
+    elif tier == 'E2':
+        income = 43500
+        target_day_idx = 3 # Thursday
+        target_day_name = 'Kamis'
+    elif tier == 'E1':
+        income = 15000
+        target_day_idx = 4 # Friday
+        target_day_name = 'Jumat'
+    else:
+        # Default or Basic
+        income = 0
+        target_day_idx = 4
+        target_day_name = 'Jumat'
+        if not level_fallback: return None
+
+    # 2. Calculate Days Until Target
+    now = datetime.datetime.now()
+    current_weekday = now.weekday() # Mon=0, Sun=6
+    
+    # If today is target or after target, target is next week
+    if current_weekday >= target_day_idx:
+        days_until = (7 - current_weekday) + target_day_idx
+    else:
+        days_until = target_day_idx - current_weekday
+        
+    # 3. Calculate Projected Balance (SKIP SUNDAYS)
+    projected_income = 0
+    # Iterate through upcoming days
+    for i in range(1, days_until + 1):
+        future_date = now + datetime.timedelta(days=i)
+        if future_date.weekday() != 6: # Skip Sunday
+            projected_income += income
+            
+    estimated_total = balance + projected_income
+    
+    return {
+        'tier': tier,
+        'target_day': target_day_name,
+        'days_left': days_until,
+        'estimated_balance': estimated_total,
+        'daily_income': income
+    }
 
 
 @app.route("/api/logs/<phone_display>")
@@ -1000,16 +1069,30 @@ def _scheduler_loop():
             
             def check_and_trigger(accounts):
                 now = datetime.datetime.now()
-                now_hm = now.strftime('%H:%M')
                 any_triggered = False
 
                 for acc in accounts:
                     sched = acc.get('schedule')
                     if not sched:
                         continue
-                    if sched != now_hm:
+
+                    # Current status skipping: don't trigger if already syncing/queued if possible
+                    if acc.get('is_syncing'):
                         continue
 
+                    # Parse schedule
+                    try:
+                        hh, mm = (int(x) for x in sched.split(':'))
+                        # Today's scheduled time
+                        scheduled_dt = datetime.datetime.combine(now.date(), datetime.time(hh, mm))
+                    except Exception:
+                        logger.warning("Invalid schedule format for %s: %s", acc.get('phone', 'unknown'), sched)
+                        continue
+                    
+                    # CATCH-UP LOGIC: trigger if now >= scheduled_time AND hasn't run yet today
+                    if now < scheduled_dt:
+                        continue
+                        
                     # Check last run
                     last_ts = acc.get('last_run_ts')
                     last_dt = None
@@ -1023,48 +1106,44 @@ def _scheduler_loop():
                              last_dt = datetime.datetime.combine(d, datetime.time(0,0))
                          except: pass
 
-                    # Schedule time today
-                    try:
-                        hh, mm = (int(x) for x in sched.split(':'))
-                        scheduled_dt = datetime.datetime.combine(now.date(), datetime.time(hh, mm))
-                    except Exception:
-                        logger.warning("Invalid schedule format for %s: %s", acc.get('phone', 'unknown'), sched)
-                        continue
-                        
                     if last_dt:
-                        # Prevent double triggering within the same day if last run matches schedule
-                        # (allowing for a 1-minute drift margin)
-                         scheduled_ts = scheduled_dt.timestamp()
-                         last_ts_val = last_dt.timestamp()
-                         if last_ts_val >= scheduled_ts - 5: # -5s margin
+                        # Prevent double triggering: skip if last run was after today's scheduled time
+                         if last_dt >= scheduled_dt - datetime.timedelta(seconds=10):
                              continue
                         
                     # Trigger
                     ok = _trigger_run_for_account(acc)
                     if ok:
+                        # Mark as triggered immediately to prevent double-queuing
                         acc['last_run_ts'] = datetime.datetime.now().isoformat()
                         if 'last_run' in acc: del acc['last_run']
                         any_triggered = True
                 
-                return accounts if any_triggered else accounts # if no change, atomic update detects equality? no, we need to return list.
+                return accounts
 
-            # Special handling: only write if needed. 
-            # But _atomic_update_accounts always writes. 
-            # We can use a trick: read first, check if anything needs triggering.
-            # OR just run it. If it writes unchanged data, it's fine but inefficient.
-            # Let's optimize:
-            
-            # 1. Peek first
+            # 1. Peek first to avoid unnecessary locks
             peek_accounts = data_manager.load_accounts()
             needs_update = False
             now = datetime.datetime.now()
-            now_hm = now.strftime('%H:%M')
             
             for acc in peek_accounts:
                 sched = acc.get('schedule')
-                if sched and sched == now_hm:
-                    needs_update = True
-                    break
+                if not sched or acc.get('is_syncing'): 
+                    continue
+                try:
+                    hh, mm = (int(x) for x in sched.split(':'))
+                    scheduled_dt = datetime.datetime.combine(now.date(), datetime.time(hh, mm))
+                    if now >= scheduled_dt:
+                        # Check last run
+                        last_ts = acc.get('last_run_ts')
+                        if not last_ts:
+                            needs_update = True
+                            break
+                        last_dt = datetime.datetime.fromisoformat(last_ts)
+                        if last_dt < scheduled_dt - datetime.timedelta(seconds=10):
+                            needs_update = True
+                            break
+                except: continue
             
             if needs_update:
                 # 2. Run atomic update
@@ -1380,6 +1459,48 @@ def _handle_single_run(req, sync_only=False):
 
 
 
+
+
+@app.route("/estimation")
+def estimation_page():
+    """Render the dedicated estimation page."""
+    accounts = data_manager.load_accounts()
+    
+    # Filter by phone if provided (to fix "masih semuanya" complaint)
+    phone_filter = request.args.get('phone')
+    
+    results = []
+    for acc in accounts:
+        phone = acc.get("phone", "")
+        # Apply filter if set
+        if phone_filter and phone_filter not in phone:
+            continue
+
+        # Get latest stats
+        dp = acc.get('daily_progress', {})
+        display_stats = {}
+        if dp:
+            sorted_dates = sorted(dp.keys(), reverse=True)
+            for d in sorted_dates:
+                if dp[d].get('balance', 0) > 0 or dp[d].get('income', 0) > 0:
+                    display_stats = dp[d]
+                    break
+        
+        income = display_stats.get('income', 0)
+        balance = display_stats.get('balance', 0)
+        level = acc.get('level')
+        
+        est_data = calculate_estimation(income, balance, level)
+        
+        results.append({
+            "phone_display": phone_display(phone),
+            "level": level or "Unknown",
+            "income": income,
+            "balance": balance,
+            "estimation": est_data
+        })
+    
+    return render_template('estimation.html', accounts=results, filter=phone_filter)
 
 
 @app.route("/logs")
