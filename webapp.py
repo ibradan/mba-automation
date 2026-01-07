@@ -449,7 +449,7 @@ def api_accounts():
             "completed": progress.get('completed', 0),
             "total": progress.get('total', 60),
             "income": display_stats.get('income', 0),
-            "withdrawal": display_stats.get('withdrawal', 0),
+            "withdrawal": display_stats.get('withdrawal', 0) * 0.9, # Apply 10% tax
             "balance": display_stats.get('balance', 0),
             "points": display_stats.get('points', 0),
             "calendar": display_stats.get('calendar', []),
@@ -525,7 +525,7 @@ def calculate_estimation(daily_income, current_balance, level_fallback=None):
         if future_date.weekday() != 6: # Skip Sunday
             projected_income += income
             
-    estimated_total = balance + projected_income
+    estimated_total = (balance + projected_income) * 0.9 # Apply 10% tax on withdrawal amount
     
     return {
         'tier': tier,
@@ -585,7 +585,7 @@ def api_global_history():
                 
                 day_total_income += current_state['income']
                 day_total_balance += current_state['balance']
-                day_total_withdrawal += current_state['withdrawal']
+                day_total_withdrawal += (current_state['withdrawal'] * 0.9) # Apply 10% tax
             
             # Record the aggregates
             aggregated[date_str] = {
@@ -1364,7 +1364,7 @@ def history(phone, metric):
     metric_map = {
         'modal': {'key': 'income', 'label': 'Modal'},
         'saldo': {'key': 'balance', 'label': 'Saldo'},
-        'pendapatan': {'key': 'withdrawal', 'label': 'Pendapatan'}
+        'pendapatan': {'key': 'withdrawal', 'label': 'Pendapatan (Net)'}
     }
     
     if metric not in metric_map:
@@ -1396,11 +1396,16 @@ def history(phone, metric):
                  # Format: 14 Desember 2025
                  month_name = months_id[dt.month]
                  date_formatted = f"{dt.day} {month_name} {dt.year}"
+                 # Apply 10% tax for Pendapatan metric
+                 final_val = val
+                 if metric == 'pendapatan':
+                     final_val = float(val or 0) * 0.9
                  
                  history_items.append({
+                     'date': date_str,
                      'date_formatted': date_formatted,
                      'day_name': day_name,
-                     'value': float(val)
+                     'value': final_val
                  })
              except Exception:
                  continue

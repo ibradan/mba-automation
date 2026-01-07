@@ -335,14 +335,14 @@
         <!-- Total Pendapatan -->
         <div class="stat-box withdrawal-display glass-glow"
           title="Total pendapatan/penarikan yang sudah berhasil diproses">
-          <span class="stat-label">Pendapatan</span>
+          <span class="stat-label">Pendapatan (Net)</span>
           <span class="stat-value animate-value" id="total-income">Rp 0</span>
         </div>
 
         <!-- Total Estimasi -->
         <a href="/estimation" class="stat-box estimation-display glass-glow" style="text-decoration: none;"
           title="Total estimasi saldo yang akan masuk pada hari target penarikan">
-          <span class="stat-label">Estimasi</span>
+          <span class="stat-label">Estimasi (Net)</span>
           <span class="stat-value animate-value" id="total-estimation">Rp 0</span>
         </a>
 
@@ -600,23 +600,23 @@
               </div>
               {% endif %}
 
-              {% set withdrawal = acc.display_stats.get('withdrawal', 0) %}
+              {% set withdrawal = acc.display_stats.get('withdrawal', 0) * 0.9 %}
               {% if acc.phone_display %}
               <a href="{{ url_for('history', phone=acc.phone_display, metric='pendapatan') }}"
                 class="stat-box withdrawal-display" style="text-decoration: none;">
-                <span class="stat-label">Pendapatan</span>
+                <span class="stat-label">Pendapatan (Net)</span>
                 <span class="stat-value">Rp {{ "{:,.0f}".format(withdrawal).replace(',', '.') }}</span>
               </a>
               {% else %}
               <div class="stat-box withdrawal-display">
-                <span class="stat-label">Pendapatan</span>
+                <span class="stat-label">Pendapatan (Net)</span>
                 <span class="stat-value">Rp {{ "{:,.0f}".format(withdrawal).replace(',', '.') }}</span>
               </div>
               {% endif %}
 
               <a href="/estimation?phone={{ acc.phone_display }}" class="stat-box estimation-display"
                 style="text-decoration: none;">
-                <span class="stat-label">Saldo Est.</span>
+                <span class="stat-label">Saldo Est (Net)</span>
                 <span class="stat-value est-value">-</span>
               </a>
 
