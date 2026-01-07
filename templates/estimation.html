@@ -15,33 +15,32 @@
         }
 
         .est-card {
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 16px;
+            background: #ffffff;
+            border-radius: 8px;
             padding: 24px;
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
-            backdrop-filter: blur(10px);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s var(--bounce);
             position: relative;
             overflow: hidden;
         }
 
         .est-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-md);
             border-color: var(--primary);
         }
 
         .est-card.tier-e3 {
-            border-top: 6px solid #8b5cf6;
+            border-top: 6px solid var(--primary);
         }
 
         .est-card.tier-e2 {
-            border-top: 6px solid #3b82f6;
+            border-top: 6px solid var(--accent);
         }
 
         .est-card.tier-e1 {
-            border-top: 6px solid #10b981;
+            border-top: 6px solid var(--success);
         }
 
         .est-header {
