@@ -1078,16 +1078,16 @@ function renderChart(row, canvas) {
 
     // Create gradients for fill
     const modalGradient = ctx.createLinearGradient(0, 0, 0, 240);
-    modalGradient.addColorStop(0, 'rgba(245, 158, 11, 0.3)');
-    modalGradient.addColorStop(1, 'rgba(245, 158, 11, 0.02)');
+    modalGradient.addColorStop(0, 'rgba(234, 88, 12, 0.2)'); // Industrial Orange
+    modalGradient.addColorStop(1, 'rgba(234, 88, 12, 0.01)');
 
     const saldoGradient = ctx.createLinearGradient(0, 0, 0, 240);
-    saldoGradient.addColorStop(0, 'rgba(6, 182, 212, 0.3)');
-    saldoGradient.addColorStop(1, 'rgba(6, 182, 212, 0.02)');
+    saldoGradient.addColorStop(0, 'rgba(37, 99, 235, 0.2)'); // Performance Blue
+    saldoGradient.addColorStop(1, 'rgba(37, 99, 235, 0.01)');
 
     const pendapatanGradient = ctx.createLinearGradient(0, 0, 0, 240);
-    pendapatanGradient.addColorStop(0, 'rgba(249, 115, 22, 0.3)');
-    pendapatanGradient.addColorStop(1, 'rgba(249, 115, 22, 0.02)');
+    pendapatanGradient.addColorStop(0, 'rgba(5, 150, 105, 0.2)'); // Tactical Green
+    pendapatanGradient.addColorStop(1, 'rgba(5, 150, 105, 0.01)');
 
     canvas.chartInstance = new Chart(ctx, {
       type: 'line',
@@ -1097,43 +1097,34 @@ function renderChart(row, canvas) {
           {
             label: 'Modal',
             data: incomeData,
-            borderColor: '#f59e0b',
+            borderColor: '#ea580c',
             backgroundColor: modalGradient,
-            borderWidth: 2.5,
-            pointRadius: 4,
-            pointBackgroundColor: '#f59e0b',
-            pointBorderColor: '#fff',
-            pointBorderWidth: 2,
-            pointHoverRadius: 7,
-            tension: 0.4,
+            borderWidth: 3,
+            pointRadius: 0,
+            pointHoverRadius: 6,
+            tension: 0.1,
             fill: true
           },
           {
             label: 'Saldo',
             data: balanceData,
-            borderColor: '#06b6d4',
+            borderColor: '#2563eb',
             backgroundColor: saldoGradient,
-            borderWidth: 2.5,
-            pointRadius: 4,
-            pointBackgroundColor: '#06b6d4',
-            pointBorderColor: '#fff',
-            pointBorderWidth: 2,
-            pointHoverRadius: 7,
-            tension: 0.4,
+            borderWidth: 3,
+            pointRadius: 0,
+            pointHoverRadius: 6,
+            tension: 0.1,
             fill: true
           },
           {
             label: 'Pendapatan (Net)',
             data: withdrawalData,
-            borderColor: '#f97316',
+            borderColor: '#059669',
             backgroundColor: pendapatanGradient,
-            borderWidth: 2.5,
-            pointRadius: 4,
-            pointBackgroundColor: '#f97316',
-            pointBorderColor: '#fff',
-            pointBorderWidth: 2,
-            pointHoverRadius: 7,
-            tension: 0.4,
+            borderWidth: 3,
+            pointRadius: 0,
+            pointHoverRadius: 6,
+            tension: 0.1,
             fill: true
           }
         ]
@@ -1398,16 +1389,16 @@ function renderGlobalChart(totalModal, totalSaldo, totalPendapatan) {
 
   // Create gradients matching per-account chart style
   const modalGradient = ctx.createLinearGradient(0, 0, 0, 300);
-  modalGradient.addColorStop(0, 'rgba(245, 158, 11, 0.3)');
-  modalGradient.addColorStop(1, 'rgba(245, 158, 11, 0.02)');
+  modalGradient.addColorStop(0, 'rgba(234, 88, 12, 0.2)');
+  modalGradient.addColorStop(1, 'rgba(234, 88, 12, 0.01)');
 
   const saldoGradient = ctx.createLinearGradient(0, 0, 0, 300);
-  saldoGradient.addColorStop(0, 'rgba(6, 182, 212, 0.3)');
-  saldoGradient.addColorStop(1, 'rgba(6, 182, 212, 0.02)');
+  saldoGradient.addColorStop(0, 'rgba(37, 99, 235, 0.2)');
+  saldoGradient.addColorStop(1, 'rgba(37, 99, 235, 0.01)');
 
   const pendapatanGradient = ctx.createLinearGradient(0, 0, 0, 300);
-  pendapatanGradient.addColorStop(0, 'rgba(16, 185, 129, 0.3)');
-  pendapatanGradient.addColorStop(1, 'rgba(16, 185, 129, 0.02)');
+  pendapatanGradient.addColorStop(0, 'rgba(5, 150, 105, 0.2)');
+  pendapatanGradient.addColorStop(1, 'rgba(5, 150, 105, 0.01)');
 
   // Destroy old chart if we are re-initializing (e.g., date shift or first load)
   if (globalChartInstance) {
@@ -1423,43 +1414,34 @@ function renderGlobalChart(totalModal, totalSaldo, totalPendapatan) {
         {
           label: 'Modal',
           data: incomeData,
-          borderColor: '#f59e0b',
+          borderColor: '#ea580c',
           backgroundColor: modalGradient,
-          borderWidth: 2.5,
-          pointRadius: 4,
-          pointBackgroundColor: '#f59e0b',
-          pointBorderColor: '#fff',
-          pointBorderWidth: 2,
-          pointHoverRadius: 7,
-          tension: 0.4,
+          borderWidth: 3,
+          pointRadius: 0,
+          pointHoverRadius: 6,
+          tension: 0.1,
           fill: true
         },
         {
           label: 'Saldo',
           data: balanceData,
-          borderColor: '#06b6d4',
+          borderColor: '#2563eb',
           backgroundColor: saldoGradient,
-          borderWidth: 2.5,
-          pointRadius: 4,
-          pointBackgroundColor: '#06b6d4',
-          pointBorderColor: '#fff',
-          pointBorderWidth: 2,
-          pointHoverRadius: 7,
-          tension: 0.4,
+          borderWidth: 3,
+          pointRadius: 0,
+          pointHoverRadius: 6,
+          tension: 0.1,
           fill: true
         },
         {
           label: 'Pendapatan',
           data: withdrawalData,
-          borderColor: '#10b981',
+          borderColor: '#059669',
           backgroundColor: pendapatanGradient,
-          borderWidth: 2.5,
-          pointRadius: 4,
-          pointBackgroundColor: '#10b981',
-          pointBorderColor: '#fff',
-          pointBorderWidth: 2,
-          pointHoverRadius: 7,
-          tension: 0.4,
+          borderWidth: 3,
+          pointRadius: 0,
+          pointHoverRadius: 6,
+          tension: 0.1,
           fill: true
         }
       ]
