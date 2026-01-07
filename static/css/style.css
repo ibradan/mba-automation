@@ -673,6 +673,48 @@ select:focus {
   border-color: #cbd5e1;
 }
 
+/* Compact Global & Chart Specific Buttons */
+.toggle-chart-btn,
+.chart-nav-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-light);
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.toggle-chart-btn:hover,
+.chart-nav-btn:hover {
+  background: #f1f5f9;
+  color: var(--text);
+  border-color: #cbd5e1;
+}
+
+.toggle-chart-btn.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.toggle-chart-btn svg,
+.chart-nav-btn svg {
+  width: 12px;
+  height: 12px;
+  stroke-width: 2;
+}
+
+.toggle-chart-btn.active svg {
+  transform: rotate(180deg);
+}
+
 .more-dropdown {
   position: absolute;
   top: 100%;
@@ -1609,7 +1651,10 @@ a.stat-box {
 
 .global-master-card .stats-row .stat-box {
   flex: 1;
-  min-width: 120px;
+  min-width: 100px;
+  /* Reduced from 120px */
+  padding: 8px 4px;
+  /* Match individual accounts */
 }
 
 .global-master-card .stat-value {

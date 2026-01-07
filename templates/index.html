@@ -55,54 +55,7 @@
       max-height: 240px !important;
     }
 
-    .chart-nav-btn {
-      background: #ffffff;
-      border: 1px solid #cbd5e1;
-      color: #64748b;
-      width: 28px;
-      height: 28px;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .chart-nav-btn:hover:not(:disabled) {
-      background: #f1f5f9;
-      color: #334155;
-      border-color: #94a3b8;
-    }
-
-    .chart-nav-btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .toggle-chart-btn {
-      background: none;
-      border: none;
-      color: #94a3b8;
-      cursor: pointer;
-      transition: all 0.2s;
-      padding: 4px;
-      border-radius: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-left: auto;
-      /* Push to right if in flex */
-    }
-
-    .toggle-chart-btn:hover {
-      color: #f8fafc;
-      background: rgba(255, 255, 255, 0.1);
-    }
-
-    .toggle-chart-btn.active svg {
-      transform: rotate(180deg);
-    }
+    /* Chart buttons now handled in style.css */
 
     /* New UI Elements */
     .system-status {
@@ -346,8 +299,10 @@
           <span class="stat-value animate-value" id="total-estimation">Rp 0</span>
         </a>
 
-        <button type="button" class="toggle-chart-btn" onclick="toggleGlobalChart(this)" title="Lihat Grafik Akumulasi">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <button type="button" class="toggle-chart-btn" onclick="toggleGlobalChart(this)" title="Lihat Grafik Akumulasi"
+          style="margin-left: auto;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
             <polyline points="6 9 12 15 18 9"></polyline>
           </svg>
         </button>
@@ -360,15 +315,15 @@
         <div style="display: flex; justify-content: center; gap: 8px; margin-top: 8px;">
           <button type="button" class="chart-nav-btn prev" onclick="shiftGlobalChartDate(event, this, -1)"
             title="Sebelumnya">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
               <polyline points="15 18 9 12 15 6"></polyline>
             </svg>
           </button>
           <button type="button" class="chart-nav-btn next" onclick="shiftGlobalChartDate(event, this, 1)"
             title="Selanjutnya" disabled>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
               <polyline points="9 18 15 12 9 6"></polyline>
             </svg>
           </button>
@@ -454,7 +409,7 @@
 
                 <div class="more-actions-wrapper">
                   <button type="button" class="btn-icon more-btn" title="Lainnya">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                       stroke-linecap="round" stroke-linejoin="round">
                       <circle cx="12" cy="12" r="1" />
                       <circle cx="12" cy="5" r="1" />
@@ -620,9 +575,10 @@
                 <span class="stat-value est-value">-</span>
               </a>
 
-              <button type="button" class="toggle-chart-btn" onclick="toggleChart(this)" title="Lihat Grafik">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round">
+              <button type="button" class="toggle-chart-btn" onclick="toggleChart(this)" title="Lihat Grafik"
+                style="margin-left: auto;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round">
                   <polyline points="6 9 12 15 18 9"></polyline>
                 </svg>
               </button>
@@ -633,15 +589,15 @@
               <div style="display: flex; justify-content: center; gap: 8px; margin-top: 8px;">
                 <button type="button" class="chart-nav-btn prev" onclick="shiftChartDate(event, this, -1)"
                   title="Sebelumnya">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
                     <polyline points="15 18 9 12 15 6"></polyline>
                   </svg>
                 </button>
                 <button type="button" class="chart-nav-btn next" onclick="shiftChartDate(event, this, 1)"
                   title="Selanjutnya" disabled>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
                     <polyline points="9 18 15 12 9 6"></polyline>
                   </svg>
                 </button>
@@ -851,7 +807,7 @@
 
     <div class="more-actions-wrapper">
       <button type="button" class="btn-icon more-btn" title="Lainnya">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
           stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="1" />
           <circle cx="12" cy="5" r="1" />
