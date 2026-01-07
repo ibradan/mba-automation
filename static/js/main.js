@@ -3,6 +3,7 @@ let autoSaveTimeout;
 let isSaving = false;
 let isPolling = false;
 let lastTotals = { modal: 0, balance: 0, income: 0, estimation: 0 };
+let lastAccountStats = {}; // Map: phone -> {modal, balance, withdrawal, estimation}
 
 
 async function forceResetApp() {
@@ -263,25 +264,22 @@ function showToast(message, type = 'info') {
   }, 3000);
 }
 
-function animateValue(el, start, end, duration) {
-  if (!el || start === end) return;
+function animateValue(id, start, end, duration = 800) {
+  const el = typeof id === 'string' ? document.getElementById(id) : id;
+  if (!el) return;
+  if (start === end) {
+    el.textContent = 'Rp ' + new Intl.NumberFormat('id-ID').format(end);
+    return;
+  }
   const startTime = performance.now();
-
   const step = (currentTime) => {
     const elapsed = currentTime - startTime;
     const progress = Math.min(elapsed / duration, 1);
-
-    // Cubic Ease Out (Simpler & More Professional)
     const ease = 1 - Math.pow(1 - progress, 3);
     const current = Math.floor(start + (end - start) * ease);
-
-    el.textContent = 'Rp ' + formatNumber(current);
-
-    if (progress < 1) {
-      requestAnimationFrame(step);
-    } else {
-      el.textContent = 'Rp ' + formatNumber(end);
-    }
+    el.textContent = 'Rp ' + new Intl.NumberFormat('id-ID').format(current);
+    if (progress < 1) requestAnimationFrame(step);
+    else el.textContent = 'Rp ' + new Intl.NumberFormat('id-ID').format(end);
   };
   requestAnimationFrame(step);
 }
@@ -290,7 +288,12 @@ function formatNumber(num) {
   return new Intl.NumberFormat('id-ID').format(num);
 }
 
+/* Global state moved to top */
+
 function updateStatusRealTime() {
+  if (isPolling) return;
+  isPolling = true;
+
   fetch('/api/accounts')
     .then(res => res.json())
     .then(data => {
@@ -298,76 +301,78 @@ function updateStatusRealTime() {
       const queueSize = data.queue_size || 0;
 
       // Update Queue Status
-      const queueBadge = document.getElementById('queue-status');
       const queueCount = document.getElementById('queue-count');
+      const queueBadge = document.getElementById('queue-status');
       if (queueCount) queueCount.textContent = queueSize;
       if (queueBadge) {
         if (queueSize > 0) queueBadge.classList.add('active');
         else queueBadge.classList.remove('active');
       }
 
-      // Aggregation Variables
-      let totalModal = 0;
-      let totalSaldo = 0;
-      let totalPendapatan = 0;
-      let totalEstimation = 0;
+      let totalModal = 0, totalSaldo = 0, totalPendapatan = 0, totalEstimation = 0;
 
       accounts.forEach(acc => {
-        // Accumulate Totals
         totalModal += (acc.income || 0);
         totalSaldo += (acc.balance || 0);
         totalPendapatan += (acc.withdrawal || 0);
         totalEstimation += (acc.estimation ? acc.estimation.estimated_balance : 0);
 
-        // Find the card by phone number
         const card = document.querySelector(`.account-card[data-phone="${acc.phone_display}"]`);
         if (!card) return;
 
-        // Update progress bar
+        // Progress
         const fill = card.querySelector('.progress-fill');
         const text = card.querySelector('.progress-value');
         if (fill && text) {
-          const pct = acc.pct || 0;
-          fill.style.width = pct + '%';
+          fill.style.width = (acc.pct || 0) + '%';
           text.textContent = `${acc.completed}/${acc.total}`;
-
           fill.classList.remove('progress-complete', 'progress-partial', 'progress-low');
-          if (acc.status === 'ran') {
-            fill.classList.add('progress-complete');
-          }
+          if (acc.status === 'ran') fill.classList.add('progress-complete');
           else if (acc.status === 'due') fill.classList.add('progress-partial');
           else fill.classList.add('progress-low');
+
+          // Ensure liquid exists
+          if (!fill.querySelector('.liquid')) {
+            const liq = document.createElement('div');
+            liq.className = 'liquid';
+            fill.appendChild(liq);
+          }
         }
 
-        // Update status badge & pulsing effect
+        // Badge
         const badge = card.querySelector('.status-badge');
         if (badge) {
           badge.className = 'status-badge status-' + (acc.status_raw || 'idle');
           badge.textContent = acc.status_label || 'Idle';
-
-          // Add pulsing class if active
-          if (acc.status_raw === 'running' || acc.status_raw === 'queued') {
-            card.classList.add('card-active-pulse');
-          } else {
-            card.classList.remove('card-active-pulse');
-          }
+          if (acc.status_raw === 'running' || acc.status_raw === 'queued') card.classList.add('card-active-pulse');
+          else card.classList.remove('card-active-pulse');
         }
 
-        // SMART WITHDRAWAL ALERT (Phase 5)
-        const today = new Date().getDay(); // 0=Sun, 1=Mon, ..., 3=Wed, 4=Thu
-        const level = (acc.level || '').toUpperCase();
-        let isWdDay = false;
+        // Stats (Animated)
+        const phone = acc.phone_display;
+        if (!lastAccountStats[phone]) lastAccountStats[phone] = { modal: 0, balance: 0, withdrawal: 0, estimation: 0 };
 
-        if (level === 'E3' && today === 3) isWdDay = true;
-        if ((level === 'E2' || level === 'E1') && today === 4) isWdDay = true;
+        const mEl = card.querySelector('.income-display .stat-value');
+        const sEl = card.querySelector('.balance-display .stat-value');
+        const wEl = card.querySelector('.withdrawal-display .stat-value');
+        const eEl = card.querySelector('.estimation-display .stat-value');
 
-        if (isWdDay) {
-          card.classList.add('is-withdrawal-day');
-        } else {
-          card.classList.remove('is-withdrawal-day');
-        }
+        if (mEl) animateValue(mEl, lastAccountStats[phone].modal, acc.income || 0);
+        if (sEl) animateValue(sEl, lastAccountStats[phone].balance, acc.balance || 0);
+        if (wEl) animateValue(wEl, lastAccountStats[phone].withdrawal, acc.withdrawal || 0);
+        if (eEl && acc.estimation) animateValue(eEl, lastAccountStats[phone].estimation, acc.estimation.estimated_balance);
 
-        // Update Syncing Spinner & Button State
+        lastAccountStats[phone] = {
+          modal: acc.income || 0,
+          balance: acc.balance || 0,
+          withdrawal: acc.withdrawal || 0,
+          estimation: acc.estimation ? acc.estimation.estimated_balance : 0
+        };
+
+        const pEl = card.querySelector('.points-display .stat-value');
+        if (pEl) pEl.textContent = formatNumber(acc.points || 0);
+
+        // Sync State
         const syncBtn = card.querySelector('.sync-btn');
         if (syncBtn) {
           const syncIcon = syncBtn.querySelector('.sync-icon');
@@ -394,28 +399,6 @@ function updateStatusRealTime() {
           }
         }
 
-        // Update financial stats (Modal, Saldo, Pendapatan)
-        const modalEl = card.querySelector('.income-display .stat-value');
-        const saldoEl = card.querySelector('.balance-display .stat-value');
-        const profitEl = card.querySelector('.withdrawal-display .stat-value');
-
-        if (modalEl) modalEl.textContent = 'Rp ' + formatNumber(acc.income || 0);
-        if (saldoEl) saldoEl.textContent = 'Rp ' + formatNumber(acc.balance || 0);
-        if (profitEl) profitEl.textContent = 'Rp ' + formatNumber(acc.withdrawal || 0);
-
-        // Update Estimation
-        const estEl = card.querySelector('.estimation-display .stat-value');
-        if (estEl && acc.estimation) {
-          estEl.textContent = 'Rp ' + formatNumber(acc.estimation.estimated_balance);
-        }
-
-        // Update Points (New Finance Style)
-        const pointsEl = card.querySelector('.points-display .stat-value');
-        if (pointsEl) {
-          const pts = acc.points || 0;
-          pointsEl.textContent = formatNumber(pts);
-        }
-
         // Update Calendar Data
         card.dataset.calendar = JSON.stringify(acc.calendar || []);
 
@@ -431,50 +414,25 @@ function updateStatusRealTime() {
         }
       });
 
-      // Update Global Dashboard
+      // Global Dashboard
       const dash = document.getElementById('global-dashboard');
       if (dash && accounts.length > 0) {
         dash.style.display = 'block';
-
-        // Animate/Update Global Values
-        const modalEl = document.getElementById('total-modal');
-        const balanceEl = document.getElementById('total-balance');
-        const incomeEl = document.getElementById('total-income');
-
-        if (modalEl && lastTotals.modal !== totalModal) {
-          animateValue(modalEl, lastTotals.modal, totalModal, 1500);
-          lastTotals.modal = totalModal;
-        } else if (modalEl) {
-          modalEl.textContent = 'Rp ' + formatNumber(totalModal);
-        }
-
-        if (balanceEl && lastTotals.balance !== totalSaldo) {
-          animateValue(balanceEl, lastTotals.balance, totalSaldo, 1500);
-          lastTotals.balance = totalSaldo;
-        } else if (balanceEl) {
-          balanceEl.textContent = 'Rp ' + formatNumber(totalSaldo);
-        }
-
-        if (incomeEl && lastTotals.income !== totalPendapatan) {
-          animateValue(incomeEl, lastTotals.income, totalPendapatan, 1500);
-          lastTotals.income = totalPendapatan;
-        } else if (incomeEl) {
-          incomeEl.textContent = 'Rp ' + formatNumber(totalPendapatan);
-        }
-
-        const estEl = document.getElementById('total-estimation');
-        if (estEl && lastTotals.estimation !== totalEstimation) {
-          animateValue(estEl, lastTotals.estimation, totalEstimation, 1500);
-          lastTotals.estimation = totalEstimation;
-        } else if (estEl) {
-          estEl.textContent = 'Rp ' + formatNumber(totalEstimation);
-        }
-        // Render/Update Chart
-        renderGlobalChart(totalModal, totalSaldo, totalPendapatan);
+        animateValue('total-modal', lastTotals.modal, totalModal);
+        animateValue('total-balance', lastTotals.balance, totalSaldo);
+        animateValue('total-income', lastTotals.income, totalPendapatan);
+        animateValue('total-estimation', lastTotals.estimation, totalEstimation);
+        lastTotals = { modal: totalModal, balance: totalSaldo, income: totalPendapatan, estimation: totalEstimation };
+      } else if (dash) {
+        dash.style.display = 'none';
       }
+
+      renderGlobalChart(totalModal, totalSaldo, totalPendapatan);
+      isPolling = false;
     })
     .catch(err => {
       console.error('Polling error:', err);
+      isPolling = false;
     });
 }
 
@@ -1694,7 +1652,8 @@ function renderPnLCalendar() {
   monthlyTotalLabel.textContent = `Rp ${fmt(monthlyTotal)}`;
 }
 
-// Global initialization for Calendar
+/* animateValue removed (consolidated at top) */
+
 document.addEventListener('DOMContentLoaded', () => {
   fetchPnLHistory();
   fetchGlobalHistory(); // Load global chart history

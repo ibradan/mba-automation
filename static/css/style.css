@@ -1,21 +1,68 @@
 :root {
-  /* God-Tier Palette - Ultimate Professionalism */
-  --primary: #2e59d9;
-  --secondary: #6c757d;
-  --success: #00ba9d;
-  --info: #00c2ff;
-  --warning: #ff9f0a;
-  --danger: #ff3b30;
-  --bg-body: #f4f7fe;
-  --bg-card: #ffffff;
-  --border: #d1d9e6;
-  --text: #1a1c1e;
-  --text-light: #6c727f;
-  --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.04);
-  --shadow-hover: 0 20px 50px rgba(46, 89, 217, 0.12);
-  --radius: 18px;
-  --ease-soft: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --ease-spring: cubic-bezier(0.68, -0.6, 0.32, 1.6);
+  /* Ultra-Premium Palette */
+  --primary: #4361ee;
+  --primary-glow: rgba(67, 97, 238, 0.4);
+  --secondary: #3f37c9;
+  --success: #4cc9f0;
+  --success-glow: rgba(76, 201, 240, 0.3);
+  --warning: #f72585;
+  --danger: #ef233c;
+  --info: #4895ef;
+
+  /* Backgrounds & Glass */
+  --bg-body: #0f172a;
+  --bg-card: rgba(255, 255, 255, 0.9);
+  --glass-bg: rgba(255, 255, 255, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.5);
+
+  /* Text & Border */
+  --text: #1e293b;
+  --text-light: #64748b;
+  --border: #e2e8f0;
+
+  /* Effects */
+  --radius: 20px;
+  --shadow-soft: 0 10px 40px rgba(0, 0, 0, 0.05);
+  --shadow-hover: 0 20px 60px rgba(67, 97, 238, 0.15);
+  --bounce: cubic-bezier(0.68, -0.6, 0.32, 1.6);
+  --glow: 0 0 20px var(--primary-glow);
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: var(--text);
+  background: var(--bg-body);
+  margin: 0;
+  overflow-x: hidden;
+  min-height: 100vh;
+  position: relative;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 10% 20%, rgba(67, 97, 238, 0.1) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(76, 201, 240, 0.15) 0%, transparent 40%),
+    radial-gradient(circle at 50% 50%, rgba(247, 37, 133, 0.05) 0%, transparent 50%),
+    #f8fafc;
+  background-size: 200% 200%;
+  animation: mesh-bg 15s ease infinite alternate;
+}
+
+@keyframes mesh-bg {
+  0% {
+    background-position: 0% 0%;
+  }
+
+  100% {
+    background-position: 100% 100%;
+  }
 }
 
 @keyframes mesh-bg {
@@ -149,9 +196,14 @@ body {
   border-radius: 10px;
   background: #ffffff;
   border: 1px solid var(--border);
-  transition: all 0.2s;
+  transition: all 0.3s var(--bounce);
   min-width: 0;
-  /* Allow shrinking */
+}
+
+.stat-box:hover {
+  transform: translateY(-4px);
+  border-color: var(--primary);
+  box-shadow: var(--shadow-hover);
 }
 
 .stat-label {
@@ -1005,18 +1057,15 @@ select:focus {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 8px 16px;
-  border-radius: 10px;
-  font-weight: 500;
-  font-size: 0.95rem;
-  border: 1px solid transparent;
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.9rem;
   cursor: pointer;
-  transition: all 0.3s var(--ease-spring);
+  border: 1px solid transparent;
+  transition: all 0.3s var(--bounce);
+  white-space: nowrap;
   user-select: none;
-}
-
-.btn:active {
-  transform: scale(0.95);
 }
 
 .btn-primary {
@@ -1341,63 +1390,117 @@ select:focus {
 }
 
 /* Daily Progress - Premium Progress Bar */
+/* Liquid Progress Bar */
 .daily-progress {
-  flex: 1;
-  height: 24px;
-  background: #f1f4ff;
-  border-radius: 99px;
-  margin-top: 0;
+  height: 28px;
+  background: rgba(226, 232, 240, 0.5);
+  border-radius: 14px;
   overflow: hidden;
   position: relative;
-  border: 2px solid var(--border);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .progress-fill {
   height: 100%;
-  background: var(--primary);
-  border-radius: 99px;
-  transition: width 1s var(--ease-soft);
+  width: 0%;
+  position: relative;
+  transition: width 1.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(90deg, var(--primary), var(--info));
+  border-radius: 0 14px 14px 0;
+}
+
+.progress-complete .progress-fill {
+  background: linear-gradient(90deg, #10b981, #34d399);
+}
+
+.progress-partial .progress-fill {
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+}
+
+.liquid {
   position: absolute;
   top: 0;
   left: 0;
-  z-index: 1;
+  width: 200%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.15);
+  transform: translate3d(-50%, 0, 0);
+  animation: wave 3s linear infinite;
+  display: block !important;
+  /* Ensure it exists */
 }
 
-/* Liquid Wave Effect */
-.liquid {
-  position: absolute;
-  top: -150%;
-  left: 50%;
-  width: 250%;
-  height: 250%;
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 42%;
-  animation: wave 4s infinite linear;
-  pointer-events: none;
-  z-index: 2;
+@keyframes wave {
+  0% {
+    transform: translate3d(-50%, 0, 0) skewX(0);
+  }
+
+  50% {
+    transform: translate3d(-25%, 0, 0) skewX(10deg);
+  }
+
+  100% {
+    transform: translate3d(0%, 0, 0) skewX(0);
+  }
 }
 
 .progress-text-overlay {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  font-size: 0.75rem;
+  gap: 12px;
+  z-index: 2;
+  mix-blend-mode: exclusion;
+  color: #fff;
   font-weight: 700;
-  color: var(--text);
-  z-index: 3;
+  font-size: 0.82rem;
+  letter-spacing: 0.5px;
+}
+
+/* Glassmorphism Cards */
+.account-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  transition: all 0.4s var(--bounce);
+  padding: 20px;
+}
+
+.account-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: var(--shadow-hover);
+  border-color: var(--primary);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.account-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+  padding: 2px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.5), transparent);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
   pointer-events: none;
-  text-shadow: 0 0 10px white;
 }
 
 .daily-progress.progress-complete {
   border-color: var(--success);
-}
-
-.daily-progress.progress-complete .progress-fill {
-  background: var(--success);
 }
 
 .daily-progress.progress-partial {
@@ -1504,17 +1607,34 @@ a.stat-box {
   border-left: 4px solid var(--primary);
 }
 
-/* Soft Indicator Colors */
+/* Premium Status Accents */
 .account-card.ran {
-  border-left: 4px solid var(--success);
+  border-top: 5px solid #10b981 !important;
+  box-shadow: 0 10px 30px rgba(16, 185, 129, 0.05);
 }
 
 .account-card.due {
-  border-left: 4px solid var(--warning);
+  border-top: 5px solid #f59e0b !important;
+  box-shadow: 0 10px 30px rgba(245, 158, 11, 0.05);
 }
 
 .account-card.pending {
-  border-left: 4px solid var(--secondary);
+  border-top: 5px solid #cbd5e1 !important;
+}
+
+.account-card.is-syncing {
+  border-top: 5px solid var(--primary) !important;
+  animation: card-pulse 2s infinite alternate;
+}
+
+@keyframes card-pulse {
+  from {
+    box-shadow: 0 0 10px rgba(67, 97, 238, 0.1);
+  }
+
+  to {
+    box-shadow: 0 0 30px rgba(67, 97, 238, 0.3);
+  }
 }
 
 .toast.fade-out {
