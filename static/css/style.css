@@ -1643,38 +1643,7 @@ a.stat-box {
   gap: 20px;
 }
 
-.section-title-gradient {
-  font-size: 1.4rem;
-  font-weight: 800;
-  text-align: center;
-  color: var(--text);
-  margin-bottom: 8px;
-  letter-spacing: -0.5px;
-  text-transform: uppercase;
-}
 
-.system-health-pulse {
-  width: 10px;
-  height: 10px;
-  background: #10b981;
-  /* Forest Green */
-  border-radius: 50%;
-  position: relative;
-  display: inline-block;
-}
-
-.system-health-pulse::after {
-  content: '';
-  position: absolute;
-  top: -4px;
-  left: -4px;
-  right: -4px;
-  bottom: -4px;
-  border: 2px solid #10b981;
-  border-radius: 50%;
-  opacity: 0;
-  animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
-}
 
 .account-pulse {
   position: absolute;

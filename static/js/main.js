@@ -314,12 +314,7 @@ function updateStatusRealTime() {
         else queueBadge.classList.remove('active');
       }
 
-      // Update Health Pulse
-      const healthPulse = document.querySelector('.system-health-pulse');
-      if (healthPulse) {
-        healthPulse.style.background = '#10b981';
-        healthPulse.title = 'System Monitoring Active';
-      }
+
 
       let totalModal = 0, totalSaldo = 0, totalPendapatan = 0, totalEstimation = 0;
 
@@ -444,11 +439,6 @@ function updateStatusRealTime() {
     })
     .catch(err => {
       console.error('Polling error:', err);
-      const healthPulse = document.querySelector('.system-health-pulse');
-      if (healthPulse) {
-        healthPulse.style.background = '#ef4444';
-        healthPulse.title = 'Connection Issue';
-      }
       isPolling = false;
     });
 }
