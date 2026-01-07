@@ -1005,6 +1005,20 @@ def index():
                              if not display_stats or (display_stats.get('balance', 0) == 0 and display_stats.get('income', 0) == 0):
                                  display_stats = dp[sorted_dates[0]]
 
+                    # Pre-transform daily_progress for display (Apply 10% tax on historical withdrawal)
+                    dp_raw = it.get('daily_progress', {})
+                    dp_display = {}
+                    for d_key, d_val in dp_raw.items():
+                        new_val = d_val.copy()
+                        if 'withdrawal' in new_val:
+                            new_val['withdrawal'] = new_val['withdrawal'] * 0.9
+                        dp_display[d_key] = new_val
+
+                    # Update display_stats to use the net withdrawal
+                    net_stats = display_stats.copy()
+                    if 'withdrawal' in net_stats:
+                        net_stats['withdrawal'] = net_stats['withdrawal'] * 0.9
+
                     saved_accounts.append({
                         "phone_display": display, 
                         "password": pwd, 
@@ -1020,8 +1034,8 @@ def index():
                         ) if it.get('sync_start_ts') else False,
                         "sync_start_ts": it.get('sync_start_ts'),
                         "status": status,
-                        "daily_progress": it.get('daily_progress', {}),
-                        "display_stats": display_stats,
+                        "daily_progress": dp_display,
+                        "display_stats": net_stats,
                         "today_label": today_label
                     })
     except Exception:

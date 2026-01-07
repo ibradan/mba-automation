@@ -1172,7 +1172,7 @@ function renderChart(row, canvas) {
             fill: true
           },
           {
-            label: 'Pendapatan',
+            label: 'Pendapatan (Net)',
             data: withdrawalData,
             borderColor: '#f97316',
             backgroundColor: pendapatanGradient,

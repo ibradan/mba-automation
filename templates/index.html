@@ -555,7 +555,7 @@
               </div>
               {% endif %}
 
-              {% set withdrawal = acc.display_stats.get('withdrawal', 0) * 0.9 %}
+              {% set withdrawal = acc.display_stats.get('withdrawal', 0) %}
               {% if acc.phone_display %}
               <a href="{{ url_for('history', phone=acc.phone_display, metric='pendapatan') }}"
                 class="stat-box withdrawal-display" style="text-decoration: none;">
