@@ -156,7 +156,12 @@ document.getElementById('add-row').addEventListener('click', function () {
 
   // Set the account number
   const count = document.querySelectorAll('.row-item').length + 1;
-  clone.querySelector('.account-number').textContent = count;
+  const numEl = clone.querySelector('.account-number');
+  if (numEl) {
+    const pulse = numEl.querySelector('.account-pulse');
+    numEl.textContent = count;
+    if (pulse) numEl.appendChild(pulse);
+  }
 
   const div = clone.querySelector('.account-card');
   rows.appendChild(clone);
@@ -411,6 +416,13 @@ function updateStatusRealTime() {
         if (calDropdown && calDropdown.style.display !== 'none') {
           const grid = calDropdown.querySelector('.calendar-grid');
           if (grid) renderCalendar(card, grid);
+        }
+
+        // Update individual Account Pulse
+        const accountPulse = card.querySelector('.account-pulse');
+        if (accountPulse) {
+          accountPulse.style.background = '#10b981'; // Green on success
+          accountPulse.style.boxShadow = '0 0 5px rgba(16, 185, 129, 0.6)';
         }
       });
 
