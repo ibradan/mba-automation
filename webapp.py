@@ -525,7 +525,7 @@ def calculate_estimation(daily_income, current_balance, level_fallback=None):
         if future_date.weekday() != 6: # Skip Sunday
             projected_income += income
             
-    estimated_total = (balance + projected_income) * 0.9 # Apply 10% tax on withdrawal amount
+    estimated_total = balance + projected_income
     
     return {
         'tier': tier,
