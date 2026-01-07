@@ -344,6 +344,11 @@ function updateStatusRealTime() {
         if (badge) {
           badge.className = 'status-badge status-' + (acc.status_raw || 'idle');
           badge.textContent = acc.status_label || 'Idle';
+
+          // Sync card status classes for sorting logic
+          card.classList.remove('ran', 'due', 'pending');
+          if (acc.status) card.classList.add(acc.status);
+
           if (acc.status_raw === 'running' || acc.status_raw === 'queued') card.classList.add('card-active-pulse');
           else card.classList.remove('card-active-pulse');
         }
