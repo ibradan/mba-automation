@@ -1859,10 +1859,7 @@ function sortAccountCards() {
   if (cards.length <= 1) return;
 
   const getWeight = (card) => {
-    // Check status classes (ran, due, pending)
     const isDue = card.classList.contains('due');
-
-    // Check raw status from badge
     const badge = card.querySelector('.status-badge');
     const raw = badge ? badge.className.replace('status-badge status-', '').trim() : 'idle';
 
@@ -1873,19 +1870,35 @@ function sortAccountCards() {
     return 0;
   };
 
-  // Sort by weight descending
-  cards.sort((a, b) => getWeight(b) - getWeight(a));
+  // Calculate desired order
+  const desiredOrder = [...cards].sort((a, b) => getWeight(b) - getWeight(a));
 
-  // Re-append elements to the DOM in sorted order
-  cards.forEach((card, index) => {
+  // Check if order actually changed (Compare by phone attribute)
+  const currentPhones = cards.map(c => c.getAttribute('data-phone'));
+  const desiredPhones = desiredOrder.map(c => c.getAttribute('data-phone'));
+
+  const isDifferent = currentPhones.some((phone, i) => phone !== desiredPhones[i]);
+  if (!isDifferent) return;
+
+  // Only re-append if order is different
+  desiredOrder.forEach((card, index) => {
     rows.appendChild(card);
 
-    // Update visual account number sequence
+    // Update visual account number only if changed
     const numEl = card.querySelector('.account-number');
     if (numEl) {
-      const pulse = numEl.querySelector('.account-pulse');
-      numEl.textContent = index + 1;
-      if (pulse) numEl.appendChild(pulse);
+      const newNum = (index + 1).toString();
+      // Check first child text node to avoid overwriting the pulse span if text matches
+      if (numEl.firstChild && numEl.firstChild.nodeType === 3) {
+        if (numEl.firstChild.textContent !== newNum) {
+          numEl.firstChild.textContent = newNum;
+        }
+      } else if (numEl.textContent !== newNum) {
+        // Fallback but preserve pulse
+        const pulse = numEl.querySelector('.account-pulse');
+        numEl.textContent = newNum;
+        if (pulse) numEl.appendChild(pulse);
+      }
     }
   });
 }
