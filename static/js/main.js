@@ -264,7 +264,7 @@ function showToast(message, type = 'info') {
   }, 3000);
 }
 
-function animateValue(id, start, end, duration = 800) {
+function animateValue(id, start, end, duration = 500) {
   const el = typeof id === 'string' ? document.getElementById(id) : id;
   if (!el) return;
   if (start === end) {
@@ -330,13 +330,6 @@ function updateStatusRealTime() {
           if (acc.status === 'ran') fill.classList.add('progress-complete');
           else if (acc.status === 'due') fill.classList.add('progress-partial');
           else fill.classList.add('progress-low');
-
-          // Ensure liquid exists
-          if (!fill.querySelector('.liquid')) {
-            const liq = document.createElement('div');
-            liq.className = 'liquid';
-            fill.appendChild(liq);
-          }
         }
 
         // Badge

@@ -1,85 +1,44 @@
 :root {
-  /* Ultra-Premium Palette */
-  --primary: #4361ee;
-  --primary-glow: rgba(67, 97, 238, 0.4);
-  --secondary: #3f37c9;
-  --success: #4cc9f0;
-  --success-glow: rgba(76, 201, 240, 0.3);
-  --warning: #f72585;
-  --danger: #ef233c;
-  --info: #4895ef;
-
-  /* Backgrounds & Glass */
-  --bg-body: #0f172a;
-  --bg-card: rgba(255, 255, 255, 0.9);
-  --glass-bg: rgba(255, 255, 255, 0.75);
-  --glass-border: rgba(255, 255, 255, 0.5);
-
-  /* Text & Border */
-  --text: #1e293b;
+  /* Minimalist Professional Palette */
+  --primary: #4f46e5;
+  /* Indigo */
+  --primary-hover: #4338ca;
+  --primary-light: #eef2ff;
+  --success: #10b981;
+  /* Emerald */
+  --warning: #f59e0b;
+  /* Amber */
+  --danger: #ef4444;
+  /* Rose */
+  --info: #0ea5e9;
+  /* Sky */
+  --bg-body: #f8fafc;
+  /* Slate 50 */
+  --bg-card: #ffffff;
+  --text: #0f172a;
+  /* Slate 900 */
   --text-light: #64748b;
+  /* Slate 500 */
   --border: #e2e8f0;
-
-  /* Effects */
-  --radius: 20px;
-  --shadow-soft: 0 10px 40px rgba(0, 0, 0, 0.05);
-  --shadow-hover: 0 20px 60px rgba(67, 97, 238, 0.15);
-  --bounce: cubic-bezier(0.68, -0.6, 0.32, 1.6);
-  --glow: 0 0 20px var(--primary-glow);
+  /* Slate 200 */
+  --radius: 12px;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --bounce: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: 'Inter', -apple-system, sans-serif;
   color: var(--text);
   background: var(--bg-body);
   margin: 0;
-  overflow-x: hidden;
   min-height: 100vh;
-  position: relative;
+  line-height: 1.5;
 }
 
-body::before {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: -1;
-  background:
-    radial-gradient(circle at 10% 20%, rgba(67, 97, 238, 0.1) 0%, transparent 40%),
-    radial-gradient(circle at 90% 80%, rgba(76, 201, 240, 0.15) 0%, transparent 40%),
-    radial-gradient(circle at 50% 50%, rgba(247, 37, 133, 0.05) 0%, transparent 50%),
-    #f8fafc;
-  background-size: 200% 200%;
-  animation: mesh-bg 15s ease infinite alternate;
-}
-
-@keyframes mesh-bg {
-  0% {
-    background-position: 0% 0%;
-  }
-
-  100% {
-    background-position: 100% 100%;
-  }
-}
-
-@keyframes mesh-bg {
-  0% {
-    background-position: 0% 50%;
-    filter: hue-rotate(0deg);
-  }
-
-  50% {
-    background-position: 100% 50%;
-    filter: hue-rotate(15deg);
-  }
-
-  100% {
-    background-position: 0% 50%;
-    filter: hue-rotate(0deg);
-  }
+/* Clean Base Styling */
+* {
+  box-sizing: border-box;
 }
 
 @keyframes icon-spin {
@@ -201,9 +160,9 @@ body {
 }
 
 .stat-box:hover {
-  transform: translateY(-4px);
+  transform: translateY(-2px);
   border-color: var(--primary);
-  box-shadow: var(--shadow-hover);
+  box-shadow: var(--shadow-md);
 }
 
 .stat-label {
@@ -228,23 +187,19 @@ body {
 
 /* Specific Stat Styles - Minimal Accents */
 .income-display {
-  border-bottom: 3px solid #f59e0b;
-  /* Amber accent line */
+  border-bottom: 3px solid var(--warning);
 }
 
 .balance-display {
-  border-bottom: 3px solid #06b6d4;
-  /* Cyan accent line */
+  border-bottom: 3px solid var(--info);
 }
 
 .withdrawal-display {
-  border-bottom: 3px solid #f97316;
-  /* Orange accent line */
+  border-bottom: 3px solid var(--primary);
 }
 
 .estimation-display {
-  border-bottom: 3px solid var(--primary);
-  /* Primary Blue accent line */
+  border-bottom: 3px solid var(--success);
 }
 
 /* Remove old specific overrides */
@@ -254,14 +209,12 @@ body {
   color: var(--text-light);
 }
 
-
+/* Base Layout */
+* {
+  box-sizing: border-box;
+}
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: var(--bg-body);
-  color: var(--text);
-  font-size: 15px;
-  line-height: 1.6;
   overscroll-behavior-y: contain;
 }
 
@@ -278,13 +231,13 @@ body {
   position: sticky;
   top: 0;
   z-index: 1000;
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 2px solid var(--border);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
   padding: 12px 0;
-  margin-bottom: 30px;
-  transition: all 0.3s var(--ease-soft);
+  margin-bottom: 20px;
+  transition: all 0.2s;
 }
 
 .header-content {
@@ -772,9 +725,9 @@ select:focus {
   top: 100%;
   right: 0;
   background: var(--bg-card);
-  border: 2px solid var(--border);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: var(--shadow-hover);
+  box-shadow: var(--shadow-md);
   padding: 8px;
   min-width: 140px;
   z-index: 100;
@@ -1114,9 +1067,8 @@ select:focus {
 }
 
 .btn-success {
-  background: #10b981;
+  background: var(--success);
   color: white;
-  border: 1px solid #059669;
 }
 
 .btn-success:hover {
@@ -1390,62 +1342,33 @@ select:focus {
 }
 
 /* Daily Progress - Premium Progress Bar */
-/* Liquid Progress Bar */
+/* Simple Progress Bar */
 .daily-progress {
-  height: 28px;
-  background: rgba(226, 232, 240, 0.5);
-  border-radius: 14px;
+  height: 20px;
+  background: #f1f5f9;
+  border-radius: 10px;
   overflow: hidden;
   position: relative;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border);
 }
 
 .progress-fill {
   height: 100%;
   width: 0%;
-  position: relative;
-  transition: width 1.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(90deg, var(--primary), var(--info));
-  border-radius: 0 14px 14px 0;
+  transition: width 0.8s ease-out;
+  background: var(--primary);
 }
 
 .progress-complete .progress-fill {
-  background: linear-gradient(90deg, #10b981, #34d399);
+  background: var(--success);
 }
 
 .progress-partial .progress-fill {
-  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+  background: var(--warning);
 }
 
 .liquid {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 200%;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.15);
-  transform: translate3d(-50%, 0, 0);
-  animation: wave 3s linear infinite;
-  display: block !important;
-  /* Ensure it exists */
-}
-
-@keyframes wave {
-  0% {
-    transform: translate3d(-50%, 0, 0) skewX(0);
-  }
-
-  50% {
-    transform: translate3d(-25%, 0, 0) skewX(10deg);
-  }
-
-  100% {
-    transform: translate3d(0%, 0, 0) skewX(0);
-  }
+  display: none !important;
 }
 
 .progress-text-overlay {
@@ -1457,75 +1380,34 @@ select:focus {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
   z-index: 2;
-  mix-blend-mode: exclusion;
-  color: #fff;
-  font-weight: 700;
-  font-size: 0.82rem;
-  letter-spacing: 0.5px;
-}
-
-/* Glassmorphism Cards */
-.account-card {
-  background: var(--glass-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-soft);
-  transition: all 0.4s var(--bounce);
-  padding: 20px;
-}
-
-.account-card:hover {
-  transform: translateY(-8px) scale(1.02);
-  box-shadow: var(--shadow-hover);
-  border-color: var(--primary);
-  background: rgba(255, 255, 255, 0.95);
-}
-
-.account-card::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: var(--radius);
-  padding: 2px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.5), transparent);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
+  color: var(--text);
+  font-weight: 600;
+  font-size: 0.7rem;
   pointer-events: none;
 }
 
-.daily-progress.progress-complete {
-  border-color: var(--success);
+/* Clean Minimalist Cards */
+.account-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s var(--bounce);
+  padding: 20px;
+  position: relative;
 }
 
-.daily-progress.progress-partial {
-  border-color: var(--warning);
+.account-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary);
 }
 
-.daily-progress.progress-partial .progress-fill {
-  background: var(--warning);
+.account-card::after {
+  display: none;
+  /* Remove complex glows */
 }
-
-.daily-progress.progress-low {
-  border-color: var(--secondary);
-}
-
-.daily-progress.progress-low .progress-fill {
-  background: var(--secondary);
-}
-
-.row-item.ran {
-  background: #ecfdf5 !important;
-  border-left: 4px solid #10b981 !important;
-  border-color: #10b981 !important;
-}
-
-
 
 .progress-label {
   opacity: 0.9;
@@ -1607,33 +1489,35 @@ a.stat-box {
   border-left: 4px solid var(--primary);
 }
 
-/* Premium Status Accents */
+/* Professional Status Accents */
 .account-card.ran {
-  border-top: 5px solid #10b981 !important;
-  box-shadow: 0 10px 30px rgba(16, 185, 129, 0.05);
+  border-left: 5px solid var(--success) !important;
+  border-top: none !important;
 }
 
 .account-card.due {
-  border-top: 5px solid #f59e0b !important;
-  box-shadow: 0 10px 30px rgba(245, 158, 11, 0.05);
+  border-left: 5px solid var(--warning) !important;
+  border-top: none !important;
 }
 
 .account-card.pending {
-  border-top: 5px solid #cbd5e1 !important;
+  border-left: 5px solid var(--border) !important;
+  border-top: none !important;
 }
 
 .account-card.is-syncing {
-  border-top: 5px solid var(--primary) !important;
-  animation: card-pulse 2s infinite alternate;
+  border-left: 5px solid var(--primary) !important;
+  border-top: none !important;
+  background: var(--primary-light);
 }
 
 @keyframes card-pulse {
   from {
-    box-shadow: 0 0 10px rgba(67, 97, 238, 0.1);
+    opacity: 0.8;
   }
 
   to {
-    box-shadow: 0 0 30px rgba(67, 97, 238, 0.3);
+    opacity: 1;
   }
 }
 
@@ -1689,31 +1573,26 @@ a.stat-box {
 }
 
 .card-active-pulse {
-  animation: card-pulse 2s infinite;
+  background: var(--primary-light);
   border-color: var(--primary) !important;
 }
 
-/* Withdrawal Day Alert - Premium Gold */
+/* Withdrawal Day Alert */
 .is-withdrawal-day {
-  border-color: #f59e0b !important;
-  box-shadow: 0 0 20px rgba(245, 158, 11, 0.4) !important;
-  position: relative;
+  border-color: var(--warning) !important;
 }
 
 .is-withdrawal-day::after {
-  content: "WD TODAY! 💰";
+  content: "WD TODAY!";
   position: absolute;
   top: -10px;
-  right: -10px;
-  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  right: 10px;
+  background: var(--warning);
   color: white;
   font-size: 10px;
-  font-weight: 900;
-  padding: 4px 10px;
-  border-radius: 20px;
-  box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3);
-  z-index: 10;
-  animation: float 2s infinite ease-in-out;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 4px;
 }
 
 @keyframes float {
@@ -1745,22 +1624,18 @@ a.stat-box {
 }
 
 .section-title-gradient {
-  font-size: 1.8rem;
-  font-weight: 900;
+  font-size: 1.5rem;
+  font-weight: 800;
   text-align: center;
-  background: linear-gradient(135deg, var(--primary) 0%, #4facfe 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--text);
   margin-bottom: 8px;
-  letter-spacing: -1px;
+  letter-spacing: -0.5px;
 }
 
 /* ================= GLOBAL DASHBOARD (Unified Master Card) ================= */
 .global-master-card {
-  border: 2px solid var(--primary) !important;
-  background: linear-gradient(to bottom right, rgba(255, 255, 255, 0.9), rgba(241, 245, 249, 0.9)) !important;
-  backdrop-filter: blur(12px);
+  border: 1px solid var(--primary) !important;
+  background: var(--bg-card) !important;
 }
 
 .global-master-card .master-label {
@@ -1784,15 +1659,7 @@ a.stat-box {
   font-weight: 800;
 }
 
-/* Glass Glow Effects */
-.income-display.glass-glow {
-  border-bottom: 4px solid #f59e0b !important;
-}
-
-.modal-card .withdrawal-display {
-  background: linear-gradient(135deg, #f97316 0%, #fb923c 100%);
-  color: #fff;
-}
+/* Accents handled by display-specific classes */
 
 .estimation-display.glass-glow {
   background: #fff;
