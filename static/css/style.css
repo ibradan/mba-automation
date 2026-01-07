@@ -1043,6 +1043,26 @@ select:focus {
   border-color: var(--primary);
 }
 
+.btn.review-btn {
+  background: var(--success) !important;
+  color: white;
+  border-radius: 6px;
+}
+
+.btn.review-btn:hover {
+  background: #059669 !important;
+}
+
+.btn.schedule-btn {
+  background: #475569 !important;
+  color: white;
+  border-radius: 6px;
+}
+
+.btn.schedule-btn:hover {
+  background: #334155 !important;
+}
+
 .btn-danger {
   background: white;
   border: 1px solid #fecaca;
