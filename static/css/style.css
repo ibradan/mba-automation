@@ -1644,21 +1644,23 @@ a.stat-box {
 }
 
 .global-master-card .master-label {
-  font-size: 0.95rem;
+  font-size: 0.8rem;
+  /* Match account-number size */
   color: var(--primary);
   text-transform: uppercase;
 }
 
 .global-master-card .stats-row .stat-box {
   flex: 1;
-  min-width: 100px;
-  /* Reduced from 120px */
+  min-width: 0;
+  /* Match individual accounts */
   padding: 8px 4px;
   /* Match individual accounts */
 }
 
 .global-master-card .stat-value {
-  font-size: 1.15rem;
+  font-size: 0.92rem;
+  /* Match .stat-value base size */
   font-weight: 800;
 }
 
