@@ -441,10 +441,20 @@ def api_accounts():
                  if not display_stats or (display_stats.get('balance', 0) == 0 and display_stats.get('income', 0) == 0):
                      display_stats = dp[sorted_dates[0]]
 
+        raw_st = it.get('status', 'idle')
+        label_map = {
+            'running': 'Running ⚡',
+            'queued': 'Queued ⏳',
+            'failed': 'Failed ❌',
+            'idle': 'Idle 💤'
+        }
+        
         results.append({
             "phone": phone,
             "phone_display": display,
             "status": status,
+            "status_raw": raw_st,
+            "status_label": label_map.get(raw_st, 'Idle'),
             "pct": pct,
             "completed": progress.get('completed', 0),
             "total": progress.get('total', 60),

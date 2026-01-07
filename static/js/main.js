@@ -416,8 +416,13 @@ function updateStatusRealTime() {
         // Update individual Account Pulse
         const accountPulse = card.querySelector('.account-pulse');
         if (accountPulse) {
-          accountPulse.style.background = '#10b981'; // Green on success
-          accountPulse.style.boxShadow = '0 0 5px rgba(16, 185, 129, 0.6)';
+          if (acc.status_raw === 'failed') {
+            accountPulse.style.background = '#ef4444'; // Red on failure
+            accountPulse.style.boxShadow = '0 0 5px rgba(239, 68, 68, 0.6)';
+          } else {
+            accountPulse.style.background = '#10b981'; // Green on success/idle
+            accountPulse.style.boxShadow = '0 0 5px rgba(16, 185, 129, 0.6)';
+          }
         }
       });
 
@@ -439,6 +444,11 @@ function updateStatusRealTime() {
     })
     .catch(err => {
       console.error('Polling error:', err);
+      // Turn all account pulses red to indicate connection loss/stale data
+      document.querySelectorAll('.account-pulse').forEach(pulse => {
+        pulse.style.background = '#ef4444'; // Red
+        pulse.style.boxShadow = '0 0 5px rgba(239, 68, 68, 0.6)';
+      });
       isPolling = false;
     });
 }
