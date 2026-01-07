@@ -440,6 +440,7 @@ function updateStatusRealTime() {
       }
 
       renderGlobalChart(totalModal, totalSaldo, totalPendapatan);
+      sortAccountCards();
       isPolling = false;
     })
     .catch(err => {
@@ -1833,4 +1834,53 @@ function renderEstimation(container, est) {
       </div>
     </div>
   `;
+}
+
+/**
+ * Auto-Priority Sorting:
+ * Moves mission-critical accounts (Failed, Due, Running) to the top.
+ */
+function sortAccountCards() {
+  const rows = document.getElementById('rows');
+  if (!rows) return;
+
+  // UX Protection: Don't reshuffle if user is currently typing/selecting
+  const active = document.activeElement;
+  if (active && (active.tagName === 'INPUT' || active.tagName === 'SELECT')) {
+    if (rows.contains(active)) return;
+  }
+
+  const cards = Array.from(rows.querySelectorAll('.row-item'));
+  if (cards.length <= 1) return;
+
+  const getWeight = (card) => {
+    // Check status classes (ran, due, pending)
+    const isDue = card.classList.contains('due');
+
+    // Check raw status from badge
+    const badge = card.querySelector('.status-badge');
+    const raw = badge ? badge.className.replace('status-badge status-', '').trim() : 'idle';
+
+    if (raw === 'failed') return 4;
+    if (isDue) return 3;
+    if (raw === 'running') return 2;
+    if (raw === 'queued') return 1;
+    return 0;
+  };
+
+  // Sort by weight descending
+  cards.sort((a, b) => getWeight(b) - getWeight(a));
+
+  // Re-append elements to the DOM in sorted order
+  cards.forEach((card, index) => {
+    rows.appendChild(card);
+
+    // Update visual account number sequence
+    const numEl = card.querySelector('.account-number');
+    if (numEl) {
+      const pulse = numEl.querySelector('.account-pulse');
+      numEl.textContent = index + 1;
+      if (pulse) numEl.appendChild(pulse);
+    }
+  });
 }
