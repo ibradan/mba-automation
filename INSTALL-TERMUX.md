@@ -96,15 +96,16 @@ Tekan `Ctrl+C` di Termux untuk stop server.
 
 ## 🆘 Troubleshooting
 
-**Aplikasi tidak jalan?**
+**Aplikasi tidak jalan / Hang di "Launching Browser"?**
 - Pastikan Ubuntu sudah diinstall: `proot-distro list`
+- Coba jalanin ini di dalam Ubuntu: `playwright install-deps`
+- Pastikan HP tidak mematikan Termux (cek "Battery Optimization" di settings Android)
 - Cek log error di Termux
-- Restart Termux dan coba lagi
 
 **Browser tidak bisa akses?**
-- Pastikan server sudah jalan (ada output di Termux)
+- Pastikan server sudah jalan (ada output `🔥 Starting Web Application...` di Termux)
 - Gunakan Chrome (bukan browser lain)
-- Coba akses via `http://127.0.0.1:5000`
+- Coba akses via `http://localhost:5000` atau `http://127.0.0.1:5000`
 
 ---
 

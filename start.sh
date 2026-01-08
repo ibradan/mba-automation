@@ -1,8 +1,8 @@
 #!/bin/bash
 # start.sh - One-click startup for MBA Automation in Termux (Proot)
 
-# Absolute path to project
-PROJECT_PATH="/data/data/com.termux/files/home/projects/mba-automation"
+# Determine project path dynamically
+PROJECT_PATH="$(cd "$(dirname "$0")" && pwd)"
 
 echo "🚀 Starting MBA Automation in Ubuntu Proot..."
 

@@ -26,6 +26,11 @@ source .venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
 
+# 5. Install Playwright browser and system dependencies
+echo "🌐 Installing Playwright browser and dependencies..."
+playwright install chromium
+playwright install-deps
+
 # 5. Create settings.json from template if not exist
 if [ ! -f "settings.json" ]; then
     if [ -f "settings.json.example" ]; then

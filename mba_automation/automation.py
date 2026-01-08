@@ -484,6 +484,9 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
         args=[
             "--disable-gpu",
             "--disable-dev-shm-usage",
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-extensions",
             "--no-first-run",
             "--no-default-browser-check",
             "--js-flags=\"--max-old-space-size=256\"",
