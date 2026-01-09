@@ -36,10 +36,46 @@ LOG_FILE = os.path.join(os.path.dirname(__file__), "runs.log")
 ACCOUNTS_FILE = os.path.join(os.path.dirname(__file__), "accounts.json")
 SETTINGS_FILE = os.path.join(os.path.dirname(__file__), "settings.json")
 SCHED_LOCK = threading.Lock()
-SCHED_CHECK_INTERVAL = 20  # seconds between schedule checks
 
-# Job Queue for Serial Execution (Pi Zero Optimization)
-JOB_QUEUE = queue.Queue()
+# LRU Cache for accounts data (SAFE OPTIMIZATION)
+class LRUCache:
+    def __init__(self, max_size=10, ttl=30):
+        self.cache = {}
+        self.timestamps = {}
+        self.max_size = max_size
+        self.ttl = ttl
+        self.lock = threading.Lock()
+    
+    def get(self, key):
+        with self.lock:
+            if key in self.cache:
+                if time.time() - self.timestamps[key] < self.ttl:
+                    return self.cache[key]
+                else:
+                    del self.cache[key]
+                    del self.timestamps[key]
+            return None
+    
+    def set(self, key, value):
+        with self.lock:
+            if len(self.cache) >= self.max_size:
+                oldest = min(self.timestamps, key=self.timestamps.get)
+                del self.cache[oldest]
+                del self.timestamps[oldest]
+            self.cache[key] = value
+            self.timestamps[key] = time.time()
+    
+    def invalidate(self):
+        with self.lock:
+            self.cache.clear()
+            self.timestamps.clear()
+
+ACCOUNTS_CACHE = LRUCache(max_size=10, ttl=30)
+
+# Priority Job Queue (SAFE OPTIMIZATION)
+JOB_QUEUE = queue.PriorityQueue()
+JOB_TRACKING = {}  # Track running jobs
+JOB_TRACKING_LOCK = threading.Lock()
 ACTIVE_JOBS = 0
 ACTIVE_JOBS_LOCK = threading.Lock()
 
@@ -121,9 +157,7 @@ def worker():
             if job is not None:
                 JOB_QUEUE.task_done()
 
-# Start worker thread
-worker_thread = threading.Thread(target=worker, daemon=True)
-worker_thread.start()
+# NOTE: Worker threads will be started after logger and data_manager are initialized
 
 def clean_old_logs():
     """Delete log files older than 3 days in the logs directory."""
@@ -343,6 +377,24 @@ if not logger.handlers:
     except Exception:
         # fallback to basic logging to stderr when file not writable
         logging.basicConfig(level=logging.INFO)
+
+# CRITICAL: Clear JOB_TRACKING on startup to prevent stale entries
+with JOB_TRACKING_LOCK:
+    JOB_TRACKING.clear()
+logger.info("SYSTEM: Cleared job tracking (fresh start)")
+
+# Load concurrency settings (SAFE: 5 workers, 30s cache, 15s scheduler)
+_settings = data_manager.load_settings()
+MAX_WORKERS = int(_settings.get('max_workers', 5))
+CACHE_TTL = int(_settings.get('cache_ttl', 30))
+SCHED_CHECK_INTERVAL = int(_settings.get('scheduler_interval', 15))
+ACCOUNTS_CACHE.ttl = CACHE_TTL
+
+logger.info(f"SYSTEM: Starting {MAX_WORKERS} worker threads with {CACHE_TTL}s cache TTL")
+logger.info(f"SCHEDULER: Check interval set to {SCHED_CHECK_INTERVAL}s")
+for i in range(MAX_WORKERS):
+    t = threading.Thread(target=worker, name=f"Worker-{i+1}", daemon=True)
+    t.start()
 
 
 def normalize_phone(raw: str) -> str:

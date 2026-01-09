@@ -2,5 +2,8 @@
     "headless": true,
     "log_level": "INFO",
     "telegram_token": "",
-    "telegram_chat_id": ""
+    "telegram_chat_id": "",
+    "max_workers": 5,
+    "cache_ttl": 30,
+    "scheduler_interval": 15
 }
