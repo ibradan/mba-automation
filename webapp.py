@@ -470,7 +470,10 @@ logger.info("SYSTEM: Cleared job tracking (fresh start)")
 
 # Load concurrency settings (SAFE: 5 workers, 30s cache, 15s scheduler)
 _settings = data_manager.load_settings()
-MAX_WORKERS = int(_settings.get('max_workers', 5))
+# Priority: Env Var > Settings File > Default (5)
+env_workers = os.getenv('MBA_WORKERS')
+default_workers = int(env_workers) if env_workers and env_workers.isdigit() else 5
+MAX_WORKERS = int(_settings.get('max_workers', default_workers))
 CACHE_TTL = int(_settings.get('cache_ttl', 30))
 SCHED_CHECK_INTERVAL = int(_settings.get('scheduler_interval', 15))
 ACCOUNTS_CACHE.ttl = CACHE_TTL

@@ -22,5 +22,5 @@ RUN mkdir -p logs
 # Expose port
 EXPOSE 5000
 
-# Run with Gunicorn (4 workers, bind to 0.0.0.0)
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "webapp:app"]
+# Run with Gunicorn (2 workers is safer for low RAM, bind to 0.0.0.0)
+CMD ["gunicorn", "-w", "2", "-b", "0.0.0.0:5000", "webapp:app"]

@@ -17,6 +17,7 @@ services:
     environment:
       - MBA_HEADLESS=1
       - FLASK_ENV=production
+      - MBA_WORKERS=1 # Safe default for 1GB RAM VPS to prevent freezing
     logging:
       driver: "json-file"
       options:
