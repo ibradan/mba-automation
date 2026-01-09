@@ -39,11 +39,7 @@ def get_session_path(phone: str) -> str:
     return os.path.join(session_dir, f"{norm}.json")
 
 
-    except Exception as e:
-        print(f"Login process error: {e}")
-        return False
 
-    return False
 
 def login(page: Page, context, phone: str, password: str, timeout: int = 30) -> bool:
     """Robust login with retries and better verification."""
