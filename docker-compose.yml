@@ -18,6 +18,7 @@ services:
       - MBA_HEADLESS=1
       - FLASK_ENV=production
       - MBA_WORKERS=1 # Safe default for 1GB RAM VPS to prevent freezing
+      - TZ=Asia/Jakarta # Force Timezone to WIB
     logging:
       driver: "json-file"
       options:
