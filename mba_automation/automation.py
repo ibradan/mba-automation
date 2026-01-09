@@ -461,9 +461,6 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
             "--disable-dev-shm-usage",
             "--no-first-run",
             "--no-default-browser-check",
-            "--single-process", # CRITICAL for 1GB RAM
-            "--renderer-process-limit=1",
-            "--js-flags=\"--max-old-space-size=128\"", # Cap V8 heap to 128MB
             "--disable-blink-features=AutomationControlled"
         ]
     )
