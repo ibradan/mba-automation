@@ -428,15 +428,13 @@ function updateStatusRealTime() {
 
       // Global Dashboard
       const dash = document.getElementById('global-dashboard');
-      if (dash && accounts.length > 0) {
+      if (dash) {
         dash.style.display = 'block';
         animateValue('total-modal', lastTotals.modal, totalModal);
         animateValue('total-balance', lastTotals.balance, totalSaldo);
         animateValue('total-income', lastTotals.income, totalPendapatan);
         animateValue('total-estimation', lastTotals.estimation, totalEstimation);
         lastTotals = { modal: totalModal, balance: totalSaldo, income: totalPendapatan, estimation: totalEstimation };
-      } else if (dash) {
-        dash.style.display = 'none';
       }
 
       renderGlobalChart(totalModal, totalSaldo, totalPendapatan);

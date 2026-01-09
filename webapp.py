@@ -1,4 +1,6 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, session
+from functools import wraps
+from werkzeug.security import check_password_hash, generate_password_hash
 import subprocess
 import sys
 import os
@@ -22,6 +24,88 @@ from utils import crypto
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET", "please-change-this")
 
+
+# Auth Helpers
+def load_users():
+    if not os.path.exists(USERS_FILE):
+        return []
+    try:
+        with open(USERS_FILE, 'r') as f:
+            return json.load(f)
+    except:
+        return []
+
+def save_users(users):
+    try:
+        with open(USERS_FILE, 'w') as f:
+            json.dump(users, f, indent=2)
+        return True
+    except:
+        return False
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        users = load_users()
+        user = next((u for u in users if u['username'] == username), None)
+        
+        if user and check_password_hash(user['password_hash'], password):
+            session['user_id'] = user['username']
+            return redirect(url_for('index'))
+        else:
+            flash('Invalid username or password')
+            
+    return render_template('login.html')
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+        
+        if not username or not password:
+            flash('Username dan password wajib diisi', 'error')
+            return redirect(url_for('register'))
+            
+        if password != confirm_password:
+            flash('Password tidak cocok', 'error')
+            return redirect(url_for('register'))
+            
+        users = load_users()
+        if any(u['username'] == username for u in users):
+            flash('Username sudah digunakan', 'error')
+            return redirect(url_for('register'))
+            
+        new_user = {
+            'username': username,
+            'password_hash': generate_password_hash(password)
+        }
+        users.append(new_user)
+        
+        if save_users(users):
+            flash('Registrasi berhasil! Silakan login.', 'success')
+            return redirect(url_for('login'))
+        else:
+            flash('Gagal menyimpan user baru', 'error')
+            
+    return render_template('register.html')
+
+@app.route('/logout')
+def logout():
+    session.pop('user_id', None)
+    return redirect(url_for('login'))
+
 # PWA Routes (must be at root for proper scope)
 @app.route('/sw.js')
 def service_worker():
@@ -36,6 +120,7 @@ LOG_FILE = os.path.join(os.path.dirname(__file__), "runs.log")
 ACCOUNTS_FILE = os.path.join(os.path.dirname(__file__), "accounts.json")
 SETTINGS_FILE = os.path.join(os.path.dirname(__file__), "settings.json")
 SCHED_LOCK = threading.Lock()
+USERS_FILE = os.path.join(os.path.dirname(__file__), "users.json")
 
 # LRU Cache for accounts data (SAFE OPTIMIZATION)
 class LRUCache:
@@ -429,13 +514,21 @@ def phone_display(normalized: str) -> str:
 
 
 @app.route("/api/accounts")
+@login_required
 def api_accounts():
     """Endpoint for real-time dashboard updates."""
     raw = data_manager.load_accounts()
     now = datetime.datetime.now()
     results = []
     
+    
+    current_user = session.get('user_id')
     for it in raw:
+        # Filter by owner (default to admin if owner not set)
+        owner = it.get('owner', 'admin')
+        if owner != current_user:
+            continue
+            
         phone = it.get("phone", "")
         display = phone_display(phone)
         schedule = it.get('schedule', '')
@@ -599,6 +692,7 @@ def calculate_estimation(daily_income, current_balance, level_fallback=None):
 
 
 @app.route("/api/global_history")
+@login_required
 def api_global_history():
     """Aggregate historical data from all accounts for global chart with Forward Fill."""
     try:
@@ -607,7 +701,16 @@ def api_global_history():
         
         # 1. Collect all unique dates from all accounts
         all_dates = set()
-        for acc in accounts:
+        # 1. Collect all unique dates from all accounts
+        all_dates = set()
+        current_user = session.get('user_id')
+        
+        filtered_accounts = [
+            a for a in accounts 
+            if a.get('owner', 'admin') == current_user
+        ]
+        
+        for acc in filtered_accounts:
             all_dates.update(acc.get('daily_progress', {}).keys())
             
         if not all_dates:
@@ -625,7 +728,8 @@ def api_global_history():
             day_total_balance = 0
             day_total_withdrawal = 0
             
-            for acc in accounts:
+            
+            for acc in filtered_accounts:
                 phone = normalize_phone(acc.get('phone', ''))
                 if not phone: continue
 
@@ -664,6 +768,7 @@ def api_global_history():
 
 
 @app.route("/api/logs/<phone_display>")
+@login_required
 def api_phone_logs(phone_display):
     """Get the latest log content for a specific phone number."""
     try:
@@ -704,11 +809,13 @@ def api_phone_logs(phone_display):
 
 
 @app.route("/settings/get", methods=["GET"])
+@login_required
 def get_settings():
     return jsonify(data_manager.load_settings())
 
 
 @app.route("/settings/save", methods=["POST"])
+@login_required
 def save_settings():
     try:
         data = request.get_json()
@@ -720,6 +827,7 @@ def save_settings():
 
 
 @app.route("/settings/test_telegram", methods=["POST"])
+@login_required
 def test_telegram():
     """Endpoint to test Telegram configuration."""
     try:
@@ -745,19 +853,23 @@ def test_telegram():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route("/export_accounts", methods=["GET"])
+@login_required
 def export_accounts():
     try:
-        if os.path.exists(ACCOUNTS_FILE):
-            return subprocess.check_output(['cat', ACCOUNTS_FILE]), 200, {
-                'Content-Type': 'application/json',
-                'Content-Disposition': 'attachment; filename=accounts.json'
-            }
-        return jsonify({"status": "error", "message": "No accounts file found"}), 404
+        current_user = session.get('user_id')
+        accounts = data_manager.load_accounts()
+        # Filter for current user
+        user_accounts = [acc for acc in accounts if acc.get('owner', 'admin') == current_user]
+        
+        return jsonify(user_accounts), 200, {
+            'Content-Disposition': 'attachment; filename=accounts.json'
+        }
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
 @app.route("/import_accounts", methods=["POST"])
+@login_required
 def import_accounts():
     try:
         if 'file' not in request.files:
@@ -771,6 +883,12 @@ def import_accounts():
                 data = json.load(file)
                 if not isinstance(data, list):
                     return jsonify({"status": "error", "message": "Invalid format: expected a list of accounts"}), 400
+                
+                # Assign to current user
+                current_user = session.get('user_id')
+                for acc in data:
+                    acc['owner'] = current_user
+                    
                 data_manager.write_accounts(data)
                 return jsonify({"status": "success", "message": f"Imported {len(data)} accounts"})
             except json.JSONDecodeError:
@@ -779,6 +897,7 @@ def import_accounts():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route("/", methods=["GET", "POST"])
+@login_required
 def index():
     if request.method == "POST":
         phones = request.form.getlist('phone[]')
@@ -819,33 +938,35 @@ def index():
         if action == 'save':
             try:
                 def update_save(current_accounts):
-                    # Convert list to dict for easy merging
-                    existing_map = {}
-                    for a in current_accounts:
-                        norm_p = normalize_phone(a.get('phone'))
-                        if norm_p:
-                             existing_map[norm_p] = a
+                    current_user = session.get('user_id')
                     
+                    # 1. Identify accounts to preserve (those NOT owned by current user)
+                    preserved_accounts = [a for a in current_accounts if a.get('owner', 'admin') != current_user]
+                    
+                    # 2. Map MY existing accounts to preserve dynamic data
+                    my_existing = {}
+                    for a in current_accounts:
+                        if a.get('owner', 'admin') == current_user:
+                             norm_p = normalize_phone(a.get('phone'))
+                             if norm_p: my_existing[norm_p] = a
+
                     new_list = []
                     for phone, pwd, lvl in entries:
                         norm = normalize_phone(phone)
                         # Start with fresh object
-                        acc = {"phone": norm, "password": pwd, "level": (lvl or "E2")}
+                        acc = {"phone": norm, "password": pwd, "level": (lvl or "E2"), "owner": current_user}
                         
                         # Preserve dynamic data from EXISTING file content
-                        if norm in existing_map:
-                            old = existing_map[norm]
-                            if 'reviews' in old: acc['reviews'] = old['reviews']
-                            if 'schedule' in old: acc['schedule'] = old['schedule']
-                            if 'last_run' in old: acc['last_run'] = old['last_run']
-                            if 'last_run_ts' in old: acc['last_run_ts'] = old['last_run_ts']
-                            if 'last_sync_ts' in old: acc['last_sync_ts'] = old['last_sync_ts']
-                            if 'daily_progress' in old: acc['daily_progress'] = old['daily_progress']
-                            if 'is_syncing' in old: acc['is_syncing'] = old['is_syncing']
-                            if 'sync_start_ts' in old: acc['sync_start_ts'] = old['sync_start_ts']
+                        if norm in my_existing:
+                            old = my_existing[norm]
+                            # Copy persistent fields
+                            for k in ['reviews', 'schedule', 'last_run', 'last_run_ts', 'last_sync_ts', 'daily_progress', 'is_syncing', 'sync_start_ts']:
+                                if k in old: acc[k] = old[k]
                             
                         new_list.append(acc)
-                    return new_list
+                    
+                    # 3. Combine and return
+                    return preserved_accounts + new_list
 
                 if data_manager.atomic_update_accounts(update_save):
                      flash(f"{len(entries)} akun disimpan.", "success")
@@ -949,22 +1070,31 @@ def index():
             # Persist submitted accounts so they can be reused later (update saved list)
             try:
                 def update_start(current_accounts):
+                    current_user = session.get('user_id')
+                    
+                    # 1. Separate
+                    other_accounts = [a for a in current_accounts if a.get('owner', 'admin') != current_user]
+                    my_existing = [a for a in current_accounts if a.get('owner', 'admin') == current_user]
+                    
                     existing_map = {}
-                    for a in current_accounts:
+                    for a in my_existing:
                         n = normalize_phone(a.get('phone'))
                         if n: existing_map[n] = a
                     
-                    new_list = []
+                    # 2. Rebuild Mine
+                    my_new_list = []
                     for phone_in, pwd, lvl in entries:
                          norm = normalize_phone(phone_in)
-                         acc = {"phone": norm, "password": pwd, "level": (lvl or "E2")}
+                         acc = {"phone": norm, "password": pwd, "level": (lvl or "E2"), "owner": current_user}
                          if norm in existing_map:
                              old = existing_map[norm]
                              # Merge all persistent fields
                              for k in ['reviews', 'schedule', 'last_run', 'last_run_ts', 'last_sync_ts', 'daily_progress', 'is_syncing', 'sync_start_ts']:
                                  if k in old: acc[k] = old[k]
-                         new_list.append(acc)
-                    return new_list
+                         my_new_list.append(acc)
+                    
+                    # 3. Combine
+                    return other_accounts + my_new_list
 
                 data_manager.atomic_update_accounts(update_start)
             except Exception as e:
@@ -975,7 +1105,11 @@ def index():
 
     # GET: load saved accounts to prefill the form
     saved_accounts = []
-    raw = data_manager.load_accounts()
+    current_user = session.get('user_id')
+    raw_all = data_manager.load_accounts()
+    
+    # Filter for display
+    raw = [a for a in raw_all if a.get('owner', 'admin') == current_user]
     try:
         # prepare display form (strip leading country code for the visible input)
         now = datetime.datetime.now()
@@ -1614,9 +1748,14 @@ def estimation_page():
     
     # Filter by phone if provided (to fix "masih semuanya" complaint)
     phone_filter = request.args.get('phone')
+    current_user = session.get('user_id')
     
     results = []
     for acc in accounts:
+        # Implicitly filter by owner
+        if acc.get('owner', 'admin') != current_user:
+            continue
+            
         phone = acc.get("phone", "")
         # Apply filter if set
         if phone_filter and phone_filter not in phone:
