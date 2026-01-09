@@ -13,6 +13,9 @@ services:
       - ./users.json:/app/users.json
       - ./settings.json:/app/settings.json
       - ./logs:/app/logs
+      # Sync Timezone with Host (VPS)
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
       # Optional: persist session data if you add it later
     environment:
       - MBA_HEADLESS=1
