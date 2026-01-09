@@ -196,7 +196,9 @@ class LRUCache:
 ACCOUNTS_CACHE = LRUCache(max_size=10, ttl=30)
 
 # Priority Job Queue (SAFE OPTIMIZATION)
-JOB_QUEUE = queue.PriorityQueue()
+# Changed to standard Queue to prevent "TypeError: '<' not supported between instances of 'dict' and 'dict'"
+# because we were putting non-comparable dicts into a PriorityQueue.
+JOB_QUEUE = queue.Queue()
 JOB_TRACKING = {}  # Track running jobs
 JOB_TRACKING_LOCK = threading.Lock()
 ACTIVE_JOBS = 0
