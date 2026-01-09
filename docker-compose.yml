@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  mba-automation:
+    build: .
+    container_name: mba_automation
+    restart: always
+    ports:
+      - "5000:5000"
+    volumes:
+      # Persist critical data
+      - ./accounts.json:/app/accounts.json
+      - ./users.json:/app/users.json
+      - ./settings.json:/app/settings.json
+      - ./logs:/app/logs
+      # Optional: persist session data if you add it later
+    environment:
+      - MBA_HEADLESS=1
+      - FLASK_ENV=production
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
