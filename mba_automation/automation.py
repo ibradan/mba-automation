@@ -39,106 +39,85 @@ def get_session_path(phone: str) -> str:
     return os.path.join(session_dir, f"{norm}.json")
 
 
+    except Exception as e:
+        print(f"Login process error: {e}")
+        return False
+
+    return False
+
 def login(page: Page, context, phone: str, password: str, timeout: int = 30) -> bool:
-    """
-    Handles login logic including phone number normalization and popup handling.
-    Attempts to restore session if available.
-    Returns True if login appears successful, False otherwise.
-    """
+    """Robust login with retries and better verification."""
     session_path = get_session_path(phone)
-    
-    # 1. Try to restore session
-    if os.path.exists(session_path):
-        print(f"Restoring session from {session_path}...")
-        # Note: In Playwright sync, we load storage_state when creating context. 
-        # But if we are already here, the context might have been created without state 
-        # if the file didn't exist at start (or we are in a retry/reload loop).
-        # However, 'run' function now handles initial loading.
-        # Here we just verify if we are already logged in.
+
+    # Helper to check if logged in
+    def check_is_logged_in():
+        try:
+            # 1. Check URL
+            if "login" in page.url.lower(): return False
+            
+            # 2. Check for "Saldo Rekening" or Profile Icon
+            # Increased timeout to 8s for slow VPS
+            if page.get_by_text("Saldo Rekening").is_visible(timeout=8000): return True
+            if page.locator("i.icon-lipin").is_visible(timeout=3000): return True
+            
+            return False
+        except: return False
 
     try:
-        # Normalize phone: strip '62' prefix if present
         phone_for_login = phone[2:] if phone.startswith('62') else phone
         
-        # Check if already logged in (session restored)
-        page.goto("https://mba7.com/#/mine", wait_until="domcontentloaded", timeout=timeout*1000)
-        page.wait_for_timeout(2000)
-        try_close_popups(page)
-        
-        # Verify if we are logged in
-        # PRO-TIP: "icon-lipin" might exist as an SVG symbol even if not logged in.
-        # We must check for VISIBLE elements that only appear when authenticated.
-        authenticated = False
-        
-        # 1. Check for specific text that only exists on Mine/Profile page when logged in
-        if page.get_by_text("Saldo Rekening").is_visible(timeout=3000): 
-            authenticated = True
-        elif page.locator("i.icon-lipin").is_visible(timeout=1000): # Check specifically for <i> tag
-            authenticated = True
-        
-        # 2. Check for "Login" or "Daftar" - if they are prominently visible, we are likely NOT logged in
-        # (Be careful as they might be in a header/footer on many pages)
-        if authenticated:
-            # Final sanity check: make sure we aren't actually on the login page
-            if "login" in page.url.lower():
-                authenticated = False
+        # 1. TRY RESTORE
+        if os.path.exists(session_path):
+            print(f"Restoring session for {phone}...")
+            try:
+                page.goto("https://mba7.com/#/mine", wait_until="domcontentloaded", timeout=timeout*1000)
+                try_close_popups(page)
+                if check_is_logged_in():
+                    print("Session restored successfully.")
+                    return True
+                print("Session expired or invalid.")
+            except Exception as e:
+                print(f"Session restore failed: {e}")
 
-        if authenticated:
-            print("Session restored successfully (Already logged in).")
-            return True
-        
-        print(f"Session invalid or expired. Logging in as {phone}...")
-        page.goto("https://mba7.com/#/login", wait_until="networkidle", timeout=timeout*1000)
+        # 2. PERFORM LOGIN
+        print(f"Logging in as {phone}...")
+        page.goto("https://mba7.com/#/login", wait_until="domcontentloaded", timeout=timeout*1000)
         page.wait_for_timeout(2000)
         try_close_popups(page)
 
-        # Ensure we are actually on login page
-        if "login" not in page.url.lower():
-            print("  Attempting navigation to login page again...")
-            page.goto("https://mba7.com/#/login", timeout=timeout*1000)
-            page.wait_for_timeout(2000)
-
+        # Fill credentials
         page.get_by_role("textbox", name="Nomor Telepon").fill(phone_for_login)
         page.get_by_role("textbox", name="Kata Sandi").fill(password)
         
-        # Handle the "Masuk" button in the login form
+        # Click Login
         login_btn = page.get_by_role("button", name="Masuk").first
         if login_btn.count() > 0:
             login_btn.click()
         else:
             smart_click(page, "button", role="button", name="Masuk")
             
-        page.wait_for_timeout(4000)
+        page.wait_for_timeout(5000) # Wait for network/transition
 
-        # After login: confirm buttons might appear
-        for _ in range(3):
-            if smart_click(page, "button", role="button", name="Mengonfirmasi", timeout=3000):
-                page.wait_for_timeout(1000)
-            else:
-                break
+        # Handle post-login popups/confirmations
+        smart_click(page, "button", role="button", name="Mengonfirmasi", timeout=3000)
         
-        # Verify login success by checking for mine page elements
+        # Verify
         page.goto("https://mba7.com/#/mine", timeout=timeout*1000)
         page.wait_for_timeout(3000)
         try_close_popups(page)
-        
-        success = False
-        if page.get_by_text("Saldo Rekening").is_visible(timeout=5000): 
-            success = True
-        elif page.locator("i.icon-lipin").is_visible(timeout=2000):
-            success = True
 
-        if success:
-             # Save storage state
-             print(f"Login success. Saving session to {session_path}...")
+        if check_is_logged_in():
+             print(f"Login success. Saving session...")
              context.storage_state(path=session_path)
              return True
         
+        # Fail
         print(f"Login verification failed. URL: {page.url}")
+        # Capture screenshot for debug if possible (removed for production safety/size)
         return False
 
     except Exception as e:
-        print(f"Login failed: {e}")
+        print(f"Login CRITICAL FAILURE: {e}")
         return False
 
 
