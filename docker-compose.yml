@@ -16,6 +16,7 @@ services:
       # Sync Timezone with Host (VPS)
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
+      - ./secret.key:/app/secret.key # Persist encryption key
       # Optional: persist session data if you add it later
     environment:
       - MBA_HEADLESS=1
