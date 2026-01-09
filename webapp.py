@@ -106,6 +106,44 @@ def logout():
     session.pop('user_id', None)
     return redirect(url_for('login'))
 
+
+@app.route('/change_password', methods=['POST'])
+@login_required
+def change_password():
+    old_password = request.form.get('old_password')
+    new_password = request.form.get('new_password')
+    confirm_password = request.form.get('confirm_password')
+
+    if not old_password or not new_password:
+        flash('Password lama dan baru wajib diisi.', 'error')
+        return redirect(url_for('index'))
+    
+    if new_password != confirm_password:
+        flash('Password baru tidak cocok.', 'error')
+        return redirect(url_for('index'))
+        
+    current_username = session.get('user_id')
+    users = load_users()
+    user = next((u for u in users if u['username'] == current_username), None)
+    
+    if not user:
+        flash('User tidak ditemukan.', 'error')
+        return redirect(url_for('index'))
+        
+    if not check_password_hash(user['password_hash'], old_password):
+        flash('Password lama salah.', 'error')
+        return redirect(url_for('index'))
+        
+    # Update password
+    user['password_hash'] = generate_password_hash(new_password)
+    
+    if save_users(users):
+        flash('Password berhasil diubah!', 'success')
+    else:
+        flash('Gagal menyimpan password baru.', 'error')
+        
+    return redirect(url_for('index'))
+
 # PWA Routes (must be at root for proper scope)
 @app.route('/sw.js')
 def service_worker():

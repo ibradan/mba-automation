@@ -170,9 +170,34 @@
               <div style="font-size: 12px; color: var(--primary); margin-bottom: 4px;">Logged in as: <b>{{
                   session.get('user_id') }}</b></div>
               <a href="{{ url_for('logout') }}" class="btn-small"
-                style="width: 100%; justify-content: center; background: rgba(255, 82, 82, 0.1); color: #ff5252; text-decoration: none; display: flex; align-items: center;">
+                style="width: 100%; justify-content: center; background: rgba(255, 82, 82, 0.1); color: #ff5252; text-decoration: none; display: flex; align-items: center; margin-bottom: 8px;">
                 Logout
               </a>
+
+              <button type="button" class="btn-small"
+                onclick="document.getElementById('change-password-form').style.display = document.getElementById('change-password-form').style.display === 'none' ? 'block' : 'none'"
+                style="width: 100%; justify-content: center; background: rgba(255, 255, 255, 0.05); color: var(--text); border: 1px solid rgba(255,255,255,0.1);">
+                Ganti Password 🔒
+              </button>
+
+              <form id="change-password-form" action="{{ url_for('change_password') }}" method="POST"
+                style="display: none; margin-top: 10px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
+                <div style="margin-bottom: 8px;">
+                  <input type="password" name="old_password" placeholder="Password Lama" class="settings-input" required
+                    style="width: 100%; font-size: 12px;">
+                </div>
+                <div style="margin-bottom: 8px;">
+                  <input type="password" name="new_password" placeholder="Password Baru" class="settings-input" required
+                    style="width: 100%; font-size: 12px;">
+                </div>
+                <div style="margin-bottom: 8px;">
+                  <input type="password" name="confirm_password" placeholder="Konfirmasi Password Baru"
+                    class="settings-input" required style="width: 100%; font-size: 12px;">
+                </div>
+                <button type="submit" class="btn-small"
+                  style="width: 100%; justify-content: center; background: var(--primary); color: #fff;">Simpan
+                  Password</button>
+              </form>
             </div>
 
 
