@@ -6,16 +6,29 @@ KEY_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'secret.key'
 logger = logging.getLogger(__name__)
 
 def load_key():
-    """Load the existing key or generate a new one."""
-    if not os.path.exists(KEY_FILE):
-        key = Fernet.generate_key()
-        with open(KEY_FILE, 'wb') as key_file:
-            key_file.write(key)
+    """Load the existing key or generate a new one if missing/invalid."""
+    def generate_and_save():
+        k = Fernet.generate_key()
+        with open(KEY_FILE, 'wb') as f:
+            f.write(k)
         logger.info(f"Generated new encryption key at {KEY_FILE}")
-    else:
+        return k
+
+    if not os.path.exists(KEY_FILE):
+        return generate_and_save()
+    
+    try:
         with open(KEY_FILE, 'rb') as key_file:
             key = key_file.read()
-    return key
+            if not key or len(key) < 10: # Basic validation
+                logger.warning("Key file is empty or too short. Regenerating.")
+                return generate_and_save()
+            # Validate key format
+            Fernet(key)
+            return key
+    except Exception as e:
+        logger.error(f"Invalid key file ({e}). Regenerating.")
+        return generate_and_save()
 
 # Initialize Cipher
 cipher = Fernet(load_key())
