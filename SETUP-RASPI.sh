@@ -88,9 +88,11 @@ Wants=network-online.target
 
 [Service]
 User=$SUDO_USER
+# Force wait for WiFi/Network to settle
+ExecStartPre=/bin/sleep 30
 ExecStart=/usr/bin/autossh -M 0 -o "ServerAliveInterval 30" -o "ServerAliveCountMax 3" -N -R 5000:localhost:5000 ${VPS_USER}@${VPS_IP}
 Restart=always
-RestartSec=10
+RestartSec=30
 StartLimitIntervalSec=0
 
 [Install]
