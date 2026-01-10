@@ -83,12 +83,15 @@ fi
 cat <<EOF > /etc/systemd/system/mba-tunnel.service
 [Unit]
 Description=SSH Tunnel to VPS (Expose Port 5000)
-After=network.target
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 User=$SUDO_USER
 ExecStart=/usr/bin/autossh -M 0 -o "ServerAliveInterval 30" -o "ServerAliveCountMax 3" -N -R 5000:localhost:5000 ${VPS_USER}@${VPS_IP}
 Restart=always
+RestartSec=10
+StartLimitIntervalSec=0
 
 [Install]
 WantedBy=multi-user.target
