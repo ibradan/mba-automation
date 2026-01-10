@@ -3,6 +3,7 @@
     "short_name": "TernakUang",
     "description": "MBA7 Automation Dashboard",
     "start_url": "/",
+    "scope": "/",
     "display": "standalone",
     "background_color": "#f4f7fe",
     "theme_color": "#2e59d9",
