@@ -352,7 +352,7 @@ class DataManager:
             if not os.path.exists(self.accounts_file):
                 return []
             try:
-                with open(self.accounts_file, 'r') as f:
+                with open(self.accounts_file, 'r', encoding='utf-8-sig') as f:
                     try:
                         fcntl.flock(f, fcntl.LOCK_SH)
                         data = json.load(f)
