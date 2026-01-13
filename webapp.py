@@ -30,9 +30,12 @@ def load_users():
     if not os.path.exists(USERS_FILE):
         return []
     try:
-        with open(USERS_FILE, 'r') as f:
-            return json.load(f)
-    except:
+        with open(USERS_FILE, 'r', encoding='utf-8-sig') as f:
+            content = f.read().strip()
+            if not content: return []
+            return json.loads(content)
+    except Exception as e:
+        print(f"Error loading users: {e}") # Print to visible log
         return []
 
 def save_users(users):
