@@ -1295,6 +1295,10 @@ def index():
     # Load settings to pass to template
     settings = data_manager.load_settings()
 
+    # DEBUG: Log accounts passed to template
+    for i, a in enumerate(saved_accounts):
+         logger.info(f"DEBUG ACC {i}: phone={a.get('phone_display')} status={a.get('status')}")
+
     return render_template(
         "index.html",
         saved=saved_accounts,

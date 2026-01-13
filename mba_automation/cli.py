@@ -60,12 +60,39 @@ def save_progress() -> None:
                         final_completed = max(data['completed'], existing.get('completed', 0))
                         final_total = max(data['total'], existing.get('total', 0))
                         
-                        # Sticky Financials
-                        final_income = data['income'] if (data['income'] > 0 or not existing) else existing.get('income', 0.0)
-                        final_withdrawal = data['withdrawal'] if (data['withdrawal'] > 0 or not existing) else existing.get('withdrawal', 0.0)
-                        final_balance = data['balance'] if (data['balance'] > 0 or not existing) else existing.get('balance', 0.0)
-                        final_points = data['points'] if (data['points'] > 0 or not existing) else existing.get('points', 0.0)
-                        final_calendar = data['calendar'] if (len(data['calendar']) > 0 or not existing) else existing.get('calendar', [])
+                        # --- ROBUST FALLBACK LOGIC ---
+                        # Helper to find last known good value from history
+                        def get_fallback(key, current_val):
+                            # 1. If we have a valid non-zero value now, use it
+                            if current_val > 0: return current_val
+                            
+                            # 2. If existing today has it, use it
+                            if existing.get(key, 0) > 0: return existing[key]
+                            
+                            # 3. Search backwards in history
+                            # Get all dates, sort reverse
+                            dates = sorted(acc['daily_progress'].keys(), reverse=True)
+                            for d in dates:
+                                if d == today: continue # Skip today (already checked 'existing')
+                                val = acc['daily_progress'][d].get(key, 0)
+                                if val > 0: return val
+                            
+                            # 4. Give up, return 0
+                            return 0.0
+
+                        final_income = get_fallback('income', data['income'])
+                        final_withdrawal = get_fallback('withdrawal', data['withdrawal'])
+                        final_balance = get_fallback('balance', data['balance'])
+                        final_points = get_fallback('points', data['points'])
+                        
+                        # Calendar is array, different check
+                        final_calendar = data['calendar']
+                        if not final_calendar:
+                             if existing.get('calendar'): final_calendar = existing['calendar']
+                             else:
+                                 # Fallback to last known calendar? typically calendar resets monthly...
+                                 # but for safety let's just keep today's existing if we failed to scrape
+                                 pass 
 
                         acc['daily_progress'][today] = {
                             'date': today,
