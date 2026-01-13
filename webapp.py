@@ -620,17 +620,49 @@ def api_accounts():
                         status = 'pending'
                 except: pass
 
-        display_stats = progress if progress else {}
-        if not display_stats or (display_stats.get('balance', 0) == 0 and display_stats.get('income', 0) == 0):
-             dp = it.get('daily_progress', {})
-             if dp:
-                 sorted_dates = sorted(dp.keys(), reverse=True)
-                 for d in sorted_dates:
-                     if dp[d].get('balance', 0) > 0 or dp[d].get('income', 0) > 0:
-                         display_stats = dp[d]
-                         break
-                 if not display_stats or (display_stats.get('balance', 0) == 0 and display_stats.get('income', 0) == 0):
-                     display_stats = dp[sorted_dates[0]]
+        
+        # PER-FIELD FALLBACK LOGIC
+        # Instead of all-or-nothing, we ensure each critical metric has a value if possible.
+        
+        # 1. Start with what we have (today or latest from loop above)
+        final_income = display_stats.get('income', 0)
+        final_balance = display_stats.get('balance', 0)
+        final_withdrawal = display_stats.get('withdrawal', 0)
+        final_points = display_stats.get('points', 0)
+        
+        # 2. If any are zero, look back in history specifically for that field
+        dp = it.get('daily_progress', {})
+        if dp:
+            # Sort dates once
+            sorted_dates = sorted(dp.keys(), reverse=True)
+            
+            # Helper to find first non-zero
+            def find_last_nonzero(key, current_val):
+                if current_val > 0: return current_val
+                for d in sorted_dates:
+                    try:
+                        # Only look back 3 days max to avoid ancient stale data? 
+                        # User wants NO zeros, so let's look back further.
+                        # But verifying it's not ANCIENT is good practice. Let's say 7 days.
+                        d_dt = datetime.datetime.fromisoformat(d)
+                        if (now - d_dt).total_seconds() > 7 * 86400: continue
+                        
+                        val = dp[d].get(key, 0)
+                        if val > 0: return val
+                    except: continue
+                return 0
+
+            final_income = find_last_nonzero('income', final_income)
+            final_balance = find_last_nonzero('balance', final_balance)
+            final_withdrawal = find_last_nonzero('withdrawal', final_withdrawal)
+            # Points usually don't need strict fallback as they are less critical, but consistent behavior is good.
+            final_points = find_last_nonzero('points', final_points)
+
+        # 3. Update display_stats for subsequent usage (calendar etc passed through)
+        display_stats['income'] = final_income
+        display_stats['balance'] = final_balance
+        display_stats['withdrawal'] = final_withdrawal
+        display_stats['points'] = final_points
 
         raw_st = it.get('status', 'idle')
         label_map = {
@@ -784,10 +816,30 @@ def api_global_history():
                 
                 if daily_data:
                     # Update our knowledge of this account's state
+                    # FIXED: Only update fields that are NON-ZERO or if we have no history yet
+                    current_cached = account_states.get(phone, {'income': 0, 'balance': 0, 'withdrawal': 0})
+                    
+                    new_income = daily_data.get('income', 0)
+                    new_balance = daily_data.get('balance', 0)
+                    new_withdrawal = daily_data.get('withdrawal', 0)
+                    
+                    # If new value is 0 and we have a previous non-zero, KEEP previous
+                    if new_income == 0 and current_cached['income'] > 0:
+                        new_income = current_cached['income']
+                    
+                    if new_balance == 0 and current_cached['balance'] > 0:
+                        new_balance = current_cached['balance']
+                        
+                    if new_withdrawal == 0 and current_cached['withdrawal'] > 0:
+                        new_withdrawal = current_cached['withdrawal']
+                        
+                    if new_withdrawal == 0 and current_cached['withdrawal'] > 0:
+                        new_withdrawal = current_cached['withdrawal']
+                        
                     account_states[phone] = {
-                        'income': daily_data.get('income', 0),
-                        'balance': daily_data.get('balance', 0),
-                        'withdrawal': daily_data.get('withdrawal', 0)
+                        'income': new_income,
+                        'balance': new_balance,
+                        'withdrawal': new_withdrawal
                     }
                 
                 # Get the state to use (either just updated, or carried forward)
@@ -807,7 +859,9 @@ def api_global_history():
                 'withdrawal': day_total_withdrawal
             }
         
-        return jsonify(aggregated)
+        resp = jsonify(aggregated)
+        resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        return resp
     except Exception as e:
         logger.error(f"Global history error: {e}")
         return jsonify({}), 500
@@ -1658,8 +1712,34 @@ def history(phone, metric):
                  date_formatted = f"{dt.day} {month_name} {dt.year}"
                  # Apply 10% tax for Pendapatan metric
                  final_val = val
+                 
+                 # FIXED: Single account history forward fill
+                 # If value is 0, look ahead (since we are iterating reverse: recent -> old)
+                 # Wait, we are iterating REVERSE (Newest first).
+                 # To forward fill (Old -> New), we need access to the "previous day" which is further down the list?
+                 # No, if we want to fill 0s with "previous known value", we should iterate OLD -> NEW.
+                 # OR, we can just do a dumb check: if 0, search for older data in the map.
+                 
+                 if final_val == 0:
+                     # Search backwards (older dates)
+                     current_dt_obj = dt
+                     
+                     # Simple scan of older dates
+                     # Since sorted_dates is Newest -> Oldest, we look at indices AFTER current
+                     current_idx = sorted_dates.index(date_str)
+                     for older_date in sorted_dates[current_idx+1:]:
+                         try:
+                             older_val = daily_progress[older_date].get(target_key, 0)
+                             if older_val > 0:
+                                 final_val = older_val
+                                 break
+                             # Don't look back too far (e.g. 7 days?)
+                             o_dt = datetime.datetime.strptime(older_date, "%Y-%m-%d")
+                             if (current_dt_obj - o_dt).total_seconds() > 7 * 86400: break
+                         except: break
+                 
                  if metric == 'pendapatan':
-                     final_val = float(val or 0) * 0.9
+                     final_val = float(final_val or 0) * 0.9
                  
                  history_items.append({
                      'date': date_str,
