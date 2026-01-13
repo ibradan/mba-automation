@@ -1,9 +1,5 @@
 [
   {
-    "username": "admin",
-    "password_hash": "scrypt:32768:8:1$PYSzB663uHUqoLno$24444297ee3203083386ff431b379fe543ea5fe3c6624990b69c925c83c4ea6100280e6e658463486212dd7c6ff173c18bbc5219bfa98071c6e7a0a81bc1ca8d"
-  },
-  {
     "username": "friend",
     "password_hash": "scrypt:32768:8:1$4JFKwNbeJ7GbY7tU$86bbd0b4f63691d9737b3cb531502e3ca9db873601333d6827dda44614a65ff073a249fdb1c24217ca66741903bbff8e2cf89f26cba88221378acb5a45e8ef82"
   },
@@ -18,5 +14,9 @@
   {
     "username": "kom",
     "password_hash": "scrypt:32768:8:1$ksIuUEyH6yB3pqIH$52267fba8f638776a49e898215e44f761e847604a6f335927300051dfbec82dac1aeaebc881cf0d34854bf02ba0885cda39d10635ca34b9cd9ea9cc58f79aa39"
+  },
+  {
+    "username": "admin",
+    "password_hash": "scrypt:32768:8:1$Y9AUiUNrb8YsEooa$50615ef0a391e34d80b27b029313314af4ff2c72f59bd32942e09d6c3d8d88ead0f8d930c759105dde3703767a66b785d88b93a660aec6c1289147f7d0be30f2"
   }
 ]
