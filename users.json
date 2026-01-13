@@ -17,6 +17,6 @@
   },
   {
     "username": "admin",
-    "password_hash": "scrypt:32768:8:1$Y9AUiUNrb8YsEooa$50615ef0a391e34d80b27b029313314af4ff2c72f59bd32942e09d6c3d8d88ead0f8d930c759105dde3703767a66b785d88b93a660aec6c1289147f7d0be30f2"
+    "password_hash": "scrypt:32768:8:1$aNsII3AFKQ58heTj$cb85d5e0664347c785409ae098294c6093bc7fff633a9beb2bc4b9d7735b547a311eef9f01cd62db13bd871e61f576d2384290edc8d2ae36bfe54920a850fc37"
   }
 ]
