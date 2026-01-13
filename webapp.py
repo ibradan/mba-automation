@@ -1020,12 +1020,21 @@ def index():
         else:
             headless = bool(form_headless)
 
-        # normalize lists to same length
+        # normalize lists to same length and deduplicate by phone
         entries = []
+        seen_phones = set()
+        
         for i, phone in enumerate(phones):
             phone = (phone or '').strip()
             if not phone:
                 continue
+            
+            norm = normalize_phone(phone)
+            if norm in seen_phones:
+                continue
+                
+            seen_phones.add(norm)
+            
             pwd = passwords[i].strip() if i < len(passwords) else ''
             lvl = levels[i].strip() if i < len(levels) else ''
             entries.append((phone, pwd, lvl))
