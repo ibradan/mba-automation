@@ -78,7 +78,7 @@ def login(page: Page, context, phone: str, password: str, timeout: int = 30) -> 
         # 2. PERFORM LOGIN
         print(f"Logging in as {phone}...")
         page.goto("https://mba7.com/#/login", wait_until="domcontentloaded", timeout=timeout*1000)
-        page.wait_for_timeout(2000)
+        page.wait_for_timeout(1000)
         try_close_popups(page)
 
         # Fill credentials
@@ -92,7 +92,8 @@ def login(page: Page, context, phone: str, password: str, timeout: int = 30) -> 
         else:
             smart_click(page, "button", role="button", name="Masuk")
             
-        page.wait_for_timeout(5000) # Wait for network/transition
+        
+        page.wait_for_timeout(3000) # Wait for network/transition
 
         # Handle post-login popups/confirmations
         smart_click(page, "button", role="button", name="Mengonfirmasi", timeout=3000)
@@ -130,7 +131,7 @@ def perform_checkin(page: Page) -> Tuple[float, list]:
         # 1. Navigation: Go directly to points shop
         print("  Navigating to Points Shop...")
         page.goto("https://mba7.com/#/points/shop", timeout=45000)
-        page.wait_for_timeout(3000)
+        page.wait_for_timeout(2000)
         try_close_popups(page)
 
         # 2. Scrape Points FIRST (while on main shop page)
@@ -455,7 +456,7 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
 def run(playwright: Playwright, phone: str, password: str, headless: bool = False, slow_mo: int = 200, iterations: int = 30, review_text: Optional[str] = None, sync_only: bool = False, progress_callback=None) -> Tuple[int, int, float, float, float, float, list]:
     browser = playwright.chromium.launch(
         headless=headless, 
-        slow_mo=slow_mo,
+        slow_mo=50,
         args=[
             "--disable-gpu",
             "--disable-dev-shm-usage",
@@ -486,7 +487,8 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
     page = context.new_page()
 
     # Set timeout (convert to ms)
-    timeout = 30
+    # Set timeout (convert to ms) - Reduced to prevent zombie processes
+    timeout = 25
     page.set_default_timeout(timeout * 1000) 
 
     # OPTIMIZATION: Block heavy resources to save RAM, CPU, and Battery
@@ -503,7 +505,7 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
     try:
         # ========== LOGIN ==========
         # Login now handles restoration check AND saving to 'context'
-        if not login(page, context, phone, password, timeout):
+        if not login(page, context, phone, password, 45): # Increased login timeout slightly for safety against slow network
             print("Login failed, aborting run.")
             return 0, iterations, 0.0, 0.0, 0.0, 0.0, []
 
