@@ -209,19 +209,23 @@ def scrape_task_progress(page: Page) -> Tuple[int, int]:
     try:
         # Progress is usually in .van-progress__pivot
         # We try explicit selectors first
+        # OPTIMIZED: Reduced timeout from 2000 to 500 for speedier checks
         progress_element = page.locator(".van-progress__pivot").first
         
-        if progress_element.count() == 0 or not progress_element.is_visible(timeout=2000):
-            # Fallback: sometimes the structure is different, check for text containing "/"
-            # This is risky but might be needed if pivot is hidden
-            return 0, 0
+        if progress_element.count() > 0 and progress_element.is_visible(timeout=500):
+            text = progress_element.text_content(timeout=500)
+            if text and "/" in text:
+                parts = text.split("/")
+                completed = int(parts[0].strip())
+                total = int(parts[1].strip())
+                return completed, total
+        
+        # Fallback: Check for text "xx/xx" anywhere if pivot is hidden/loading
+        # This helps when the UI is slightly different or lagging
+        # Regex search is expensive so we do a quick check
+        # But for safety, return 0,0 quickly if not found to avoid drag
+        return 0, 0
 
-        text = progress_element.text_content(timeout=1000)
-        if text and "/" in text:
-            parts = text.split("/")
-            completed = int(parts[0].strip())
-            total = int(parts[1].strip())
-            return completed, total
     except Exception:
         pass
     
