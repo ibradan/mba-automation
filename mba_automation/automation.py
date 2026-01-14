@@ -279,122 +279,99 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
     consecutive_errors = 0
     max_consecutive_errors = 5
     
+    # Pre-calculate selectors for speed
+    loc_pivot = page.locator(".van-progress__pivot").first
+    loc_confirm = page.get_by_role("button", name="Mengonfirmasi")
+    loc_kirim = page.get_by_role("button", name="Kirim")
+    loc_task_active = page.locator(".task-item.active").first
+    
     while current_completed < iterations:
         # Callback Update
         if progress_callback:
             try: progress_callback(current_completed, iterations)
             except: pass
 
-        # Check for logout
+        # Check for logout rarely (only on error or explicitly)
         if "login" in page.url:
             if not resurrect_session():
                 log("Could not resurrect session. Stopping.")
                 break
                 
-        log(f"Executing task for {current_completed + 1}/{iterations}...")
+        log(f"⚡ FAST EXEC: Task {current_completed + 1}/{iterations}...")
 
         task_success = False
 
         try:
-            # A. FIND BUTTON (Sedang Berlangsung / Kirim)
-            # We look for "Kirim" directly first, as it might be left over
-            kirim_btn = page.get_by_role("button", name="Kirim")
-            
-            if kirim_btn.is_visible(timeout=2000):
-                 log("  Found 'Kirim' button directly.")
-                 kirim_btn.click()
+            # A. FAST ACTION
+            # Prioritize finding the active task or Kirim button instantly
+            if loc_kirim.is_visible(timeout=500):
+                 loc_kirim.click()
+            elif loc_task_active.is_visible(timeout=500):
+                 loc_task_active.click()
+                 # Immediate check for Kirim after click
+                 if loc_kirim.is_visible(timeout=1000):
+                     loc_kirim.click()
             else:
-                # Find the task item to click
-                task_item = page.get_by_text("Sedang Berlangsung").first
-                if not task_item.is_visible(timeout=2000):
-                     # Try getting "Mendapatkan" if we are completely stalled? 
-                     # Actually, if "Sedang Berlangsung" is missing, we might need to click "Mendapatkan"
-                     # BUT usually we are already in the list.
-                     # Let's try the generic item class
-                     task_item = page.locator(".task-item.active").first
-                
-                if task_item.is_visible(timeout=3000):
-                    task_item.click()
-                    # Now wait for Kirim
-                    if kirim_btn.is_visible(timeout=3000):
-                        kirim_btn.click()
-                    else:
-                        log("  'Kirim' button did not appear after clicking task.")
-                        # This counts as an error/retry
-                        consecutive_errors += 1
-                        page.reload()
-                        page.wait_for_timeout(3000)
-                        continue 
-                else:
-                    # If NO task is visible, maybe we need to click "Mendapatkan"?
-                    # Or maybe we are done?
-                    log("  No task items found. checking 'Mendapatkan'...")
-                    btn_get = page.get_by_role("button", name="Mendapatkan").first
-                    if btn_get.is_visible(timeout=2000):
-                         btn_get.click()
-                         page.wait_for_timeout(2000)
-                         # This might trigger the review flow, handled below or in next loop
-                    else:
-                         log("  Stuck: No task items and no 'Mendapatkan' button.")
-                         consecutive_errors += 1
-                         page.reload()
-                         page.wait_for_timeout(3000)
-                         continue
+                 # Fallback to slower text search
+                 log("  CSS failed, trying text search...")
+                 page.get_by_text("Sedang Berlangsung").first.click(timeout=1000)
+                 if loc_kirim.is_visible(timeout=1000):
+                     loc_kirim.click()
 
-            # B. CONFIRMATION (The critical part!)
-            # We MUST wait for "Berhasil" / "Mengonfirmasi"
-            # If we don't see it, we assume the click failed.
-            confirm_btn = page.get_by_role("button", name="Mengonfirmasi")
-            
-            # Special handling for First Task (Review)
-            # If this is a review task, we might see the review dialog instead of simple verify
-            review_box = page.get_by_role("textbox", name="Harap masukkan ulasan Anda di")
-            
-            if review_box.is_visible(timeout=3000):
-                 log("  Handling Review Task...")
-                 daily_seed = f"{date.today()}-{phone}"
-                 daily_review = random.Random(daily_seed).choice(REVIEWS)
-                 text = review_text if review_text else daily_review
-                 
-                 review_box.fill(text)
-                 page.get_by_role("button", name="Kirim").click()
-                 # Now wait for confirm
-                 
-            if confirm_btn.is_visible(timeout=5000):
-                confirm_btn.click()
-                log("  ✓ Task Confirmed.")
+            # B. FAST CONFIRM
+            # Wait for success dialog max 2s
+            if loc_confirm.is_visible(timeout=2000):
+                loc_confirm.click()
                 task_success = True
-                consecutive_errors = 0 # Reset errors
+                consecutive_errors = 0 
             else:
-                log("  ⚠ No confirmation dialog seen. Validating progress...")
-                # We don't mark success yet, we let the scrape verify it.
+                log("  ⚠ No confirm dialog. Might have missed or failed.")
+                consecutive_errors += 1
 
         except Exception as e:
-            log(f"  Error completing task: {e}")
+            log(f"  Error: {e}")
             consecutive_errors += 1
 
-        # C. VERIFY PROGRESS FROM PAGE
-        # We ALWAYS trust the page.
-        # Short wait for backend update
-        page.wait_for_timeout(1000)
+        # C. HYBRID STATE CHECK
+        # To be fast, we assume success if we clicked confirm.
+        # But we verify every step to be safe, just with very low timeout.
         
-        new_completed, new_total = scrape_task_progress(page)
+        # Short sleep only if we suspect lag, otherwise GO GO GO
+        # page.wait_for_timeout(100) 
         
-        if new_completed > current_completed:
-            log(f"  Progress OK: {current_completed} -> {new_completed}")
-            current_completed = new_completed
-            if new_total > iterations: iterations = new_total # Keep sync
+        try:
+            # Super fast check
+            if loc_pivot.is_visible(timeout=500):
+                txt = loc_pivot.text_content(timeout=100)
+                if txt and "/" in txt:
+                    parts = txt.split("/")
+                    new_completed = int(parts[0].strip())
+                    new_total = int(parts[1].strip())
+                    
+                    if new_completed > current_completed:
+                         current_completed = new_completed
+                         if new_total > iterations: iterations = new_total
+                         log(f"  ✓ Up: {current_completed}/{iterations}")
+                         continue # NEXT LOOP IMMEDIATELY
+        except: pass
+        
+        # If we didn't confirm via scrape, check if we should verify harder or just retry
+        if task_success:
+             # We clicked confirm, so we 'probably' succeeded. 
+             # Optimistically increment for the log, but scraper will catch up next loop.
+             pass 
         else:
-             log(f"  Progress Stalled: Still {current_completed}/{iterations}")
-             # If we thought we succeeded but progress didn't move, that's suspicious but okay, we just retry.
              if consecutive_errors > max_consecutive_errors:
-                 log(f"  TOO MANY ERRORS ({consecutive_errors}). Reloading page...")
+                 log("  STALLED. Reloading...")
                  page.reload()
-                 page.wait_for_timeout(4000)
-                 consecutive_errors = 0 # Reset to try again fresh
+                 page.wait_for_timeout(3000)
+                 consecutive_errors = 0
+                 # Re-sync
+                 c, t = scrape_task_progress(page)
+                 if c > 0: current_completed = c
 
     
-    log(f"Detailed loop finished. Final: {current_completed}/{iterations}")
+    log(f"Loop finished. Final: {current_completed}/{iterations}")
     return current_completed, iterations
 
 
