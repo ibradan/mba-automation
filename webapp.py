@@ -621,6 +621,8 @@ def api_accounts():
                 except: pass
 
         
+        display_stats = progress.copy()
+
         # PER-FIELD FALLBACK LOGIC
         # Instead of all-or-nothing, we ensure each critical metric has a value if possible.
         
