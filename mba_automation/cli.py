@@ -11,6 +11,10 @@ import gc
 from playwright.sync_api import sync_playwright
 from .automation import run as automation_run
 
+# Force unbuffered output for realtime logging
+def log(msg):
+    log(msg, flush=True)
+
 ACCOUNTS_FILE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'accounts.json'))
 
 # Global state for signal handler
@@ -119,14 +123,14 @@ def save_progress() -> None:
                     f.seek(0)
                     json.dump(accounts, f, indent=2)
                     f.truncate()
-                    print(f"✓ Progress saved for {data['phone']}")
+                    log(f"✓ Progress saved for {data['phone']}")
             finally:
                 fcntl.flock(f, fcntl.LOCK_UN)
     except Exception as e:
-        print(f"⚠️ Failed to save progress: {e}")
+        log(f"⚠️ Failed to save progress: {e}")
 
 def signal_handler(sig, frame):
-    print(f"\nTerminating (signal {sig}). Saving progress...")
+    log(f"\nTerminating (signal {sig}). Saving progress...")
     save_progress()
     sys.exit(0)
 
@@ -184,7 +188,7 @@ def main() -> None:
     password = args.password or os.getenv("MBA_PASSWORD")
 
     if not phones or not password:
-        print("ERROR: at least one phone and a password must be provided via args or .env (MBA_PHONE or MBA_PHONES, MBA_PASSWORD)")
+        log("ERROR: at least one phone and a password must be provided via args or .env (MBA_PHONE or MBA_PHONES, MBA_PASSWORD)")
         return
 
     # run automation sequentially for each phone
@@ -192,14 +196,14 @@ def main() -> None:
         # SYSTEM CLEANUP: Delete logs older than 3 days
         LOGS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'logs'))
         if os.path.exists(LOGS_DIR):
-            print("🧹 Cleaning up old logs...")
+            log("🧹 Cleaning up old logs...")
             now = time.time()
             for f in os.listdir(LOGS_DIR):
                 f_path = os.path.join(LOGS_DIR, f)
                 if os.path.isfile(f_path) and os.stat(f_path).st_mtime < now - 3 * 86400:
                     try: 
                         os.remove(f_path)
-                        print(f"  Removed old log: {f}")
+                        log(f"  Removed old log: {f}")
                     except: pass
 
         # Decide final headless setting: CLI flag > env var > default True
@@ -216,7 +220,7 @@ def main() -> None:
             final_headless = True if parsed is None else bool(parsed)
 
         for phone in phones:
-            print(f"Starting automation for {phone} (headless={final_headless})")
+            log(f"Starting automation for {phone} (headless={final_headless})")
             
             current_run_data.update({
                 'phone': phone,
@@ -235,11 +239,11 @@ def main() -> None:
             while attempt < max_retries:
                 attempt += 1
                 if attempt > 1:
-                    print(f"🔄 Retry attempt {attempt}/{max_retries} for {phone}...")
+                    log(f"🔄 Retry attempt {attempt}/{max_retries} for {phone}...")
                     
                     # Connection Check
                     if not check_internet_connection():
-                        print("⚠️ No internet connection detected. Waiting 30s...")
+                        log("⚠️ No internet connection detected. Waiting 30s...")
                         time.sleep(30)
                 
                 def on_prog(c, t):
@@ -269,19 +273,19 @@ def main() -> None:
                     })
                     
                     if args.sync or (c >= t and t > 0):
-                        print(f"✅ {'SYNC' if args.sync else 'SUCCESS'} for {phone}")
+                        log(f"✅ {'SYNC' if args.sync else 'SUCCESS'} for {phone}")
                         # COOL DOWN: Give the CPU a break before next account
                         if phone != phones[-1]:
-                            print("❄️ Cooling down for 15s...")
+                            log("❄️ Cooling down for 15s...")
                             time.sleep(15)
                         # Explicit Memory Flush
                         gc.collect()
                         break
                     
-                    print(f"⚠️ Incomplete: {c}/{t}. Retrying in 5s...")
+                    log(f"⚠️ Incomplete: {c}/{t}. Retrying in 5s...")
                     time.sleep(5)
                 except Exception as e:
-                    print(f"❌ Error: {e}. Retrying in 5s...")
+                    log(f"❌ Error: {e}. Retrying in 5s...")
                     time.sleep(5)
             
             save_progress()

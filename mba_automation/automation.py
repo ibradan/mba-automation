@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 from typing import Optional, Tuple
 from playwright.sync_api import Playwright, Page, TimeoutError as PlaywrightTimeoutError
@@ -6,6 +7,10 @@ from .scraper import scrape_income, scrape_withdrawal, scrape_balance, scrape_po
 from .reviews import REVIEWS
 import random
 from datetime import date
+
+# Force unbuffered output for realtime logging
+def log(msg):
+    log(msg, flush=True)
 
 
 
@@ -64,19 +69,19 @@ def login(page: Page, context, phone: str, password: str, timeout: int = 30) -> 
         
         # 1. TRY RESTORE
         if os.path.exists(session_path):
-            print(f"Restoring session for {phone}...")
+            log(f"Restoring session for {phone}...")
             try:
                 page.goto("https://mba7.com/#/mine", wait_until="domcontentloaded", timeout=timeout*1000)
                 try_close_popups(page)
                 if check_is_logged_in():
-                    print("Session restored successfully.")
+                    log("Session restored successfully.")
                     return True
-                print("Session expired or invalid.")
+                log("Session expired or invalid.")
             except Exception as e:
-                print(f"Session restore failed: {e}")
+                log(f"Session restore failed: {e}")
 
         # 2. PERFORM LOGIN
-        print(f"Logging in as {phone}...")
+        log(f"Logging in as {phone}...")
         page.goto("https://mba7.com/#/login", wait_until="domcontentloaded", timeout=timeout*1000)
         page.wait_for_timeout(1000)
         try_close_popups(page)
@@ -104,17 +109,17 @@ def login(page: Page, context, phone: str, password: str, timeout: int = 30) -> 
         try_close_popups(page)
 
         if check_is_logged_in():
-             print(f"Login success. Saving session...")
+             log(f"Login success. Saving session...")
              context.storage_state(path=session_path)
              return True
         
         # Fail
-        print(f"Login verification failed. URL: {page.url}")
+        log(f"Login verification failed. URL: {page.url}")
         # Capture screenshot for debug if possible (removed for production safety/size)
         return False
 
     except Exception as e:
-        print(f"Login CRITICAL FAILURE: {e}")
+        log(f"Login CRITICAL FAILURE: {e}")
         return False
 
 
@@ -126,72 +131,72 @@ def perform_checkin(page: Page) -> Tuple[float, list]:
     points = 0.0
     calendar = []
     
-    print("Performing Check-in & Points Scraping...")
+    log("Performing Check-in & Points Scraping...")
     try:
         # 1. Navigation: Go directly to points shop
-        print("  Navigating to Points Shop...")
+        log("  Navigating to Points Shop...")
         page.goto("https://mba7.com/#/points/shop", timeout=45000)
         page.wait_for_timeout(2000)
         try_close_popups(page)
 
         # 2. Scrape Points FIRST (while on main shop page)
         points = scrape_points(page)
-        print(f"  Initial points balance: {points}")
+        log(f"  Initial points balance: {points}")
 
         # 3. Open Calendar Popup using smart_click
-        print("  Opening calendar popup...")
+        log("  Opening calendar popup...")
         calendar_opened = False
         
         # Try sign-in-container first, then "Masuk" text
         if smart_click(page, ".sign-in-container", timeout=2000):
-            print("    Clicked .sign-in-container")
+            log("    Clicked .sign-in-container")
             page.wait_for_timeout(2000)
             calendar_opened = page.locator(".van-calendar__month-title").first.is_visible(timeout=3000)
         elif smart_click(page, "button", role="button", name="Masuk", timeout=2000):
-            print("    Clicked 'Masuk' button")
+            log("    Clicked 'Masuk' button")
             page.wait_for_timeout(2000)
             calendar_opened = page.locator(".van-calendar__month-title").first.is_visible(timeout=3000)
         else:
-            print("    Could not find calendar trigger (might be already checked in today)")
+            log("    Could not find calendar trigger (might be already checked in today)")
 
         # 4. Scrape Calendar Data (Current attendance)
         if calendar_opened:
-            print("    Calendar popup opened successfully")
+            log("    Calendar popup opened successfully")
             calendar = scrape_calendar_data(page)
         else:
-            print("    Calendar not opened, skipping calendar scraping")
+            log("    Calendar not opened, skipping calendar scraping")
             return points, calendar
 
         # 5. PERFORM CHECK-IN if calendar is open
-        print("  Attempting check-in...")
+        log("  Attempting check-in...")
         if smart_click(page, ".van-calendar__confirm", timeout=3000):
-            print("    Clicked check-in submit button")
+            log("    Clicked check-in submit button")
             page.wait_for_timeout(2000)
             
             # Handle Success Dialog
             if smart_click(page, "button", role="button", name="Mengonfirmasi", timeout=3000):
-                print("    ✓ Check-in successful! Clicked confirmation.")
+                log("    ✓ Check-in successful! Clicked confirmation.")
                 page.wait_for_timeout(1000)
                 
                 # Re-scrape calendar if still visible
                 if page.locator(".van-calendar__month-title").first.is_visible(timeout=2000):
                     calendar = scrape_calendar_data(page)
-                    print(f"    Updated calendar: {len(calendar)} days checked in")
+                    log(f"    Updated calendar: {len(calendar)} days checked in")
             else:
-                print("    No success dialog (might already be checked in)")
+                log("    No success dialog (might already be checked in)")
             
             try_close_popups(page)
             
             # Re-scrape points after check-in attempt
             new_points = scrape_points(page)
             if new_points > points:
-                print(f"    ✓ Points increased: {points} -> {new_points}")
+                log(f"    ✓ Points increased: {points} -> {new_points}")
             points = new_points
         else:
-            print("    Check-in button not found or not clickable")
+            log("    Check-in button not found or not clickable")
 
     except Exception as e:
-        print(f"  Error in perform_checkin: {e}")
+        log(f"  Error in perform_checkin: {e}")
         
     return points, calendar
 
@@ -203,12 +208,13 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
     """
     tasks_completed = 0
     tasks_total = iterations
+    loop_count = 0  # Track actual completed iterations in this session
 
     def resurrect_session():
         """Helper to re-login if session is lost."""
-        print("⚠️ Session lost! Attempting to resurrect...")
+        log("⚠️ Session lost! Attempting to resurrect...")
         if login(page, context, phone, password):
-            print("🚀 Session resurrected! Navigating back to grab...")
+            log("🚀 Session resurrected! Navigating back to grab...")
             page.goto("https://mba7.com/#/grab", timeout=45000)
             page.wait_for_timeout(3000)
             try_close_popups(page)
@@ -216,7 +222,7 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
         return False
 
     # Navigate to grab page (where tasks are)
-    print("Navigating to tasks page...")
+    log("Navigating to tasks page...")
     try:
         # Try direct goto first
         page.goto("https://mba7.com/#/grab", timeout=45000)
@@ -225,7 +231,7 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
         
         # If not on grab page, try clicking icon-ticket (legacy flow)
         if "grab" not in page.url and "ticket" not in page.url:
-            print("  Not on grab page, trying icon-ticket navigation...")
+            log("  Not on grab page, trying icon-ticket navigation...")
             ticket_selectors = [
                 ".van-badge__wrapper.van-icon.van-icon-undefined.item-icon.iconfont.icon-ticket",
                 ".icon-ticket",
@@ -238,9 +244,9 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
                     page.wait_for_timeout(3000)
                     break
 
-        print("Tasks page check done.")
+        log("Tasks page check done.")
     except Exception as e:
-        print(f"Navigation error: {e}")
+        log(f"Navigation error: {e}")
         # Detect if we were sent to login
         if "login" in page.url:
             resurrect_session()
@@ -261,13 +267,13 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
                 btn = page.get_by_role("button", name="Mendapatkan").first
                 if btn.count() > 0 and btn.is_visible(timeout=5000):
                     btn.click()
-                    print("Klik Mendapatkan (Role/Name) OK")
+                    log("Klik Mendapatkan (Role/Name) OK")
                 else:
                     # 2. Try Specific CSS selector fallback
                     btn = page.locator("#app > div > div.van-config-provider.provider-box > div.main-wrapper.travel-bg > div.div-flex-center > button").first
                     btn.wait_for(state="visible", timeout=5000)
                     btn.click()
-                    print("Klik Mendapatkan (CSS) OK")
+                    log("Klik Mendapatkan (CSS) OK")
             except Exception as e:
                 # ... (error handling)
                 pass
@@ -282,13 +288,13 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
                 btn = page.get_by_role("button", name="Mendapatkan").first
                 if btn.count() > 0 and btn.is_visible(timeout=5000):
                     btn.click()
-                    print("Klik Mendapatkan (Detail Role) OK")
+                    log("Klik Mendapatkan (Detail Role) OK")
                 else:
                     # Text based fallback
                     btn = page.locator("button:has-text('Mendapatkan')").first
                     btn.wait_for(state="visible", timeout=5000)
                     btn.click()
-                    print("Klik Mendapatkan (Detail Text) OK")
+                    log("Klik Mendapatkan (Detail Text) OK")
             except Exception as e:
                 # ...
                 pass
@@ -296,7 +302,7 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
             try:
                 page.get_by_text("Sedang Berlangsung").nth(1).click()
             except PlaywrightTimeoutError:
-                print("'Sedang Berlangsung' ke-2 nggak ketemu.")
+                log("'Sedang Berlangsung' ke-2 nggak ketemu.")
                 # Fallback: try looking for the first one if 2nd not found
                 # raise Exception("'Sedang Berlangsung' 2 not found")
                 pass
@@ -318,7 +324,7 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
                     text_to_fill = review_text
                 else:
                     text_to_fill = daily_review
-                    print(f"Using daily consistent review: {text_to_fill}")
+                    log(f"Using daily consistent review: {text_to_fill}")
                 
                 page.get_by_role("textbox", name="Harap masukkan ulasan Anda di").fill(text_to_fill)
                 page.get_by_role("button", name="Kirim").click()
@@ -333,13 +339,14 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
             # Calculate remaining iterations
             # We just did 1, so subtract 1 more
             remaining_iterations = max(0, tasks_total - tasks_completed - 1)
-            print(f"Tasks completed: {tasks_completed + 1}/{tasks_total}. Remaining loops: {remaining_iterations}")
+            log(f"Tasks completed: {tasks_completed + 1}/{tasks_total}. Remaining loops: {remaining_iterations}")
             
             loop_count = 1 # We already did one
+            tasks_completed += 1  # IMPORTANT: Accumulate from first task
             
             # Update callback after first task
             if progress_callback:
-                try: progress_callback(tasks_completed + 1, tasks_total)
+                try: progress_callback(tasks_completed, tasks_total)
                 except: pass
             
             consecutive_failures = 0
@@ -350,100 +357,130 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
                     if not resurrect_session():
                         break
 
-                current_completed = tasks_completed + i + 2
-                print(f"Loop ke-{i+1} (Total progress: {current_completed}/{tasks_total})")
-                page.wait_for_timeout(1000) # Slight delay
+                log(f"Loop ke-{i+2} (Total progress: {tasks_completed + 1}/{tasks_total})")
+                page.wait_for_timeout(800) # Slight delay
 
                 try:
-                    # Robust clicking: find element, ensuring it's enabled
-                    el = page.get_by_text("Sedang Berlangsung").nth(1)
-                    if el.is_visible():
+                    # Try multiple selectors for the task element
+                    el = None
+                    selectors_to_try = [
+                        ("get_by_text", "Sedang Berlangsung", 1),  # nth(1)
+                        ("locator", ".task-item.active", 0),
+                        ("locator", "[class*='progress']", 0),
+                    ]
+                    
+                    for sel_type, sel_val, idx in selectors_to_try:
+                        try:
+                            if sel_type == "get_by_text":
+                                el = page.get_by_text(sel_val).nth(idx)
+                            else:
+                                el = page.locator(sel_val).nth(idx)
+                            if el.is_visible(timeout=2000):
+                                break
+                            el = None
+                        except:
+                            el = None
+                    
+                    if el and el.is_visible(timeout=1000):
                         el.click()
                         
                         # Wait for Kirim button
                         k_btn = page.get_by_role("button", name="Kirim")
-                        if k_btn.is_visible(timeout=2000):
+                        if k_btn.is_visible(timeout=3000):
                             k_btn.click()
                             loop_count += 1
+                            tasks_completed += 1  # ACCUMULATE!
                             consecutive_failures = 0 # Reset failure count
                             
                             # CALLBACK HERE for real-time update
                             if progress_callback:
-                                try: progress_callback(current_completed, tasks_total)
+                                try: progress_callback(tasks_completed, tasks_total)
                                 except: pass
+                            
+                            log(f"✓ Task {tasks_completed}/{tasks_total} completed")
 
                         else:
-                             print("Tombol Kirim tidak muncul (mungkin delay)")
+                             log("Tombol Kirim tidak muncul (mungkin delay)")
                              if "login" in page.url:
                                  resurrect_session()
                     else:
                         if "login" in page.url:
                             resurrect_session()
                         else:
-                            print("Elemen utama hidden/hilang")
+                            log("Elemen utama hidden/hilang")
                             consecutive_failures += 1
                         
                 except PlaywrightTimeoutError:
                     if "login" in page.url:
                         resurrect_session()
                     else:
-                        print("Elemen utama nggak ketemu (Timeout).")
+                        log("Elemen utama nggak ketemu (Timeout).")
                         consecutive_failures += 1
                 
-                # Self-healing: if too many consecutive failures, refresh and trying to recover would be complex here as state is lost
-                # Instead, we break early to trigger the outer retry loop in cli.py which is safer
+                # Self-healing: if too many consecutive failures, try page refresh first
                 if consecutive_failures >= 3:
-                     print("Terlalu banyak kegagalan berturut-turut. Breaking loop untuk restart.")
-                     break
+                    log("Mencoba refresh halaman...")
+                    try:
+                        page.reload(timeout=30000)
+                        page.wait_for_timeout(3000)
+                        try_close_popups(page)
+                        consecutive_failures = 0  # Reset after refresh
+                    except:
+                        log("Refresh gagal. Breaking loop untuk restart.")
+                        break
 
                 try:
                     page.get_by_role("button", name="Mengonfirmasi").click(timeout=1500)
                 except:
                     pass
         else:
-            print(f"All tasks already completed ({tasks_completed}/{tasks_total}). Skipping automation.")
-            loop_count = 0
+            log(f"All tasks already completed ({tasks_completed}/{tasks_total}). Skipping automation.")
             # Callback even if skipped
             if progress_callback:
                 try: progress_callback(tasks_completed, tasks_total)
                 except: pass
 
-        print(f"Selesai loop. {loop_count} iterations completed")
+        log(f"Selesai loop. {loop_count} iterations completed, total: {tasks_completed}/{tasks_total}")
         
     except Exception as e:
-        print(f"⚠️ Automation loop interrupted: {e}")
+        log(f"⚠️ Automation loop interrupted: {e}")
         # Detect logout in catch block too
         if "login" in page.url:
             resurrect_session()
-        print("Proceeding to scrape data anyway...")
+        log("Proceeding to scrape data anyway...")
 
-    print(f"Selesai loop. {loop_count} iterations completed")
+    log(f"Selesai loop. {loop_count} iterations completed, accumulated: {tasks_completed}/{tasks_total}")
     
     # Re-scrape progress from page to get final count
+    scraped_progress = None
     try:
         # Check login before final scrape
         if "login" in page.url:
             resurrect_session()
 
-        # Go to ticket page to be sure
-        page.locator(".van-badge__wrapper.van-icon.van-icon-undefined.item-icon.iconfont.icon-ticket").click()
-        try_close_popups(page) # Should be available in scope or via import if function
+        # Try direct navigation instead of clicking icon
+        page.goto("https://mba7.com/#/ticket", timeout=30000)
+        page.wait_for_timeout(3000)
+        try_close_popups(page)
         
         progress_element = page.locator(".van-progress__pivot").first
-        progress_text = progress_element.text_content(timeout=5000)
-        print(f"Final progress from page: {progress_text}")
-        
-        if progress_text and "/" in progress_text:
-            parts = progress_text.split("/")
-            tasks_completed = int(parts[0].strip())
-            tasks_total = int(parts[1].strip())
-            print(f"Parsed final progress: {tasks_completed}/{tasks_total}")
+        if progress_element.count() > 0:
+            progress_text = progress_element.text_content(timeout=5000)
+            log(f"Final progress from page: {progress_text}")
+            
+            if progress_text and "/" in progress_text:
+                parts = progress_text.split("/")
+                scraped_completed = int(parts[0].strip())
+                scraped_total = int(parts[1].strip())
+                log(f"Parsed final progress: {scraped_completed}/{scraped_total}")
+                
+                # Use the HIGHER value between scraped and accumulated
+                tasks_completed = max(tasks_completed, scraped_completed)
+                tasks_total = scraped_total
     except Exception as e:
-        print(f"Could not re-scrape progress: {e}")
-        # Fallback: add loop_count to initial tasks_completed (capped at tasks_total)
-        if tasks_completed > 0:
-            tasks_completed = min(tasks_completed + loop_count, tasks_total)
-            print(f"Using fallback progress calculation: {tasks_completed}/{tasks_total}")
+        log(f"Could not re-scrape progress: {e}")
+        # Keep accumulated value - DON'T reset to 0!
+        log(f"Using accumulated progress: {tasks_completed}/{tasks_total}")
 
     # Final callback
     if progress_callback:
@@ -474,13 +511,13 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
     storage_state = session_path if os.path.exists(session_path) else None
     
     if storage_state:
-        print(f"Attempting to load session from {storage_state}")
+        log(f"Attempting to load session from {storage_state}")
     
     # Create context with storage_state if available
     try:
         context = browser.new_context(viewport=vp, storage_state=storage_state)
     except Exception as e:
-        print(f"Failed to load session (corrupt?): {e}")
+        log(f"Failed to load session (corrupt?): {e}")
         # Fallback to no session
         context = browser.new_context(viewport=vp)
 
@@ -506,7 +543,7 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
         # ========== LOGIN ==========
         # Login now handles restoration check AND saving to 'context'
         if not login(page, context, phone, password, 45): # Increased login timeout slightly for safety against slow network
-            print("Login failed, aborting run.")
+            log("Login failed, aborting run.")
             return 0, iterations, 0.0, 0.0, 0.0, 0.0, []
 
         # ========== PERFORM TASKS ==========
@@ -514,7 +551,7 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
         if not sync_only:
             tasks_completed, tasks_total = perform_tasks(page, context, phone, password, iterations, review_text, progress_callback=progress_callback)
         else:
-            print("Sync only mode: checking current progress...")
+            log("Sync only mode: checking current progress...")
             try:
                 # Direct navigation is more reliable than clicking icons
                 page.goto("https://mba7.com/#/ticket", timeout=timeout*1000)
@@ -530,25 +567,25 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
                         parts = progress_text.split("/")
                         tasks_completed = int(parts[0].strip())
                         tasks_total = int(parts[1].strip())
-                        print(f"  ✓ Current progress detected: {tasks_completed}/{tasks_total}")
+                        log(f"  ✓ Current progress detected: {tasks_completed}/{tasks_total}")
                 else:
                     # Alternative: check record status count if pivot not found?
                     # For now, if not found, we assume 0 or keep what we have
                     pass
             except Exception as e:
-                print(f"  ✗ Could not read progress during sync: {e}")
+                log(f"  ✗ Could not read progress during sync: {e}")
 
         # ========== SCRAPE DATA ==========
-        print("Scraping income from deposit records...")
+        log("Scraping income from deposit records...")
         income = scrape_income(page, timeout)
         
-        print("Scraping withdrawal from withdrawal records...")
+        log("Scraping withdrawal from withdrawal records...")
         withdrawal = scrape_withdrawal(page, timeout)
 
-        print("Scraping balance from profile...")
+        log("Scraping balance from profile...")
         if sync_only:
             # STABLE SYNC: Double-check logic to ensure balance isn't changing
-            print("  Performing STABLE SYNC check (Double Scrape)...")
+            log("  Performing STABLE SYNC check (Double Scrape)...")
             b1 = scrape_balance(page, timeout)
             
             # Initial wait
@@ -556,11 +593,11 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
             b2 = scrape_balance(page, timeout)
             
             if abs(b1 - b2) > 0.01:
-                print(f"  Balance unstable (diff: {b2-b1}). Waiting for final check...")
+                log(f"  Balance unstable (diff: {b2-b1}). Waiting for final check...")
                 page.wait_for_timeout(5000)
                 balance = scrape_balance(page, timeout)
             else:
-                print("  Balance stable.")
+                log("  Balance stable.")
                 balance = b2
         else:
             balance = scrape_balance(page, timeout)
@@ -571,7 +608,7 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
         points, calendar = perform_checkin(page)
         
         # Return progress with income, withdrawal, balance, points, and calendar
-        print(f"Returning final progress: {tasks_completed}/{tasks_total}, Points: {points}, Calendar days: {len(calendar)}")
+        log(f"Returning final progress: {tasks_completed}/{tasks_total}, Points: {points}, Calendar days: {len(calendar)}")
         return tasks_completed, tasks_total, income, withdrawal, balance, points, calendar
 
     finally:
