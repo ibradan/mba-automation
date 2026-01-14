@@ -279,10 +279,6 @@ def main() -> None:
                         'calendar': cal
                     })
                     
-                    # CRITICAL: Save progress immediately after getting final data
-                    log(f"📊 Final data: {c}/{t}, is_sync={args.sync}")
-                    save_progress()
-                    
                     if args.sync or (c >= t and t > 0):
                         log(f"✅ {'SYNC' if args.sync else 'SUCCESS'} for {phone}")
                         # COOL DOWN: Give the CPU a break before next account
