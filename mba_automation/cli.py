@@ -60,9 +60,16 @@ def save_progress() -> None:
                         
                         existing = acc['daily_progress'].get(today, {})
                         
-                        # Sticky Progress
-                        final_completed = max(data['completed'], existing.get('completed', 0))
-                        final_total = max(data['total'], existing.get('total', 0))
+                        # Use actual scraped values for progress (not max)
+                        # Sync gives us real-time data, so trust it
+                        if data['is_sync'] and data['completed'] > 0:
+                            # Sync mode: use scraped values directly
+                            final_completed = data['completed']
+                            final_total = data['total']
+                        else:
+                            # Automation mode: keep sticky (only increase)
+                            final_completed = max(data['completed'], existing.get('completed', 0))
+                            final_total = max(data['total'], existing.get('total', 0))
                         
                         # --- ROBUST FALLBACK LOGIC ---
                         # Helper to find last known good value from history
