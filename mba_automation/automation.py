@@ -391,7 +391,7 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
                         ("get_by_text", "Sedang Berlangsung", 1), 
                         ("get_by_text", "Sedang Berlangsung", 0), 
                         ("locator", ".task-item.active", 0),
-                        ("locator", "button:has-text('Kirim')", 0),
+                        # REMOVED dangerous "Kirim" check here to prevent clicking stuck buttons
                         ("locator", "[class*='progress']", 0),
                     ]
                     
