@@ -252,7 +252,26 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
             resurrect_session()
 
     # ========== SCRAPE ACTUAL PROGRESS FROM PAGE ==========
-    # ... (skipping for brevity but keeping implementation)
+    # ========== SCRAPE ACTUAL PROGRESS FROM PAGE ==========
+    try:
+        # Check if we need to login
+        if "login" in page.url:
+            resurrect_session()
+            
+        progress_element = page.locator(".van-progress__pivot").first
+        if progress_element.count() > 0 and progress_element.is_visible(timeout=3000):
+            progress_text = progress_element.text_content(timeout=1000)
+            log(f"Initial progress check: {progress_text}")
+            if progress_text and "/" in progress_text:
+                parts = progress_text.split("/")
+                initial_completed = int(parts[0].strip())
+                # tasks_total = int(parts[1].strip()) # Keep configured total
+                
+                if initial_completed > tasks_completed:
+                    tasks_completed = initial_completed
+                    log(f"Resuming from {tasks_completed}/{tasks_total}")
+    except Exception as e:
+        log(f"Initial progress scrape failed (assuming 0): {e}")
 
     # ========== PERTAMA KALI ISI REVIEW ==========
     loop_count = 0
