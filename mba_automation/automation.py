@@ -358,20 +358,21 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
                         break
 
                 log(f"Loop ke-{i+2} (Total progress: {tasks_completed + 1}/{tasks_total})")
-                page.wait_for_timeout(800) # Slight delay
+                
+                # OPTIMIZATION: Scroll down slightly to trigger lazy loading/visibility
+                try: page.evaluate("window.scrollBy(0, 200)")
+                except: pass
+                
+                page.wait_for_timeout(300) # Short delay
 
                 try:
                     # Robust clicking: find element, ensuring it's enabled
-                    # Wait for network idle to ensure elements are loaded
-                    try: page.wait_for_load_state("networkidle", timeout=3000)
-                    except: pass
-
                     el = None
                     selectors_to_try = [
-                        ("get_by_text", "Sedang Berlangsung", 1),  # nth(1) usually
-                        ("get_by_text", "Sedang Berlangsung", 0),  # nth(0) fallback
+                        ("get_by_text", "Sedang Berlangsung", 1), 
+                        ("get_by_text", "Sedang Berlangsung", 0), 
                         ("locator", ".task-item.active", 0),
-                        ("locator", "button:has-text('Kirim')", 0), # Maybe button is already there?
+                        ("locator", "button:has-text('Kirim')", 0),
                         ("locator", "[class*='progress']", 0),
                     ]
                     
@@ -383,7 +384,8 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
                             else:
                                 el = page.locator(sel_val).nth(idx)
                             
-                            if el.is_visible(timeout=1000):
+                            # Reduced visibility check timeout for speed
+                            if el.is_visible(timeout=500):
                                 found_selector = True
                                 break
                             el = None
@@ -395,12 +397,19 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
                         is_kirim_btn = "Kirim" in str(sel_val)
                         
                         if not is_kirim_btn:
-                            el.click()
+                            # Force click to bypass overlay checks
+                            el.click(force=True)
                         
                         # Wait for Kirim button
+                        # Try finding it quickly first
                         k_btn = page.get_by_role("button", name="Kirim")
-                        if k_btn.is_visible(timeout=5000):
-                            k_btn.click()
+                        
+                        # If not immediately visible, wait briefly
+                        if not k_btn.is_visible(timeout=500):
+                             page.wait_for_timeout(500)
+                             
+                        if k_btn.is_visible(timeout=3000):
+                            k_btn.click(force=True)
                             loop_count += 1
                             tasks_completed += 1  # ACCUMULATE!
                             consecutive_failures = 0 # Reset failure count
