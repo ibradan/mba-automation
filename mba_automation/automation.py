@@ -374,14 +374,45 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
                 except: pass
             
             consecutive_failures = 0
+            safety_max_loops = 200 # Prevent infinite loops
+            current_loop_idx = 0
             
-            for i in range(remaining_iterations):
+            # REFACTOR: Use while loop to verify ACTUAL completion
+            while tasks_completed < tasks_total and current_loop_idx < safety_max_loops:
+                current_loop_idx += 1
+                
                 # CHECK FOR LOGOUT AT START OF EACH LOOP
                 if "login" in page.url:
                     if not resurrect_session():
                         break
 
-                log(f"Loop ke-{i+2} (Total progress: {tasks_completed + 1}/{tasks_total})")
+                # --- SMART CHECK: Verify actual progress every 5 tasks (MORE FREQUENT) ---
+                if (current_loop_idx % 5 == 0) and tasks_completed > 0:
+                    log(f"🕵️ Smart Check at internal {tasks_completed}: Verifying actual progress...")
+                    try:
+                        p_el = page.locator(".van-progress__pivot").first
+                        if p_el.is_visible(timeout=2000):
+                            txt = p_el.text_content()
+                            if txt and "/" in txt:
+                                parts = txt.split("/")
+                                real_completed = int(parts[0].strip())
+                                real_total = int(parts[1].strip())
+                                
+                                # Always trust the page!
+                                if real_completed != tasks_completed:
+                                    log(f"⚠️ SYNC ADJUST: Internal {tasks_completed} -> Actual {real_completed}")
+                                    tasks_completed = real_completed
+                                    # If page says we are done, break early!
+                                    if tasks_completed >= real_total:
+                                        log("🎉 Page says 60/60! Stopping early.")
+                                        tasks_total = real_total # Ensure we match
+                                        break
+                                else:
+                                    log(f"✅ Verified: {real_completed}/{real_total}")
+                    except Exception as e:
+                        log(f"Smart check warning: {e}")
+
+                log(f"Loop #{current_loop_idx} | Progress: {tasks_completed}/{tasks_total}")
                 
                 # OPTIMIZATION: Scroll down slightly to trigger lazy loading/visibility
                 try: page.evaluate("window.scrollBy(0, 200)")
@@ -443,42 +474,41 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
                                 try: progress_callback(tasks_completed, tasks_total)
                                 except: pass
                             
-                            log(f"✓ Task {tasks_completed}/{tasks_total} completed")
+                            log(f"✓ Task done. Now {tasks_completed}/{tasks_total}")
 
                         else:
                              log("Tombol Kirim tidak muncul (mungkin delay)")
                              if "login" in page.url:
                                  resurrect_session()
+                             else:
+                                 consecutive_failures += 1
                     else:
-                        if "login" in page.url:
-                            resurrect_session()
-                        else:
-                            log("Elemen utama hidden/hilang (Selector check failed)")
-                            consecutive_failures += 1
-                        
-                except PlaywrightTimeoutError:
-                    if "login" in page.url:
-                        resurrect_session()
-                    else:
-                        log("Elemen utama nggak ketemu (Timeout).")
+                        log("Element tugas tidak ditemukan.")
                         consecutive_failures += 1
-                
-                # Self-healing: if too many consecutive failures, try page refresh first
-                if consecutive_failures >= 3:
-                    log("Mencoba refresh halaman...")
-                    try:
-                        page.reload(timeout=30000)
-                        page.wait_for_timeout(3000)
-                        try_close_popups(page)
-                        consecutive_failures = 0  # Reset after refresh
-                    except:
-                        log("Refresh gagal. Breaking loop untuk restart.")
-                        break
 
+                    if consecutive_failures >= 5:
+                        log("⚠️ Too many failures. Refreshing page...")
+                        page.reload(timeout=10000)
+                        page.wait_for_timeout(3000)
+                        consecutive_failures = 0
+                        
+                        # Re-click get button if after reload we are lost
+                        if tasks_completed < tasks_total:
+                            # Try navigating to work page again logic... (simplified)
+                            pass
+                        
+                except Exception as e:
+                    log(f"Error in loop: {e}")
+                    consecutive_failures += 1
+                
+                # Close "Berhasil" / "Mengonfirmasi" popup if it appears
                 try:
-                    page.get_by_role("button", name="Mengonfirmasi").click(timeout=1500)
-                except:
+                    c_btn = page.get_by_role("button", name="Mengonfirmasi")
+                    if c_btn.is_visible(timeout=1000):
+                        c_btn.click(force=True)
+                except: 
                     pass
+                    
         else:
             log(f"All tasks already completed ({tasks_completed}/{tasks_total}). Skipping automation.")
             # Callback even if skipped
