@@ -10,7 +10,7 @@ from datetime import date
 
 # Force unbuffered output for realtime logging
 def log(msg):
-    log(msg, flush=True)
+    print(msg, flush=True)
 
 
 

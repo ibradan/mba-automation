@@ -13,7 +13,7 @@ from .automation import run as automation_run
 
 # Force unbuffered output for realtime logging
 def log(msg):
-    log(msg, flush=True)
+    print(msg, flush=True)
 
 ACCOUNTS_FILE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'accounts.json'))
 
