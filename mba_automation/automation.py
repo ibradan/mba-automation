@@ -265,7 +265,12 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
             if progress_text and "/" in progress_text:
                 parts = progress_text.split("/")
                 initial_completed = int(parts[0].strip())
-                # tasks_total = int(parts[1].strip()) # Keep configured total
+                scraped_total = int(parts[1].strip())
+                
+                # Use higher of configured or scraped total (handles E3=60 correctly)
+                if scraped_total > tasks_total:
+                    tasks_total = scraped_total
+                    log(f"Updated tasks_total from page: {tasks_total}")
                 
                 if initial_completed > tasks_completed:
                     tasks_completed = initial_completed
