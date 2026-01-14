@@ -504,10 +504,12 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
         if "login" in page.url:
             resurrect_session()
 
-        # Try direct navigation instead of clicking icon
-        page.goto("https://mba7.com/#/ticket", timeout=30000)
-        page.wait_for_timeout(3000)
+        # Navigate to grab page where progress is shown (NOT /ticket!)
+        log("Navigating to /grab for final progress scrape...")
+        page.goto("https://mba7.com/#/grab", timeout=30000)
+        page.wait_for_timeout(4000)
         try_close_popups(page)
+        page.wait_for_timeout(2000)
         
         progress_element = page.locator(".van-progress__pivot").first
         if progress_element.count() > 0:
