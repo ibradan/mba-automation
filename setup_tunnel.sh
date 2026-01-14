@@ -8,7 +8,8 @@ set -e
 VPS_USER="root"
 VPS_IP="202.10.36.191"      # UPDATED with verified IP
 VPS_PORT="22"
-REMOTE_PORT="8080"
+
+REMOTE_PORT="5000"
 LOCAL_PORT="5000"
 
 KEY_PATH="$HOME/.ssh/id_rsa"
