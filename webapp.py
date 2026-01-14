@@ -559,6 +559,22 @@ def phone_display(normalized: str) -> str:
     return normalized
 
 
+def _get_iterations_for_level(level: str) -> int:
+    """Map account level to task iterations count."""
+    lvl_up = (level or '').upper()
+    if lvl_up == 'E1':
+        return 15
+    elif lvl_up == 'E2':
+        return 30
+    elif lvl_up == 'E3':
+        return 60
+    else:
+        try:
+            return int(level)
+        except:
+            return 30
+
+
 @app.route("/api/accounts")
 @login_required
 def api_accounts():
@@ -682,7 +698,7 @@ def api_accounts():
             "status_label": label_map.get(raw_st, 'Idle'),
             "pct": pct,
             "completed": progress.get('completed', 0),
-            "total": progress.get('total', 60),
+            "total": progress.get('total', _get_iterations_for_level(it.get('level', 'E2'))),
             "income": display_stats.get('income', 0),
             "withdrawal": display_stats.get('withdrawal', 0) * 0.9, # Apply 10% tax
             "balance": display_stats.get('balance', 0),
