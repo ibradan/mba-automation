@@ -600,25 +600,37 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
             log("Sync only mode: checking current progress...")
             try:
                 # Navigate to grab page where progress is shown
+                log("  Navigating to /grab page...")
                 page.goto("https://mba7.com/#/grab", timeout=timeout*1000)
                 page.wait_for_timeout(4000)
                 from .scraper import try_close_popups
                 try_close_popups(page)
                 page.wait_for_timeout(2000)
                 
-                # Look for progress text (usually "X/Y")
-                progress_element = page.locator(".van-progress__pivot").first
-                if progress_element.count() > 0:
-                    progress_text = progress_element.text_content(timeout=5000)
-                    if progress_text and "/" in progress_text:
-                        parts = progress_text.split("/")
-                        tasks_completed = int(parts[0].strip())
-                        tasks_total = int(parts[1].strip())
-                        log(f"  ✓ Current progress detected: {tasks_completed}/{tasks_total}")
+                # Log current URL to verify navigation
+                log(f"  Current URL: {page.url}")
+                
+                # Look for ALL progress elements and log them
+                progress_elements = page.locator(".van-progress__pivot")
+                count = progress_elements.count()
+                log(f"  Found {count} progress elements")
+                
+                # Try each element to find one with X/Y format
+                for i in range(count):
+                    try:
+                        elem = progress_elements.nth(i)
+                        text = elem.text_content(timeout=2000)
+                        log(f"    Element {i}: '{text}'")
+                        if text and "/" in text:
+                            parts = text.split("/")
+                            tasks_completed = int(parts[0].strip())
+                            tasks_total = int(parts[1].strip())
+                            log(f"  ✓ Current progress detected: {tasks_completed}/{tasks_total}")
+                            break
+                    except Exception as e:
+                        log(f"    Element {i}: error - {e}")
                 else:
-                    # Alternative: check record status count if pivot not found?
-                    # For now, if not found, we assume 0 or keep what we have
-                    pass
+                    log("  ✗ No valid progress element found")
             except Exception as e:
                 log(f"  ✗ Could not read progress during sync: {e}")
 
