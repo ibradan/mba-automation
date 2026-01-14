@@ -253,10 +253,12 @@ async function performManualSyncAll() {
 
   const syncIcon = btn.querySelector('.sync-icon');
   const spinnerIcon = btn.querySelector('.spinner-icon');
+  const checkIcon = btn.querySelector('.check-icon');
 
   // Show loading state
   btn.disabled = true;
   if (syncIcon) syncIcon.style.display = 'none';
+  if (checkIcon) checkIcon.style.display = 'none';
   if (spinnerIcon) spinnerIcon.style.display = 'inline';
 
   const cards = Array.from(document.querySelectorAll('.account-card[data-phone]'));
@@ -284,12 +286,19 @@ async function performManualSyncAll() {
     await new Promise(r => setTimeout(r, 500));
   }
 
-  // Reset button state
+  // Show green checkmark
   btn.disabled = false;
   if (spinnerIcon) spinnerIcon.style.display = 'none';
-  if (syncIcon) syncIcon.style.display = 'inline';
+  if (syncIcon) syncIcon.style.display = 'none';
+  if (checkIcon) checkIcon.style.display = 'inline';
 
   showToast(`✓ Synced ${syncCount}/${cards.length} accounts`, 'success');
+
+  // Revert to sync icon after 5 seconds
+  setTimeout(() => {
+    if (checkIcon) checkIcon.style.display = 'none';
+    if (syncIcon) syncIcon.style.display = 'inline';
+  }, 5000);
 
   // Refresh dashboard
   setTimeout(updateStatusRealTime, 1000);
