@@ -361,32 +361,45 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
                 page.wait_for_timeout(800) # Slight delay
 
                 try:
-                    # Try multiple selectors for the task element
+                    # Robust clicking: find element, ensuring it's enabled
+                    # Wait for network idle to ensure elements are loaded
+                    try: page.wait_for_load_state("networkidle", timeout=3000)
+                    except: pass
+
                     el = None
                     selectors_to_try = [
-                        ("get_by_text", "Sedang Berlangsung", 1),  # nth(1)
+                        ("get_by_text", "Sedang Berlangsung", 1),  # nth(1) usually
+                        ("get_by_text", "Sedang Berlangsung", 0),  # nth(0) fallback
                         ("locator", ".task-item.active", 0),
+                        ("locator", "button:has-text('Kirim')", 0), # Maybe button is already there?
                         ("locator", "[class*='progress']", 0),
                     ]
                     
+                    found_selector = False
                     for sel_type, sel_val, idx in selectors_to_try:
                         try:
                             if sel_type == "get_by_text":
                                 el = page.get_by_text(sel_val).nth(idx)
                             else:
                                 el = page.locator(sel_val).nth(idx)
-                            if el.is_visible(timeout=2000):
+                            
+                            if el.is_visible(timeout=1000):
+                                found_selector = True
                                 break
                             el = None
                         except:
                             el = None
                     
-                    if el and el.is_visible(timeout=1000):
-                        el.click()
+                    if el and found_selector:
+                        # If we found "Kirim" directly, skip clicking the task item
+                        is_kirim_btn = "Kirim" in str(sel_val)
+                        
+                        if not is_kirim_btn:
+                            el.click()
                         
                         # Wait for Kirim button
                         k_btn = page.get_by_role("button", name="Kirim")
-                        if k_btn.is_visible(timeout=3000):
+                        if k_btn.is_visible(timeout=5000):
                             k_btn.click()
                             loop_count += 1
                             tasks_completed += 1  # ACCUMULATE!
@@ -407,7 +420,7 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
                         if "login" in page.url:
                             resurrect_session()
                         else:
-                            log("Elemen utama hidden/hilang")
+                            log("Elemen utama hidden/hilang (Selector check failed)")
                             consecutive_failures += 1
                         
                 except PlaywrightTimeoutError:
