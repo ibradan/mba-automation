@@ -618,17 +618,12 @@ def api_accounts():
             # Sort dates once
             sorted_dates = sorted(dp.keys(), reverse=True)
             
-            # Helper to find first non-zero
+            # Helper to find first non-zero - NO DATE LIMIT
+            # User requirement: modal/pendapatan should NEVER be 0
             def find_last_nonzero(key, current_val):
                 if current_val > 0: return current_val
                 for d in sorted_dates:
                     try:
-                        # Only look back 3 days max to avoid ancient stale data? 
-                        # User wants NO zeros, so let's look back further.
-                        # But verifying it's not ANCIENT is good practice. Let's say 7 days.
-                        d_dt = datetime.datetime.fromisoformat(d)
-                        if (now - d_dt).total_seconds() > 7 * 86400: continue
-                        
                         val = dp[d].get(key, 0)
                         if val > 0: return val
                     except: continue
@@ -1197,14 +1192,34 @@ def index():
                              if not display_stats or (display_stats.get('balance', 0) == 0 and display_stats.get('income', 0) == 0):
                                  display_stats = dp[sorted_dates[0]]
 
-                    # Pre-transform daily_progress for display (Apply 10% tax on historical withdrawal)
+                    # Pre-transform daily_progress for display
+                    # 1. Apply 10% tax on historical withdrawal
+                    # 2. HEAL zero values with forward-fill from previous dates
                     dp_raw = it.get('daily_progress', {})
                     dp_display = {}
-                    for d_key, d_val in dp_raw.items():
+                    
+                    # Sort dates ascending for forward-fill
+                    sorted_dates_asc = sorted(dp_raw.keys())
+                    last_known = {'income': 0, 'withdrawal': 0, 'balance': 0}
+                    
+                    for d_key in sorted_dates_asc:
+                        d_val = dp_raw[d_key]
                         new_val = d_val.copy()
+                        
+                        # Forward-fill: if value is 0, use last known good value
+                        for field in ['income', 'withdrawal', 'balance']:
+                            current = new_val.get(field, 0)
+                            if current > 0:
+                                last_known[field] = current
+                            elif last_known[field] > 0:
+                                new_val[field] = last_known[field]
+                        
+                        # Apply 10% tax on withdrawal
                         if 'withdrawal' in new_val:
                             new_val['withdrawal'] = new_val['withdrawal'] * 0.9
+                        
                         dp_display[d_key] = new_val
+
 
                     # Update display_stats to use the net withdrawal
                     net_stats = display_stats.copy()
