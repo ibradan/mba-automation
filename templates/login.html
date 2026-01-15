@@ -20,11 +20,11 @@
             <p>Silakan masuk untuk melanjutkan</p>
         </div>
 
-        {% with messages = get_flashed_messages() %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
         <div class="flash-messages">
-            {% for message in messages %}
-            <div class="alert alert-error">{{ message }}</div>
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
             {% endfor %}
         </div>
         {% endif %}

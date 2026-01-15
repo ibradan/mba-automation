@@ -84,6 +84,17 @@
   border: 1px solid rgba(255, 82, 82, 0.2);
 }
 
+.alert-success {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  padding: 0.8rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  text-align: center;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
 /* Existing Styles */
 :root {
   /* Tactical & Manly Palette - Slate, Navy, & Industrial Blue */
