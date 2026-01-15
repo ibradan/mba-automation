@@ -581,25 +581,22 @@
             {% if acc.display_stats %}
             <div class="stats-row" style="position: relative;">
               {% set income = acc.display_stats.get('income', 0) %}
-              <a href="{{ url_for('history', phone=acc.phone_display, metric='modal') }}"
-                class="stat-box income-display glass-glow" style="text-decoration: none; cursor: pointer;">
+              <div class="stat-box income-display glass-glow">
                 <span class="stat-label">Modal</span>
                 <span class="stat-value animate-value">Rp {{ "{:,.0f}".format(income).replace(',', '.') }}</span>
-              </a>
+              </div>
 
               {% set balance = acc.display_stats.get('balance', 0) %}
-              <a href="{{ url_for('history', phone=acc.phone_display, metric='saldo') }}"
-                class="stat-box balance-display glass-glow" style="text-decoration: none; cursor: pointer;">
+              <div class="stat-box balance-display glass-glow">
                 <span class="stat-label">Saldo</span>
                 <span class="stat-value animate-value">Rp {{ "{:,.0f}".format(balance).replace(',', '.') }}</span>
-              </a>
+              </div>
 
               {% set withdrawal = acc.display_stats.get('withdrawal', 0) %}
-              <a href="{{ url_for('history', phone=acc.phone_display, metric='pendapatan') }}"
-                class="stat-box withdrawal-display glass-glow" style="text-decoration: none; cursor: pointer;">
+              <div class="stat-box withdrawal-display glass-glow">
                 <span class="stat-label">Pendapatan (Net)</span>
                 <span class="stat-value animate-value">Rp {{ "{:,.0f}".format(withdrawal).replace(',', '.') }}</span>
-              </a>
+              </div>
 
               <a href="/estimation?phone={{ acc.phone_display }}" class="stat-box estimation-display glass-glow"
                 style="text-decoration: none;">
