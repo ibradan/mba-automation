@@ -163,40 +163,7 @@ SETTINGS_FILE = os.path.join(os.path.dirname(__file__), "settings.json")
 SCHED_LOCK = threading.Lock()
 USERS_FILE = os.path.join(os.path.dirname(__file__), "users.json")
 
-# LRU Cache for accounts data (SAFE OPTIMIZATION)
-class LRUCache:
-    def __init__(self, max_size=10, ttl=30):
-        self.cache = {}
-        self.timestamps = {}
-        self.max_size = max_size
-        self.ttl = ttl
-        self.lock = threading.Lock()
-    
-    def get(self, key):
-        with self.lock:
-            if key in self.cache:
-                if time.time() - self.timestamps[key] < self.ttl:
-                    return self.cache[key]
-                else:
-                    del self.cache[key]
-                    del self.timestamps[key]
-            return None
-    
-    def set(self, key, value):
-        with self.lock:
-            if len(self.cache) >= self.max_size:
-                oldest = min(self.timestamps, key=self.timestamps.get)
-                del self.cache[oldest]
-                del self.timestamps[oldest]
-            self.cache[key] = value
-            self.timestamps[key] = time.time()
-    
-    def invalidate(self):
-        with self.lock:
-            self.cache.clear()
-            self.timestamps.clear()
 
-ACCOUNTS_CACHE = LRUCache(max_size=10, ttl=30)
 
 # Priority Job Queue (SAFE OPTIMIZATION)
 # Changed to standard Queue to prevent "TypeError: '<' not supported between instances of 'dict' and 'dict'"
@@ -511,17 +478,14 @@ with JOB_TRACKING_LOCK:
     JOB_TRACKING.clear()
 logger.info("SYSTEM: Cleared job tracking (fresh start)")
 
-# Load concurrency settings (SAFE: 5 workers, 30s cache, 15s scheduler)
+# Load concurrency settings
 _settings = data_manager.load_settings()
-# Priority: Env Var > Settings File > Default (5)
 env_workers = os.getenv('MBA_WORKERS')
-default_workers = int(env_workers) if env_workers and env_workers.isdigit() else 8 # SUPER MODE: 8 Parallel Bots
+default_workers = int(env_workers) if env_workers and env_workers.isdigit() else 8
 MAX_WORKERS = int(_settings.get('max_workers', default_workers))
-CACHE_TTL = int(_settings.get('cache_ttl', 30))
 SCHED_CHECK_INTERVAL = int(_settings.get('scheduler_interval', 15))
-ACCOUNTS_CACHE.ttl = CACHE_TTL
 
-logger.info(f"SYSTEM: Starting {MAX_WORKERS} worker threads with {CACHE_TTL}s cache TTL")
+logger.info(f"SYSTEM: Starting {MAX_WORKERS} worker threads")
 logger.info(f"SCHEDULER: Check interval set to {SCHED_CHECK_INTERVAL}s")
 for i in range(MAX_WORKERS):
     t = threading.Thread(target=worker, name=f"Worker-{i+1}", daemon=True)
@@ -787,102 +751,7 @@ def calculate_estimation(daily_income, current_balance, level_fallback=None):
     }
 
 
-@app.route("/api/global_history")
-@login_required
-def api_global_history():
-    """Aggregate historical data from all accounts for global chart with Forward Fill."""
-    try:
-        accounts = data_manager.load_accounts()
-        aggregated = {}
-        
-        # 1. Collect all unique dates from all accounts
-        all_dates = set()
-        # 1. Collect all unique dates from all accounts
-        all_dates = set()
-        current_user = session.get('user_id')
-        
-        filtered_accounts = [
-            a for a in accounts 
-            if a.get('owner', 'admin') == current_user
-        ]
-        
-        for acc in filtered_accounts:
-            all_dates.update(acc.get('daily_progress', {}).keys())
-            
-        if not all_dates:
-            return jsonify({})
-            
-        sorted_dates = sorted(list(all_dates))
-        
-        # 2. Iterative Forward Fill
-        # We track the last known state for EACH account
-        account_states = {} # {phone_norm: {'income': 0, ...}}
 
-        for date_str in sorted_dates:
-            # Stats for this specific date (aggregated across all accounts)
-            day_total_income = 0
-            day_total_balance = 0
-            day_total_withdrawal = 0
-            
-            
-            for acc in filtered_accounts:
-                phone = normalize_phone(acc.get('phone', ''))
-                if not phone: continue
-
-                # Check if this account has specific data for this date
-                daily_data = acc.get('daily_progress', {}).get(date_str)
-                
-                if daily_data:
-                    # Update our knowledge of this account's state
-                    # FIXED: Only update fields that are NON-ZERO or if we have no history yet
-                    current_cached = account_states.get(phone, {'income': 0, 'balance': 0, 'withdrawal': 0})
-                    
-                    new_income = daily_data.get('income', 0)
-                    new_balance = daily_data.get('balance', 0)
-                    new_withdrawal = daily_data.get('withdrawal', 0)
-                    
-                    # If new value is 0 and we have a previous non-zero, KEEP previous
-                    if new_income == 0 and current_cached['income'] > 0:
-                        new_income = current_cached['income']
-                    
-                    if new_balance == 0 and current_cached['balance'] > 0:
-                        new_balance = current_cached['balance']
-                        
-                    if new_withdrawal == 0 and current_cached['withdrawal'] > 0:
-                        new_withdrawal = current_cached['withdrawal']
-                        
-                    if new_withdrawal == 0 and current_cached['withdrawal'] > 0:
-                        new_withdrawal = current_cached['withdrawal']
-                        
-                    account_states[phone] = {
-                        'income': new_income,
-                        'balance': new_balance,
-                        'withdrawal': new_withdrawal
-                    }
-                
-                # Get the state to use (either just updated, or carried forward)
-                current_state = account_states.get(phone, {
-                    'income': 0, 'balance': 0, 'withdrawal': 0
-                })
-                
-                day_total_income += current_state['income']
-                day_total_balance += current_state['balance']
-                day_total_withdrawal += (current_state['withdrawal'] * 0.9) # Apply 10% tax
-            
-            # Record the aggregates
-            aggregated[date_str] = {
-                'date': date_str,
-                'income': day_total_income,
-                'balance': day_total_balance,
-                'withdrawal': day_total_withdrawal
-            }
-        
-        resp = jsonify(aggregated)
-        resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-        return resp
-    except Exception as e:
-        logger.error(f"Global history error: {e}")
-        return jsonify({}), 500
 
 
 @app.route("/api/logs/<phone_display>")
@@ -1686,102 +1555,6 @@ def schedule():
 
     return render_template('schedule.html', phone_display=display_phone, schedule=existing_schedule)
 
-
-@app.route("/history/<phone>/<metric>")
-def history(phone, metric):
-    # Normalize phone
-    norm = normalize_phone(phone)
-    accounts = data_manager.load_accounts()
-    
-    # Find account
-    acc = next((a for a in accounts if a.get('phone') == norm), None)
-    if not acc:
-        flash("Akun tidak ditemukan", "error")
-        return redirect(url_for('index'))
-        
-    daily_progress = acc.get('daily_progress', {})
-    
-    # Map metric to internal key and display label
-    metric_map = {
-        'modal': {'key': 'income', 'label': 'Modal'},
-        'saldo': {'key': 'balance', 'label': 'Saldo'},
-        'pendapatan': {'key': 'withdrawal', 'label': 'Pendapatan (Net)'}
-    }
-    
-    if metric not in metric_map:
-        flash("Tipe riwayat tidak valid", "error")
-        return redirect(url_for('index'))
-        
-    info = metric_map[metric]
-    target_key = info['key']
-    label = info['label']
-    
-    # Prepare list
-    history_items = []
-    
-    # Sort dates descending
-    sorted_dates = sorted(daily_progress.keys(), reverse=True)
-    
-    # Locale for days
-    days_id = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu']
-    months_id = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
-    
-    for date_str in sorted_dates:
-        data = daily_progress[date_str]
-        val = data.get(target_key)
-        
-        if val is not None:
-             try:
-                 dt = datetime.datetime.strptime(date_str, "%Y-%m-%d")
-                 day_name = days_id[dt.weekday()]
-                 # Format: 14 Desember 2025
-                 month_name = months_id[dt.month]
-                 date_formatted = f"{dt.day} {month_name} {dt.year}"
-                 # Apply 10% tax for Pendapatan metric
-                 final_val = val
-                 
-                 # FIXED: Single account history forward fill
-                 # If value is 0, look ahead (since we are iterating reverse: recent -> old)
-                 # Wait, we are iterating REVERSE (Newest first).
-                 # To forward fill (Old -> New), we need access to the "previous day" which is further down the list?
-                 # No, if we want to fill 0s with "previous known value", we should iterate OLD -> NEW.
-                 # OR, we can just do a dumb check: if 0, search for older data in the map.
-                 
-                 if final_val == 0:
-                     # Search backwards (older dates)
-                     current_dt_obj = dt
-                     
-                     # Simple scan of older dates
-                     # Since sorted_dates is Newest -> Oldest, we look at indices AFTER current
-                     current_idx = sorted_dates.index(date_str)
-                     for older_date in sorted_dates[current_idx+1:]:
-                         try:
-                             older_val = daily_progress[older_date].get(target_key, 0)
-                             if older_val > 0:
-                                 final_val = older_val
-                                 break
-                             # Don't look back too far (e.g. 7 days?)
-                             o_dt = datetime.datetime.strptime(older_date, "%Y-%m-%d")
-                             if (current_dt_obj - o_dt).total_seconds() > 7 * 86400: break
-                         except: break
-                 
-                 if metric == 'pendapatan':
-                     final_val = float(final_val or 0) * 0.9
-                 
-                 history_items.append({
-                     'date': date_str,
-                     'date_formatted': date_formatted,
-                     'day_name': day_name,
-                     'value': final_val
-                 })
-             except Exception:
-                 continue
-                 
-    return render_template('history.html', 
-                           phone=phone, 
-                           label=label, 
-                           metric_type=metric,
-                           history_items=history_items)
 
 
 @app.route("/run_single", methods=["POST"])
