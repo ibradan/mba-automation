@@ -1571,6 +1571,77 @@ def schedule():
     return render_template('schedule.html', phone_display=display_phone, schedule=existing_schedule)
 
 
+@app.route("/history/<phone>/<metric>")
+def history(phone, metric):
+    """Display historical data for a specific account and metric."""
+    norm = normalize_phone(phone)
+    accounts = data_manager.load_accounts()
+    
+    acc = next((a for a in accounts if a.get('phone') == norm), None)
+    if not acc:
+        flash("Akun tidak ditemukan", "error")
+        return redirect(url_for('index'))
+        
+    daily_progress = acc.get('daily_progress', {})
+    
+    metric_map = {
+        'modal': {'key': 'income', 'label': 'Modal'},
+        'saldo': {'key': 'balance', 'label': 'Saldo'},
+        'pendapatan': {'key': 'withdrawal', 'label': 'Pendapatan (Net)'}
+    }
+    
+    if metric not in metric_map:
+        flash("Tipe riwayat tidak valid", "error")
+        return redirect(url_for('index'))
+        
+    info = metric_map[metric]
+    target_key = info['key']
+    label = info['label']
+    
+    history_items = []
+    sorted_dates = sorted(daily_progress.keys(), reverse=True)
+    
+    days_id = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu']
+    months_id = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
+    
+    # Build forward-fill map first (oldest to newest)
+    sorted_asc = sorted(daily_progress.keys())
+    last_known = 0
+    filled_values = {}
+    for d in sorted_asc:
+        val = daily_progress[d].get(target_key, 0)
+        if val > 0:
+            last_known = val
+        filled_values[d] = last_known if val == 0 and last_known > 0 else val
+    
+    for date_str in sorted_dates:
+        final_val = filled_values.get(date_str, 0)
+        
+        if final_val is not None:
+            try:
+                dt = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+                day_name = days_id[dt.weekday()]
+                month_name = months_id[dt.month]
+                date_formatted = f"{dt.day} {month_name} {dt.year}"
+                
+                if metric == 'pendapatan':
+                    final_val = float(final_val or 0) * 0.9
+                
+                history_items.append({
+                    'date': date_str,
+                    'date_formatted': date_formatted,
+                    'day_name': day_name,
+                    'value': final_val
+                })
+            except Exception:
+                continue
+                 
+    return render_template('history.html', 
+                           phone=phone, 
+                           label=label, 
+                           metric_type=metric,
+                           history_items=history_items)
+
 
 @app.route("/run_single", methods=["POST"])
 def run_single():
