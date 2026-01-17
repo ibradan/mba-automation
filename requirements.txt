@@ -4,3 +4,6 @@ Flask>=2.0.0
 gunicorn>=21.2.0
 requests>=2.31.0
 cryptography>=41.0.0
+werkzeug
+flask-compress
+gevent

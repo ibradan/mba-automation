@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, session
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, session, make_response
 from functools import wraps
 from werkzeug.security import check_password_hash, generate_password_hash
 import subprocess
@@ -18,11 +18,39 @@ try:
     import requests
 except ImportError:
     requests = None
+
+# Optional: Flask-Compress for GZIP
+try:
+    from flask_compress import Compress
+    COMPRESS_AVAILABLE = True
+except ImportError:
+    COMPRESS_AVAILABLE = False
+
 from utils import crypto
 
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET", "please-change-this")
+
+# Enable GZIP compression if available
+if COMPRESS_AVAILABLE:
+    app.config['COMPRESS_MIMETYPES'] = ['text/html', 'text/css', 'text/javascript', 'application/javascript', 'application/json']
+    app.config['COMPRESS_LEVEL'] = 6
+    app.config['COMPRESS_MIN_SIZE'] = 500
+    Compress(app)
+
+# Static file cache configuration (1 week)
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 604800
+
+
+# Add cache headers to all static files
+@app.after_request
+def add_cache_headers(response):
+    # Add cache headers for static files
+    if request.path.startswith('/static/'):
+        response.headers['Cache-Control'] = 'public, max-age=604800'  # 1 week
+        response.headers['Vary'] = 'Accept-Encoding'
+    return response
 
 
 # Auth Helpers
