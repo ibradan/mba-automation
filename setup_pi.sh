@@ -40,7 +40,7 @@ CURRENT_USER=$(whoami)
 CURRENT_DIR=$(pwd)
 
 # Create service file content
-start_command="$CURRENT_DIR/venv/bin/gunicorn --workers 2 --bind 0.0.0.0:5000 webapp:app"
+start_command="$CURRENT_DIR/venv/bin/gunicorn --workers 2 --timeout 120 --bind 0.0.0.0:5000 webapp:app"
 
 sudo bash -c "cat > $SERVICE_FILE" <<EOL
 [Unit]

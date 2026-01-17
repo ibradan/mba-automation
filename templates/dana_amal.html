@@ -379,6 +379,20 @@
 
                 try {
                     const res = await fetch(`/api/dana_amal/${phone}`);
+
+                    // Handle non-OK responses or non-JSON content
+                    if (!res.ok) {
+                        const errorText = await res.text();
+                        let errorMsg = `Server Error (${res.status})`;
+                        if (res.status === 504 || res.status === 502) errorMsg = "Server Timeout (Website Berat)";
+                        throw new Error(errorMsg);
+                    }
+
+                    const contentType = res.headers.get("content-type");
+                    if (!contentType || !contentType.includes("application/json")) {
+                        throw new Error("Server Error (Bukan JSON - Kemungkinan Timeout)");
+                    }
+
                     const data = await res.json();
 
                     if (data.records && data.records.length > 0) {
@@ -422,11 +436,17 @@
                 } catch (e) {
                     console.error(`Error fetching for ${phone}:`, e);
                     // Log error
-                    logContainer.innerHTML += `<div style="color: red;">✗ +62 ${phone}: Gagal mengambil data (${e.message || 'Error'})</div>`;
+                    const timeStr = new Date().toLocaleTimeString('id-ID');
+                    logContainer.innerHTML += `<div style="color: red;">✗ [${timeStr}] +62 ${phone}: Gagal (${e.message || 'Error'})</div>`;
                 }
 
                 // Auto scroll log
                 logContainer.scrollTop = logContainer.scrollHeight;
+
+                // Add 1s delay to prevent resource spike on Pi
+                if (i < accounts.length - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
             }
 
             progressEl.className = 'progress-indicator success';
