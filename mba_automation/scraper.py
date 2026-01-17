@@ -253,15 +253,26 @@ def scrape_dana_amal_records(page: Page, timeout: int = 30) -> list:
         print(f"  Navigating to Dana Amal page: {full_url}")
         page.goto(full_url, wait_until="domcontentloaded", timeout=timeout * 1000)
         
-        page.wait_for_timeout(5000)
-        try_close_popups(page)
-        page.wait_for_timeout(2000)
+        # Handle "Data sedang diproses" or other popups that block loading
+        for i in range(5): # Wait up to 15 seconds for busy popup to clear
+            page.wait_for_timeout(2000)
+            try_close_popups(page)
+            
+            # Check for "Data sedang diproses" text in body as well
+            if "diproses" not in page.locator("body").text_content().lower():
+                break
+            print(f"  System still busy (attempt {i+1}/5), waiting...")
         
         # Wait for records to load - the site uses .van-cell for each record
         try:
+            # First look for empty state
+            if "tidak ada data" in page.locator("body").text_content().lower():
+                print("  Confirmed: No dana amal records (Empty Page)")
+                return []
+                
             page.wait_for_selector(".van-cell", timeout=10000)
         except Exception:
-            print("  No dana amal records found (no .van-cell elements)")
+            print("  No dana amal records found (.van-cell selector timed out)")
             return []
         
         # Get all van-cell elements (each represents one investment record)

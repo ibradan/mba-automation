@@ -269,7 +269,13 @@
                             {% for item in all_records %}
                             <tr>
                                 <td>{{ loop.index }}</td>
-                                <td><span class="status-badge status-active">+62 {{ item.phone_display }}</span></td>
+                                <td>
+                                    <span class="status-badge status-active">+62 {{ item.phone_display }}</span>
+                                    {% if item.last_update %}
+                                    <div style="font-size: 0.65rem; color: #94a3b8; margin-top: 2px;">Update: {{
+                                        item.last_update[:16].replace('T', ' ') }}</div>
+                                    {% endif %}
+                                </td>
                                 <td class="period-cell">{{ item.record.period or '-' }}</td>
                                 <td>{{ item.record.product or '-' }}</td>
                                 <td class="amount-cell">Rp {{ "{:,.0f}".format(item.record.amount or 0).replace(',',
@@ -386,7 +392,10 @@
                             const tr = document.createElement('tr');
                             tr.innerHTML = `
                                 <td>${rowCount}</td>
-                                <td><span class="status-badge status-active">+62 ${phone}</span></td>
+                                <td>
+                                    <span class="status-badge status-active">+62 ${phone}</span>
+                                    <div style="font-size: 0.65rem; color: #94a3b8; margin-top: 2px;">Update: ${new Date().toLocaleString('id-ID')}</div>
+                                </td>
                                 <td class="period-cell">${r.period || '-'}</td>
                                 <td>${r.product || '-'}</td>
                                 <td class="amount-cell">Rp ${formatRupiah(r.amount || 0)}</td>
@@ -401,11 +410,14 @@
                         document.querySelector('.total-amount-cell').textContent = 'Rp ' + formatRupiah(grandTotalAmount);
                         document.querySelector('.total-profit-cell').textContent = 'Rp ' + formatRupiah(Math.round(grandTotalProfit));
 
-                        // Log success
-                        logContainer.innerHTML += `<div style="color: green;">✓ +62 ${phone}: Ditemukan ${data.records.length} records</div>`;
+                        // Log success with timestamp
+                        const timeStr = new Date().toLocaleTimeString('id-ID');
+                        logContainer.innerHTML += `<div style="color: green;">✓ [${timeStr}] +62 ${phone}: Ditemukan ${data.records.length} records</div>`;
                     } else {
-                        // Log empty
-                        logContainer.innerHTML += `<div style="color: #64748b;">• +62 ${phone}: Tidak ada data investasi</div>`;
+                        // Log empty or error msg
+                        const timeStr = new Date().toLocaleTimeString('id-ID');
+                        const msg = data.status_msg || 'Tidak ada data investasi';
+                        logContainer.innerHTML += `<div style="color: #64748b;">• [${timeStr}] +62 ${phone}: ${msg}</div>`;
                     }
                 } catch (e) {
                     console.error(`Error fetching for ${phone}:`, e);

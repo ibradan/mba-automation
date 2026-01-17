@@ -1775,13 +1775,18 @@ def dana_amal_page():
         phone = acc.get("phone", "")
         display_phone = phone_display(phone) if phone else ""
         dana_amal_records = acc.get('dana_amal_records', [])
+        last_update = acc.get('last_dana_amal_update_ts', '')
         
-        accounts_for_js.append({'phone_display': display_phone})
+        accounts_for_js.append({
+            'phone_display': display_phone,
+            'last_update': last_update
+        })
         
         for record in dana_amal_records:
             all_records.append({
                 'phone_display': display_phone,
-                'record': record
+                'record': record,
+                'last_update': last_update
             })
             total_amount += record.get('amount', 0)
             total_profit += record.get('profit', 0)
@@ -1846,15 +1851,35 @@ def api_dana_amal(phone_disp):
                             
                             if records:
                                 # Success! Save and break
+                                logger.info(f"DANA AMAL: Scraped {len(records)} records for {norm}. Attempting to save...")
                                 acc_list = data_manager.load_accounts()
+                                matched = False
                                 for a in acc_list:
                                     if normalize_phone(a.get('phone', '')) == norm:
                                         a['dana_amal_records'] = records
+                                        matched = True
+                                        logger.info(f"DANA AMAL: Matched account {norm} in accounts.json. Records updated.")
                                         break
-                                data_manager.write_accounts(acc_list)
+                                
+                                if matched:
+                                    # Add timestamp
+                                    now = datetime.datetime.now().isoformat()
+                                    for a in acc_list:
+                                        if normalize_phone(a.get('phone', '')) == norm:
+                                            a['last_dana_amal_update_ts'] = now
+                                            break
+                                            
+                                    if data_manager.write_accounts(acc_list):
+                                        logger.info(f"DANA AMAL: Successfully saved accounts.json with new records for {norm}")
+                                    else:
+                                        logger.error(f"DANA AMAL: FAILED to save accounts.json for {norm}")
+                                else:
+                                    logger.warning(f"DANA AMAL: Could not find account {norm} in accounts.json to save records.")
+                                
                                 break  # Exit retry loop on success
                             else:
                                 last_error = "No records found (empty)"
+                                logger.info(f"DANA AMAL: No records found for {norm} in attempt {attempt+1}")
                         else:
                             last_error = "Login failed"
                     except Exception as inner_e:
