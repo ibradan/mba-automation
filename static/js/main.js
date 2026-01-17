@@ -595,13 +595,11 @@ async function refreshAllAccounts() {
   let successCount = 0;
   let errorCount = 0;
 
+  // 1. Queue all accounts first
   for (let i = 0; i < cards.length; i++) {
     const card = cards[i];
     const phone = card.dataset.phone;
     if (!phone) continue;
-
-    addLog(`[${i + 1}/${cards.length}] Syncing +62${phone}...`, 'info');
-    if (statusText) statusText.textContent = `Syncing ${i + 1}/${cards.length}: +62${phone}`;
 
     try {
       const formData = new FormData();
@@ -610,26 +608,84 @@ async function refreshAllAccounts() {
       const data = await res.json();
 
       if (data.ok) {
-        successCount++;
-        addLog(`✓ +62${phone} - queued`, 'success');
+        addLog(`⏳ +62${phone} masuk antrean...`, 'info');
       } else {
         errorCount++;
-        addLog(`✗ +62${phone} - ${data.msg || 'error'}`, 'error');
+        addLog(`✗ +62${phone} gagal antre: ${data.msg}`, 'error');
       }
     } catch (err) {
       errorCount++;
-      addLog(`✗ +62${phone} - Network error`, 'error');
+      addLog(`✗ +62${phone} network error`, 'error');
     }
-
-    // Small delay between accounts
-    await new Promise(r => setTimeout(r, 300));
   }
+
+  addLog(`Menunggu hasil proses...`, 'info');
+
+  // 2. Poll for results
+  const phonesToWatch = cards.map(c => c.dataset.phone).filter(p => p);
+  const startTime = Date.now();
+  let completed = 0;
+
+  // Disable global polling while we watch specific accounts
+  const wasPolling = isPolling;
+  isPolling = true;
+
+  while (completed < phonesToWatch.length && (Date.now() - startTime) < 300000) { // Max wait 5 mins
+    try {
+      const res = await fetch('/api/accounts');
+      const data = await res.json();
+      const accounts = data.accounts || [];
+
+      // Check each watched phone
+      for (let i = 0; i < phonesToWatch.length; i++) {
+        const phone = phonesToWatch[i];
+        if (!phone) continue;
+
+        const acc = accounts.find(a => a.phone_display === phone);
+        if (acc) {
+          // If account is IDLE (not syncing/running) and has updated recently (within last 2 mins), consider it done
+          // OR if we just see it's not syncing anymore
+
+          // Simplified: If not syncing, we assume it's done processing
+          if (!acc.is_syncing && !acc.is_running) {
+            // Mark as done
+            phonesToWatch[i] = null; // Remove from watch list
+            completed++;
+            successCount++;
+
+            // Format balance
+            const balance = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(acc.balance || 0);
+            addLog(`✓ +62${phone} OK! Saldo: ${balance}`, 'success');
+          }
+        }
+      }
+
+      if (completed >= phonesToWatch.length) break;
+
+      // Update progress text
+      if (statusText) statusText.textContent = `Processing... ${completed}/${cards.length} selesai`;
+
+      // Wait 3s before next check
+      await new Promise(r => setTimeout(r, 3000));
+
+    } catch (e) {
+      console.error("Poll error", e);
+      await new Promise(r => setTimeout(r, 5000));
+    }
+  }
+
+  // Restore global polling state
+  isPolling = wasPolling;
 
   // Final status
   const now = new Date();
   const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 
-  addLog(`Selesai! ${successCount} berhasil, ${errorCount} gagal`, successCount > 0 ? 'success' : 'error');
+  if (phonesToWatch.some(p => p)) {
+    addLog(`⚠️ Waktu habis. Beberapa akun mungkin masih proses.`, 'warning');
+  } else {
+    addLog(`🎉 Selesai! Semua akun ter-update.`, 'success');
+  }
 
   if (statusText) statusText.textContent = `${cards.length} akun - Last sync: ${timeStr}`;
   if (lastSyncInfo) lastSyncInfo.textContent = `📅 Update: ${now.toLocaleDateString('id-ID')} ${timeStr}`;
