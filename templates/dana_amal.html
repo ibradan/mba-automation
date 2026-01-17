@@ -553,11 +553,14 @@
         // Quick Login: Copy credentials and open MBA7
         async function quickLogin(phoneDisplay) {
             try {
-                // Remove spaces from phone display format
-                const cleanPhone = phoneDisplay.replace(/\s/g, '');
+                // Remove spaces and ensure 62 prefix
+                let cleanPhone = phoneDisplay.replace(/\s/g, '');
+                if (!cleanPhone.startsWith('62')) {
+                    cleanPhone = '62' + cleanPhone;
+                }
 
-                // Show loading indicator (optional)
-                const toast = showToast('⏳ Mengambil credentials...');
+                // Show loading indicator
+                showToast('⏳ Mengambil credentials...');
 
                 // Fetch credentials from backend
                 const res = await fetch(`/api/get_credentials/${cleanPhone}`);
