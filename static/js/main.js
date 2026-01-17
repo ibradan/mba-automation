@@ -172,7 +172,8 @@ document.getElementById('add-row').addEventListener('click', function () {
   attachSyncButtons();
   attachReviewButtons();
   attachScheduleButtons();
-  attachMoreButtons(); // Added this line
+  attachMoreButtons();
+  attachMBA7Buttons();
 });
 
 // ================= MORE ACTIONS DROPDOWN =================
@@ -867,6 +868,55 @@ function attachScheduleButtons() {
   });
 }
 attachScheduleButtons();
+
+// ================= MBA7 QUICK LOGIN BUTTON =================
+function attachMBA7Buttons() {
+  document.querySelectorAll('.mba7-btn').forEach(function (btn) {
+    if (btn.dataset.bound) return;
+    btn.dataset.bound = '1';
+
+    btn.addEventListener('click', async function () {
+      const row = btn.closest('.row-item');
+      if (!row) return;
+
+      const phoneInput = row.querySelector('input[name="phone[]"]');
+      const pwdInput = row.querySelector('input[name="password[]"]');
+      if (!phoneInput || !pwdInput) return;
+
+      const phone = phoneInput.value.trim();
+      const pwd = pwdInput.value;
+
+      if (!phone) {
+        showToast('Masukkan nomor HP terlebih dahulu.', 'error');
+        return;
+      }
+
+      // Copy credentials to clipboard
+      const fullPhone = '62' + phone;
+      const clipboardText = `${fullPhone}\n${pwd}`;
+
+      try {
+        await navigator.clipboard.writeText(pwd);
+        showToast(`🔐 Password tercopy! Buka MBA7...`, 'success');
+      } catch (err) {
+        // Fallback for older browsers
+        const ta = document.createElement('textarea');
+        ta.value = pwd;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showToast(`🔐 Password tercopy! Buka MBA7...`, 'success');
+      }
+
+      // Open MBA7 login page
+      setTimeout(() => {
+        window.open('https://mba7.com/#/login', '_blank');
+      }, 300);
+    });
+  });
+}
+attachMBA7Buttons();
 
 
 // ================= HEADLESS SYNC =================
