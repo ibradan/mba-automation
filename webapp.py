@@ -1856,6 +1856,34 @@ def dana_amal_page():
                          accounts_json=json_lib.dumps(accounts_for_js))
 
 
+@app.route("/api/get_credentials/<phone_disp>")
+@login_required
+def api_get_credentials(phone_disp):
+    """Return credentials for quick login to MBA7. Protected endpoint."""
+    try:
+        norm = normalize_phone(phone_disp)
+        if not norm:
+            return jsonify({"error": "Invalid phone number"}), 400
+        
+        # Find account
+        accounts = data_manager.load_accounts()
+        current_user = session.get('user_id')
+        
+        for acc in accounts:
+            if acc.get('owner', 'admin') != current_user:
+                continue
+            if normalize_phone(acc.get('phone', '')) == norm:
+                return jsonify({
+                    "phone": norm,
+                    "password": acc.get('password', '')
+                })
+        
+        return jsonify({"error": "Account not found"}), 404
+    except Exception as e:
+        logger.exception("FAILED GET CREDENTIALS: %s", e)
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/api/dana_amal/<phone_disp>")
 @login_required
 def api_dana_amal(phone_disp):

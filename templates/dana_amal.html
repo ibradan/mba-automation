@@ -171,6 +171,44 @@
             background: #def7e5 !important;
         }
 
+        /* Quick Login - Clickable Rows */
+        .clickable-row {
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .clickable-row:hover {
+            background: #f8fafc !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .clickable-row.due-soon-row:hover {
+            background: #def7e5 !important;
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #1e293b;
+            color: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+            font-size: 0.875rem;
+            font-weight: 600;
+            z-index: 9999;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
         /* Account Filter Buttons */
         .account-selector {
             display: flex;
@@ -460,8 +498,9 @@
                         </thead>
                         <tbody>
                             {% for item in all_records %}
-                            <tr class="{% if item.is_due %}due-soon-row{% endif %}"
-                                data-period="{{ item.record.period or '' }}">
+                            <tr class="{% if item.is_due %}due-soon-row{% endif %} clickable-row"
+                                data-period="{{ item.record.period or '' }}" data-phone="{{ item.phone_display }}"
+                                onclick="quickLogin('{{ item.phone_display }}')" title="Klik untuk login ke MBA7">
                                 <td>{{ loop.index }}</td>
                                 <td>
                                     <span class="status-badge status-active">+62 {{ item.phone_display }}</span>
@@ -509,6 +548,81 @@
 
         function formatRupiah(num) {
             return new Intl.NumberFormat('id-ID').format(num);
+        }
+
+        // Quick Login: Copy credentials and open MBA7
+        async function quickLogin(phoneDisplay) {
+            try {
+                // Show loading indicator (optional)
+                const toast = showToast('⏳ Mengambil credentials...');
+
+                // Fetch credentials from backend
+                const res = await fetch(`/api/get_credentials/${phoneDisplay}`);
+                if (!res.ok) {
+                    showToast('❌ Gagal mengambil data akun', 3000);
+                    return;
+                }
+
+                const data = await res.json();
+                const phone = data.phone || '';
+                const password = data.password || '';
+
+                // Copy to clipboard
+                const textToCopy = `Phone: ${phone}\nPassword: ${password}`;
+
+                try {
+                    // Modern Clipboard API (works on mobile too)
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        await navigator.clipboard.writeText(textToCopy);
+                    } else {
+                        // Fallback for older browsers
+                        const textarea = document.createElement('textarea');
+                        textarea.value = textToCopy;
+                        textarea.style.position = 'fixed';
+                        textarea.style.opacity = '0';
+                        document.body.appendChild(textarea);
+                        textarea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textarea);
+                    }
+
+                    // Show success toast
+                    showToast('📋 Credentials copied! Opening MBA7...', 3000);
+
+                    // Open MBA7 in new tab
+                    window.open('https://mba7.com/#/login', '_blank');
+
+                } catch (copyErr) {
+                    showToast(`📋 Phone: ${phone} | Password: ${password}`, 5000);
+                    window.open('https://mba7.com/#/login', '_blank');
+                }
+
+            } catch (err) {
+                console.error('Quick login error:', err);
+                showToast('❌ Error: ' + err.message, 3000);
+            }
+        }
+
+        // Toast notification helper
+        function showToast(message, duration = 2000) {
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            // Trigger animation
+            setTimeout(() => toast.classList.add('show'), 10);
+
+            // Remove after duration
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, duration);
+
+            return toast;
         }
 
         function checkDueDate(periodStr) {
