@@ -550,9 +550,22 @@ function checkQueueAndManagePolling(queueSize) {
   lastQueueSize = queueSize;
 }
 
-// Global function for manual refresh button
-function refreshDashboard() {
+// Global function for manual refresh - syncs ALL accounts with live log
+async function refreshAllAccounts() {
   const btn = document.getElementById('btn-refresh-dashboard');
+  const statusText = document.getElementById('status-text');
+  const lastSyncInfo = document.getElementById('last-sync-info');
+  const logContainer = document.getElementById('sync-log-container');
+  const logContent = document.getElementById('sync-log');
+
+  // Get all account cards
+  const cards = Array.from(document.querySelectorAll('.account-card[data-phone]'));
+  if (cards.length === 0) {
+    showToast('Tidak ada akun untuk di-sync', 'error');
+    return;
+  }
+
+  // Show loading state
   if (btn) {
     btn.disabled = true;
     const icon = btn.querySelector('.refresh-icon');
@@ -561,25 +574,78 @@ function refreshDashboard() {
     if (spinner) spinner.style.display = 'inline';
   }
 
-  updateStatusRealTime();
+  // Show log container
+  if (logContainer) logContainer.style.display = 'block';
+  if (logContent) logContent.innerHTML = '';
 
-  // Update last refresh timestamp
-  const tsEl = document.getElementById('last-refresh-ts');
-  if (tsEl) {
-    const now = new Date();
-    tsEl.textContent = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  const addLog = (msg, type = 'info') => {
+    if (!logContent) return;
+    const line = document.createElement('div');
+    line.className = `log-${type}`;
+    const time = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    line.textContent = `[${time}] ${msg}`;
+    logContent.appendChild(line);
+    logContent.scrollTop = logContent.scrollHeight;
+  };
+
+  if (statusText) statusText.textContent = `Syncing ${cards.length} akun...`;
+  addLog(`Memulai sinkronisasi ${cards.length} akun...`, 'info');
+
+  let successCount = 0;
+  let errorCount = 0;
+
+  for (let i = 0; i < cards.length; i++) {
+    const card = cards[i];
+    const phone = card.dataset.phone;
+    if (!phone) continue;
+
+    addLog(`[${i + 1}/${cards.length}] Syncing +62${phone}...`, 'info');
+    if (statusText) statusText.textContent = `Syncing ${i + 1}/${cards.length}: +62${phone}`;
+
+    try {
+      const formData = new FormData();
+      formData.append('phone', phone);
+      const res = await fetch('/sync_single', { method: 'POST', body: formData });
+      const data = await res.json();
+
+      if (data.ok) {
+        successCount++;
+        addLog(`✓ +62${phone} - queued`, 'success');
+      } else {
+        errorCount++;
+        addLog(`✗ +62${phone} - ${data.msg || 'error'}`, 'error');
+      }
+    } catch (err) {
+      errorCount++;
+      addLog(`✗ +62${phone} - Network error`, 'error');
+    }
+
+    // Small delay between accounts
+    await new Promise(r => setTimeout(r, 300));
   }
 
-  setTimeout(() => {
-    if (btn) {
-      btn.disabled = false;
-      const icon = btn.querySelector('.refresh-icon');
-      const spinner = btn.querySelector('.spinner-icon');
-      if (spinner) spinner.style.display = 'none';
-      if (icon) icon.style.display = 'inline';
-    }
-    showToast('Dashboard refreshed!', 'success');
-  }, 1000);
+  // Final status
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+  addLog(`Selesai! ${successCount} berhasil, ${errorCount} gagal`, successCount > 0 ? 'success' : 'error');
+
+  if (statusText) statusText.textContent = `${cards.length} akun - Last sync: ${timeStr}`;
+  if (lastSyncInfo) lastSyncInfo.textContent = `📅 Update: ${now.toLocaleDateString('id-ID')} ${timeStr}`;
+
+  // Reset button
+  if (btn) {
+    btn.disabled = false;
+    const icon = btn.querySelector('.refresh-icon');
+    const spinner = btn.querySelector('.spinner-icon');
+    if (spinner) spinner.style.display = 'none';
+    if (icon) icon.style.display = 'inline';
+  }
+
+  showToast(`Sync selesai: ${successCount}/${cards.length} akun`, successCount > 0 ? 'success' : 'error');
+
+  // Refresh dashboard data after a moment
+  setTimeout(updateStatusRealTime, 2000);
 }
 
 // Initial setup on load
