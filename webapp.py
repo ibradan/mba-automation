@@ -1786,6 +1786,7 @@ def dana_amal_page():
             # Calculate H-X countdown for this record
             is_due = False
             due_label = ""
+            hx_display = "-"  # Simple H-X format for Period column
             period_str = record.get('period', '')
             
             if period_str and ' ~ ' in period_str:
@@ -1803,18 +1804,31 @@ def dana_amal_page():
                                 if len(date_components) == 3:
                                     m, d, y = date_components
                                     end_date_str = f"{y}-{m}-{d}"
+                                    today_str = datetime.datetime.now().strftime('%Y-%m-%d')
                                     
-                                    # Compare with now_plus_2
-                                    if end_date_str <= now_plus_2:
-                                        is_due = True
-                                        today_str = datetime.datetime.now().strftime('%Y-%m-%d')
+                                    # Calculate days remaining
+                                    from datetime import datetime as dt
+                                    try:
+                                        end_date_obj = dt.strptime(end_date_str, '%Y-%m-%d')
+                                        today_obj = dt.strptime(today_str, '%Y-%m-%d')
+                                        days_diff = (end_date_obj - today_obj).days
                                         
-                                        if end_date_str == today_str:
-                                            due_label = f"Selesai (H-0) {end_time_part}"
-                                        elif end_date_str < today_str:
-                                            due_label = "Selesai (Overdue)"
+                                        if days_diff < 0:
+                                            hx_display = "Overdue"
                                         else:
-                                            due_label = f"Segera Selesai {end_time_part}"
+                                            hx_display = f"H-{days_diff}"
+                                        
+                                        # Set due status for highlighting (within 2 days)
+                                        if days_diff <= 2:
+                                            is_due = True
+                                            if days_diff == 0:
+                                                due_label = f"Selesai (H-0) {end_time_part}"
+                                            elif days_diff < 0:
+                                                due_label = "Selesai (Overdue)"
+                                            else:
+                                                due_label = f"Selesai (H-{days_diff}) {end_time_part}"
+                                    except:
+                                        pass
                 except Exception as e:
                     # If parsing fails, just skip the due calculation
                     pass
@@ -1824,7 +1838,8 @@ def dana_amal_page():
                 'record': record,
                 'last_update': last_update,
                 'is_due': is_due,
-                'due_label': due_label
+                'due_label': due_label,
+                'hx_display': hx_display
             })
             total_amount += (record.get('amount') or 0)
             total_profit += (record.get('profit') or 0)

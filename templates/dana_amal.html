@@ -360,10 +360,18 @@
                     </svg>
                     Refresh Data Terbaru
                 </button>
-                <span id="status-text" style="color: #64748b; font-size: 0.875rem;">
-                    {% if all_records %}{{ all_records|length }} records dari cache{% else %}Klik tombol untuk ambil
-                    data{% endif %}
-                </span>
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <span id="status-text" style="color: #64748b; font-size: 0.875rem;">
+                        {% if all_records %}{{ all_records|length }} records dari cache{% else %}Klik tombol untuk ambil
+                        data{% endif %}
+                    </span>
+                    {% if all_records and all_records|length > 0 %}
+                    <span style="font-size: 0.75rem; color: #94a3b8;">
+                        📅 Update Terakhir: {{ all_records[0].last_update[:16].replace('T', ' ') if
+                        all_records[0].last_update else '-' }}
+                    </span>
+                    {% endif %}
+                </div>
                 <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 4px;">💡 Tip: Jika warna masih merah, tekan
                     Ctrl+F5 untuk refresh cache.</div>
             </div>
@@ -420,13 +428,9 @@
                                 <td>{{ loop.index }}</td>
                                 <td>
                                     <span class="status-badge status-active">+62 {{ item.phone_display }}</span>
-                                    {% if item.last_update %}
-                                    <div style="font-size: 0.65rem; color: #94a3b8; margin-top: 2px;">Update: {{
-                                        item.last_update[:16].replace('T', ' ') }}</div>
-                                    {% endif %}
                                 </td>
                                 <td class="period-cell">
-                                    {{ item.record.period or '-' }}
+                                    {{ item.hx_display }}
                                     {% if item.is_due %}<span class="due-badge">{{ item.due_label }}</span>{% endif %}
                                 </td>
                                 <td>{{ item.record.product or '-' }}</td>
