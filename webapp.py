@@ -1824,34 +1824,60 @@ def api_dana_amal(phone_disp):
         if not pwd:
             return jsonify({"error": "Password not set for this account"}), 400
         
-        # Scrape using Playwright
+        # Scrape using Playwright with retry logic
         records = []
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True, args=["--disable-gpu", "--no-sandbox"])
-            context = browser.new_context(viewport={"width": 390, "height": 844})
-            page = context.new_page()
-            
+        max_retries = 3
+        last_error = ""
+
+        for attempt in range(max_retries):
             try:
-                # Use the proper login function from automation module
-                if mba_login(page, context, norm, pwd, timeout=30):
-                    # Now scrape dana amal
-                    records = scrape_dana_amal_records(page, timeout=30)
+                with sync_playwright() as p:
+                    # Launch logic
+                    browser = p.chromium.launch(headless=True, args=["--disable-gpu", "--no-sandbox"])
+                    context = browser.new_context(viewport={"width": 390, "height": 844})
+                    page = context.new_page()
                     
-                    # Save to accounts.json for persistence
-                    if records:
-                        acc_list = data_manager.load_accounts()
-                        for a in acc_list:
-                            if normalize_phone(a.get('phone', '')) == norm:
-                                a['dana_amal_records'] = records
-                                break
-                        data_manager.write_accounts(acc_list)
-                else:
-                    return jsonify({"error": "Login failed"}), 401
+                    try:
+                        # Use the proper login function from automation module
+                        # Increased timeout to 45s for slower connections
+                        if mba_login(page, context, norm, pwd, timeout=45):
+                            # Now scrape dana amal
+                            records = scrape_dana_amal_records(page, timeout=30)
+                            
+                            if records:
+                                # Success! Save and break
+                                acc_list = data_manager.load_accounts()
+                                for a in acc_list:
+                                    if normalize_phone(a.get('phone', '')) == norm:
+                                        a['dana_amal_records'] = records
+                                        break
+                                data_manager.write_accounts(acc_list)
+                                break  # Exit retry loop on success
+                            else:
+                                last_error = "No records found (empty)"
+                        else:
+                            last_error = "Login failed"
+                    except Exception as inner_e:
+                        last_error = str(inner_e)
+                    finally:
+                        browser.close()
                 
-            finally:
-                browser.close()
+                # If we got here and have records, we are done
+                if records:
+                    break
+                    
+                # Otherwise wait before retry
+                import time
+                time.sleep(2)
+                
+            except Exception as e:
+                last_error = str(e)
+                logger.error(f"Attempt {attempt+1} failed for {norm}: {e}")
         
-        return jsonify({"records": records})
+        if not records and "Login failed" in last_error:
+             return jsonify({"error": f"Login failed after {max_retries} attempts"}), 401
+             
+        return jsonify({"records": records, "status_msg": "Success" if records else last_error})
         
     except Exception as e:
         logger.exception("Dana Amal API error: %s", e)

@@ -9,6 +9,17 @@ def try_close_popups(page: Page) -> None:
         "button:has-text('Confirm')",
         ".van-overlay"
     ]
+    
+    # Check for "Data sedang diproses" toast/popup
+    try:
+        toast = page.locator(".van-toast__text, .van-toast").first
+        if toast.is_visible(timeout=500):
+            text = toast.text_content()
+            if "diproses" in text or "processing" in text.lower():
+                print("  'Data processing' popup detected, waiting 3s...")
+                page.wait_for_timeout(3000)
+    except: pass
+
     for selector in popups:
         try:
             el = page.locator(selector).first
