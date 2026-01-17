@@ -126,13 +126,42 @@
             opacity: 0.5;
         }
 
-        .summary-row {
-            background: #f0fdf4 !important;
-            font-weight: 700;
-        }
-
         .summary-row td {
             border-top: 2px solid #059669;
+        }
+
+        .filter-input {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .filter-input:focus {
+            border-color: #3b82f6;
+        }
+
+        .filter-row {
+            background: #f8fafc;
+        }
+
+        .due-badge {
+            background: #fee2e2;
+            color: #ef4444;
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 6px;
+            display: inline-block;
+            text-transform: uppercase;
+        }
+
+        .due-soon-row {
+            background: #fff5f5 !important;
         }
 
         .back-btn {
@@ -264,10 +293,33 @@
                                 <th>Hari</th>
                                 <th>Est. Laba</th>
                             </tr>
+                            <tr class="filter-row">
+                                <td></td>
+                                <td><input type="text" class="filter-input" placeholder="Filter Akun..."
+                                        onkeyup="filterTable(1)"></td>
+                                <td><input type="text" class="filter-input" placeholder="Filter Tgl..."
+                                        onkeyup="filterTable(2)"></td>
+                                <td><input type="text" class="filter-input" placeholder="Filter Produk..."
+                                        onkeyup="filterTable(3)"></td>
+                                <td><input type="text" class="filter-input" placeholder="Filter Rp..."
+                                        onkeyup="filterTable(4)"></td>
+                                <td><input type="text" class="filter-input" placeholder="Filter %..."
+                                        onkeyup="filterTable(5)"></td>
+                                <td><input type="text" class="filter-input" placeholder="Filter Hari..."
+                                        onkeyup="filterTable(6)"></td>
+                                <td></td>
+                            </tr>
                         </thead>
                         <tbody>
                             {% for item in all_records %}
-                            <tr>
+                            {% set is_due = false %}
+                            {% if item.record.period and ' ~ ' in item.record.period %}
+                            {% set endPart = item.record.period.split('~')[1].strip().split(' ')[0] %}
+                            {% set p_m, p_d, p_y = endPart.split('/') %}
+                            {% set endDateStr = p_y ~ '-' ~ p_m ~ '-' ~ p_d %}
+                            {% if endDateStr <= now_str %} {% set is_due=true %} {% endif %} {% endif %} <tr
+                                class="{% if is_due %}due-soon-row{% endif %}"
+                                data-period="{{ item.record.period or '' }}">
                                 <td>{{ loop.index }}</td>
                                 <td>
                                     <span class="status-badge status-active">+62 {{ item.phone_display }}</span>
@@ -276,7 +328,10 @@
                                         item.last_update[:16].replace('T', ' ') }}</div>
                                     {% endif %}
                                 </td>
-                                <td class="period-cell">{{ item.record.period or '-' }}</td>
+                                <td class="period-cell">
+                                    {{ item.record.period or '-' }}
+                                    {% if is_due %}<span class="due-badge">Segera Selesai</span>{% endif %}
+                                </td>
                                 <td>{{ item.record.product or '-' }}</td>
                                 <td class="amount-cell">Rp {{ "{:,.0f}".format(item.record.amount or 0).replace(',',
                                     '.') }}</td>
@@ -284,8 +339,8 @@
                                 <td>{{ item.record.days or 0 }}</td>
                                 <td class="profit-cell">Rp {{ "{:,.0f}".format(item.record.profit or 0).replace(',',
                                     '.') }}</td>
-                            </tr>
-                            {% endfor %}
+                                </tr>
+                                {% endfor %}
                         </tbody>
                         <tfoot>
                             <tr class="summary-row">
@@ -309,11 +364,60 @@
         </div>
     </div>
 
+    <script id="accounts-json" type="application/json">{{ accounts_json|safe }}</script>
     <script>
-        const accounts = {{ accounts_json| safe }};
+        const accountsDataStr = document.getElementById('accounts-json').textContent;
+        const accounts = JSON.parse(accountsDataStr || '[]');
 
         function formatRupiah(num) {
             return new Intl.NumberFormat('id-ID').format(num);
+        }
+
+        function checkDueDate(periodStr) {
+            try {
+                // Format: "01/16/2026 12:12:21 ~ 02/05/2026 12:13:21"
+                const parts = periodStr.split('~');
+                if (parts.length < 2) return false;
+
+                const endPart = parts[1].trim().split(' ')[0]; // "02/05/2026"
+                const [m, d, y] = endPart.split('/');
+                const endDate = new Date(y, m - 1, d);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                const diffTime = endDate.getTime() - today.getTime();
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                return diffDays <= 2; // Return true if end date is today, tomorrow, or overdue
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function filterTable(colIdx) {
+            const table = document.getElementById("dana-amal-table");
+            const filters = table.getElementsByClassName("filter-input");
+            const rows = table.getElementsByTagName("tbody")[0].getElementsByTagName("tr");
+
+            for (let i = 0; i < rows.length; i++) {
+                let showRow = true;
+                for (let j = 0; j < filters.length; j++) {
+                    const filterValue = filters[j].value.toLowerCase();
+                    if (!filterValue) continue;
+
+                    // Filter inputs are mapped to columns: 1 (Akun), 2 (Tgl), 3 (Produk), 4 (Invest), 5 (Rate), 6 (Hari)
+                    const cellIdx = j + 1;
+                    const cell = rows[i].getElementsByTagName("td")[cellIdx];
+                    if (cell) {
+                        const cellText = cell.textContent || cell.innerText;
+                        if (cellText.toLowerCase().indexOf(filterValue) === -1) {
+                            showRow = false;
+                            break;
+                        }
+                    }
+                }
+                rows[i].style.display = showRow ? "" : "none";
+            }
         }
 
         async function refreshAllData() {
@@ -403,14 +507,20 @@
                             grandTotalAmount += r.amount || 0;
                             grandTotalProfit += r.profit || 0;
 
+                            const isDue = checkDueDate(r.period || "");
                             const tr = document.createElement('tr');
+                            if (isDue) tr.className = 'due-soon-row';
+
                             tr.innerHTML = `
                                 <td>${rowCount}</td>
                                 <td>
                                     <span class="status-badge status-active">+62 ${phone}</span>
                                     <div style="font-size: 0.65rem; color: #94a3b8; margin-top: 2px;">Update: ${new Date().toLocaleString('id-ID')}</div>
                                 </td>
-                                <td class="period-cell">${r.period || '-'}</td>
+                                <td class="period-cell">
+                                    ${r.period || '-'}
+                                    ${isDue ? '<span class="due-badge">Segera Selesai</span>' : ''}
+                                </td>
                                 <td>${r.product || '-'}</td>
                                 <td class="amount-cell">Rp ${formatRupiah(r.amount || 0)}</td>
                                 <td class="rate-cell">${r.rate || 0}%</td>
@@ -450,11 +560,30 @@
             }
 
             progressEl.className = 'progress-indicator success';
-            progressEl.innerHTML = `✅ Selesai! Berhasil memproses ${accounts.length} akun. Total ${rowCount} records.`;
-            statusText.textContent = `${rowCount} records berhasil diambil`;
-
+            progressEl.innerHTML = `✓ SELESAI: Berhasil memproses ${accounts.length} akun.`;
             btn.disabled = false;
         }
+
+        // Apply highlights to initial data on load
+        document.addEventListener('DOMContentLoaded', () => {
+            const table = document.getElementById('dana-amal-table');
+            if (!table) return;
+
+            const rows = table.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                const period = row.getAttribute('data-period');
+                if (period && checkDueDate(period)) {
+                    row.classList.add('due-soon-row');
+                    const periodCell = row.querySelector('.period-cell');
+                    if (periodCell && !periodCell.querySelector('.due-badge')) {
+                        const badge = document.createElement('span');
+                        badge.className = 'due-badge';
+                        badge.innerText = 'Segera Selesai';
+                        periodCell.appendChild(badge);
+                    }
+                }
+            });
+        });
     </script>
 </body>
 

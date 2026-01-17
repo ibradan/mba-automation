@@ -1791,10 +1791,14 @@ def dana_amal_page():
             total_amount += record.get('amount', 0)
             total_profit += record.get('profit', 0)
     
+    # For due-soon highlighting (today + 2 days)
+    now_plus_2 = (datetime.datetime.now() + datetime.timedelta(days=2)).strftime('%Y-%m-%d')
+    
     return render_template('dana_amal.html', 
                          all_records=all_records,
                          total_amount=total_amount,
                          total_profit=total_profit,
+                         now_str=now_plus_2,
                          accounts_json=json_lib.dumps(accounts_for_js))
 
 
