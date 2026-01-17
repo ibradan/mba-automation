@@ -406,6 +406,15 @@
 
             btn.disabled = false;
         }
+
+        // Auto-fetch on page load if no existing data
+        document.addEventListener('DOMContentLoaded', function () {
+            const existingData = document.querySelector('#dana-amal-table tbody tr');
+            if (!existingData && accounts.length > 0) {
+                // No existing data, auto-fetch
+                refreshAllData();
+            }
+        });
     </script>
 </body>
 
