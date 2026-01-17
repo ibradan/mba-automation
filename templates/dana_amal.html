@@ -660,20 +660,13 @@
                     vA = parseInt(a.cells[colIdx].textContent.replace(/[^\d]/g, '')) || 0;
                     vB = parseInt(b.cells[colIdx].textContent.replace(/[^\d]/g, '')) || 0;
                 } else if (type === 'hx') {
-                    // Sort by H-X. We'll use data-period to extract date
+                    // Sort by days remaining until end date
                     const periodA = a.getAttribute('data-period') || '';
                     const periodB = b.getAttribute('data-period') || '';
 
-                    // Use checkDueDate to get proximity
-                    const infoA = checkDueDate(periodA);
-                    const infoB = checkDueDate(periodB);
-
-                    // Sort order: overdue < H-0 < H-1 < H-2 < others
-                    // But user said "terlama h-x nya dan tercepat", meaning days remaining
-                    const daysA = infoA.isDue ? (periodA.split('~')[1] ? parseHxDays(periodA) : 999) : 999;
-                    const daysB = infoB.isDue ? (periodB.split('~')[1] ? parseHxDays(periodB) : 999) : 999;
-                    vA = daysA;
-                    vB = daysB;
+                    // Always calculate days remaining for proper sorting (not just due items)
+                    vA = parseHxDays(periodA);
+                    vB = parseHxDays(periodB);
                 } else {
                     vA = a.cells[colIdx].textContent.toLowerCase();
                     vB = b.cells[colIdx].textContent.toLowerCase();
