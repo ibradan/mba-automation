@@ -5,10 +5,43 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Dana Amal - TERNAK UANG</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=27" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=28" />
     <style>
         .dana-amal-container {
             margin-top: 20px;
+        }
+
+        .refresh-section {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .btn-refresh {
+            padding: 12px 24px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .btn-refresh:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .btn-refresh:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
         }
 
         .records-table {
@@ -138,6 +171,42 @@
             border: 1px solid var(--border);
         }
 
+        .loading-state {
+            text-align: center;
+            padding: 60px;
+            color: #64748b;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #e2e8f0;
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .progress-indicator {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f0f9ff;
+            border-radius: 8px;
+            color: #0369a1;
+            font-weight: 600;
+        }
+
+        .progress-indicator.success {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
         @media (max-width: 768px) {
 
             .records-table th,
@@ -167,57 +236,177 @@
         </div>
 
         <div class="dana-amal-container">
-            {% if all_records and all_records|length > 0 %}
-            <div class="table-wrapper">
-                <table class="records-table">
-                    <thead>
-                        <tr>
-                            <th>No</th>
-                            <th>Akun</th>
-                            <th>Periode</th>
-                            <th>Produk</th>
-                            <th>Invest</th>
-                            <th>Rate</th>
-                            <th>Hari</th>
-                            <th>Est. Laba</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in all_records %}
-                        <tr>
-                            <td>{{ loop.index }}</td>
-                            <td><span class="status-badge status-active">+62 {{ item.phone_display }}</span></td>
-                            <td class="period-cell">{{ item.record.period or '-' }}</td>
-                            <td>{{ item.record.product or '-' }}</td>
-                            <td class="amount-cell">Rp {{ "{:,.0f}".format(item.record.amount or 0).replace(',', '.') }}
-                            </td>
-                            <td class="rate-cell">{{ item.record.rate or 0 }}%</td>
-                            <td>{{ item.record.days or 0 }}</td>
-                            <td class="profit-cell">Rp {{ "{:,.0f}".format(item.record.profit or 0).replace(',', '.') }}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                    <tfoot>
-                        <tr class="summary-row">
-                            <td colspan="4" style="text-align:right;">TOTAL</td>
-                            <td class="amount-cell">Rp {{ "{:,.0f}".format(total_amount).replace(',', '.') }}</td>
-                            <td colspan="2"></td>
-                            <td class="profit-cell">Rp {{ "{:,.0f}".format(total_profit).replace(',', '.') }}</td>
-                        </tr>
-                    </tfoot>
-                </table>
+            <div class="refresh-section">
+                <button type="button" class="btn-refresh" id="btn-refresh" onclick="refreshAllData()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
+                    </svg>
+                    Ambil Data Semua Akun
+                </button>
+                <span id="status-text" style="color: #64748b; font-size: 0.875rem;">
+                    {% if all_records %}{{ all_records|length }} records tersimpan{% else %}Belum ada data, klik tombol
+                    untuk scrape{% endif %}
+                </span>
             </div>
-            {% else %}
-            <div class="empty-state">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <path d="M9 12h6m-3-3v6M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                </svg>
-                <p>Belum ada data dana amal. Jalankan automation/sync untuk mendapatkan data.</p>
+
+            <div id="table-container">
+                {% if all_records and all_records|length > 0 %}
+                <div class="table-wrapper">
+                    <table class="records-table" id="dana-amal-table">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Akun</th>
+                                <th>Periode</th>
+                                <th>Produk</th>
+                                <th>Invest</th>
+                                <th>Rate</th>
+                                <th>Hari</th>
+                                <th>Est. Laba</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in all_records %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td><span class="status-badge status-active">+62 {{ item.phone_display }}</span></td>
+                                <td class="period-cell">{{ item.record.period or '-' }}</td>
+                                <td>{{ item.record.product or '-' }}</td>
+                                <td class="amount-cell">Rp {{ "{:,.0f}".format(item.record.amount or 0).replace(',',
+                                    '.') }}</td>
+                                <td class="rate-cell">{{ item.record.rate or 0 }}%</td>
+                                <td>{{ item.record.days or 0 }}</td>
+                                <td class="profit-cell">Rp {{ "{:,.0f}".format(item.record.profit or 0).replace(',',
+                                    '.') }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr class="summary-row">
+                                <td colspan="4" style="text-align:right;">TOTAL</td>
+                                <td class="amount-cell">Rp {{ "{:,.0f}".format(total_amount).replace(',', '.') }}</td>
+                                <td colspan="2"></td>
+                                <td class="profit-cell">Rp {{ "{:,.0f}".format(total_profit).replace(',', '.') }}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state" id="empty-state">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M9 12h6m-3-3v6M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    </svg>
+                    <p>Belum ada data dana amal. Klik tombol "Ambil Data Semua Akun" untuk scrape.</p>
+                </div>
+                {% endif %}
             </div>
-            {% endif %}
         </div>
     </div>
+
+    <script>
+        const accounts = {{ accounts_json| safe }};
+
+        function formatRupiah(num) {
+            return new Intl.NumberFormat('id-ID').format(num);
+        }
+
+        async function refreshAllData() {
+            const btn = document.getElementById('btn-refresh');
+            const container = document.getElementById('table-container');
+            const statusText = document.getElementById('status-text');
+
+            if (accounts.length === 0) {
+                alert('Tidak ada akun tersedia.');
+                return;
+            }
+
+            btn.disabled = true;
+
+            // Create table structure
+            container.innerHTML = `
+                <div class="progress-indicator" id="progress-indicator">
+                    <span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;margin-right:8px;"></span>
+                    Memulai...
+                </div>
+                <div class="table-wrapper">
+                    <table class="records-table" id="dana-amal-table">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Akun</th>
+                                <th>Periode</th>
+                                <th>Produk</th>
+                                <th>Invest</th>
+                                <th>Rate</th>
+                                <th>Hari</th>
+                                <th>Est. Laba</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                        <tfoot>
+                            <tr class="summary-row">
+                                <td colspan="4" style="text-align:right;">TOTAL</td>
+                                <td class="total-amount-cell">Rp 0</td>
+                                <td colspan="2"></td>
+                                <td class="total-profit-cell">Rp 0</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            `;
+
+            const progressEl = document.getElementById('progress-indicator');
+            let grandTotalAmount = 0;
+            let grandTotalProfit = 0;
+            let rowCount = 0;
+
+            // Process accounts one by one
+            for (let i = 0; i < accounts.length; i++) {
+                const phone = accounts[i].phone_display;
+                progressEl.innerHTML = `<span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;margin-right:8px;vertical-align:middle;"></span> Memproses akun ${i + 1}/${accounts.length}: +62 ${phone}...`;
+
+                try {
+                    const res = await fetch(`/api/dana_amal/${phone}`);
+                    const data = await res.json();
+
+                    if (data.records && data.records.length > 0) {
+                        const tbody = document.querySelector('#dana-amal-table tbody');
+
+                        data.records.forEach(r => {
+                            rowCount++;
+                            grandTotalAmount += r.amount || 0;
+                            grandTotalProfit += r.profit || 0;
+
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `
+                                <td>${rowCount}</td>
+                                <td><span class="status-badge status-active">+62 ${phone}</span></td>
+                                <td class="period-cell">${r.period || '-'}</td>
+                                <td>${r.product || '-'}</td>
+                                <td class="amount-cell">Rp ${formatRupiah(r.amount || 0)}</td>
+                                <td class="rate-cell">${r.rate || 0}%</td>
+                                <td>${r.days || 0}</td>
+                                <td class="profit-cell">Rp ${formatRupiah(Math.round(r.profit || 0))}</td>
+                            `;
+                            tbody.appendChild(tr);
+                        });
+
+                        // Update totals
+                        document.querySelector('.total-amount-cell').textContent = 'Rp ' + formatRupiah(grandTotalAmount);
+                        document.querySelector('.total-profit-cell').textContent = 'Rp ' + formatRupiah(Math.round(grandTotalProfit));
+                    }
+                } catch (e) {
+                    console.error(`Error fetching for ${phone}:`, e);
+                }
+            }
+
+            progressEl.className = 'progress-indicator success';
+            progressEl.innerHTML = `✅ Selesai! Berhasil memproses ${accounts.length} akun. Total ${rowCount} records.`;
+            statusText.textContent = `${rowCount} records berhasil diambil`;
+
+            btn.disabled = false;
+        }
+    </script>
 </body>
 
 </html>

@@ -1759,12 +1759,14 @@ def _handle_single_run(req, sync_only=False):
 @login_required
 def dana_amal_page():
     """Render the Dana Amal page with pre-scraped financial records."""
+    import json as json_lib
     accounts = data_manager.load_accounts()
     current_user = session.get('user_id')
     
     all_records = []
     total_amount = 0
     total_profit = 0
+    accounts_for_js = []
     
     for acc in accounts:
         if acc.get('owner', 'admin') != current_user:
@@ -1773,6 +1775,8 @@ def dana_amal_page():
         phone = acc.get("phone", "")
         display_phone = phone_display(phone) if phone else ""
         dana_amal_records = acc.get('dana_amal_records', [])
+        
+        accounts_for_js.append({'phone_display': display_phone})
         
         for record in dana_amal_records:
             all_records.append({
@@ -1785,7 +1789,73 @@ def dana_amal_page():
     return render_template('dana_amal.html', 
                          all_records=all_records,
                          total_amount=total_amount,
-                         total_profit=total_profit)
+                         total_profit=total_profit,
+                         accounts_json=json_lib.dumps(accounts_for_js))
+
+
+@app.route("/api/dana_amal/<phone_disp>")
+@login_required
+def api_dana_amal(phone_disp):
+    """API endpoint to fetch dana amal records by scraping on-demand."""
+    from mba_automation.scraper import scrape_dana_amal_records
+    from playwright.sync_api import sync_playwright
+    from mba_automation.automation import login as mba_login
+    
+    try:
+        norm = normalize_phone(phone_disp)
+        if not norm:
+            return jsonify({"error": "Invalid phone number"}), 400
+        
+        # Find account
+        accounts = data_manager.load_accounts()
+        current_user = session.get('user_id')
+        acc = None
+        for a in accounts:
+            if a.get('owner', 'admin') != current_user:
+                continue
+            if normalize_phone(a.get('phone', '')) == norm:
+                acc = a
+                break
+        
+        if not acc:
+            return jsonify({"error": "Account not found"}), 404
+        
+        pwd = acc.get('password', '')
+        if not pwd:
+            return jsonify({"error": "Password not set for this account"}), 400
+        
+        # Scrape using Playwright
+        records = []
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True, args=["--disable-gpu", "--no-sandbox"])
+            context = browser.new_context(viewport={"width": 390, "height": 844})
+            page = context.new_page()
+            
+            try:
+                # Use the proper login function from automation module
+                if mba_login(page, context, norm, pwd, timeout=30):
+                    # Now scrape dana amal
+                    records = scrape_dana_amal_records(page, timeout=30)
+                    
+                    # Save to accounts.json for persistence
+                    if records:
+                        acc_list = data_manager.load_accounts()
+                        for a in acc_list:
+                            if normalize_phone(a.get('phone', '')) == norm:
+                                a['dana_amal_records'] = records
+                                break
+                        data_manager.write_accounts(acc_list)
+                else:
+                    return jsonify({"error": "Login failed"}), 401
+                
+            finally:
+                browser.close()
+        
+        return jsonify({"records": records})
+        
+    except Exception as e:
+        logger.exception("Dana Amal API error: %s", e)
+        return jsonify({"error": str(e)}), 500
 
 
 
