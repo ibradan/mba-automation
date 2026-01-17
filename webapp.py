@@ -1771,12 +1771,12 @@ def dana_amal_page():
             continue
         
         phone = acc.get("phone", "")
-        phone_display = phone_display(phone) if phone else ""
+        display_phone = phone_display(phone) if phone else ""
         dana_amal_records = acc.get('dana_amal_records', [])
         
         for record in dana_amal_records:
             all_records.append({
-                'phone_display': phone_display,
+                'phone_display': display_phone,
                 'record': record
             })
             total_amount += record.get('amount', 0)
