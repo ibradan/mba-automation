@@ -2546,3 +2546,62 @@ a.stat-box {
 .cal-day.missed {
   font-weight: 700;
 }
+/* ================= BOTTOM NAVIGATION ================= */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+  z-index: 1000;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px;
+  text-decoration: none;
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: all 0.2s;
+  border-radius: 12px;
+  min-width: 80px;
+}
+
+.bottom-nav-item svg {
+  transition: all 0.2s;
+}
+
+.bottom-nav-item:hover {
+  color: var(--primary);
+  background: #f8fafc;
+}
+
+.bottom-nav-item.active {
+  color: var(--primary);
+}
+
+.bottom-nav-item.active svg {
+  stroke-width: 2.5;
+}
+
+/* Add bottom padding to body to account for fixed nav */
+body {
+  padding-bottom: 70px;
+}
+
+@media (min-width: 768px) {
+  body {
+    padding-bottom: 0;
+  }
+}
+
