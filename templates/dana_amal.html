@@ -371,7 +371,7 @@
             <div class="account-selector">
                 <span class="account-selector-label">Pilih Akun:</span>
                 <div class="account-btn active" onclick="setAccountFilter('all', this)" title="Semua Akun">All</div>
-                {% for acc in accounts_json|from_json %}
+                {% for acc in accounts_list %}
                 <div class="account-btn" onclick="setAccountFilter('+62 {{ acc.phone_display }}', this)"
                     title="+62 {{ acc.phone_display }}">
                     {{ loop.index }}
@@ -415,22 +415,7 @@
                         </thead>
                         <tbody>
                             {% for item in all_records %}
-                            {% set is_due = false %}
-                            {% set due_label = "" %}
-                            {% if item.record.period and ' ~ ' in item.record.period %}
-                            {% set endPartFull = item.record.period.split('~')[1].strip() %}
-                            {% set endDatePart = endPartFull.split(' ')[0] %}
-                            {% set endTimePart = endPartFull.split(' ')[1] %}
-                            {% set p_m, p_d, p_y = endDatePart.split('/') %}
-                            {% set endDateStr = p_y ~ '-' ~ p_m ~ '-' ~ p_d %}
-
-                            {# Logic to calculate H-X roughly (since Jinja date math is limited, we compare strings) #}
-                            {% if endDateStr <= now_str %} {% set is_due=true %} {% if endDateStr==now_str %} {% set
-                                due_label="Selesai (H-0) " ~ endTimePart %} {% elif endDateStr < now_str %} {% set
-                                due_label="Selesai (Overdue)" %} {% else %} {# Very naive comparison for H-1/H-2 if
-                                needed, but we'll stick to a generic label for server-side if it's complex #} {% set
-                                due_label="Segera Selesai " ~ endTimePart %} {% endif %} {% endif %} {% endif %} <tr
-                                class="{% if is_due %}due-soon-row{% endif %}"
+                            <tr class="{% if item.is_due %}due-soon-row{% endif %}"
                                 data-period="{{ item.record.period or '' }}">
                                 <td>{{ loop.index }}</td>
                                 <td>
@@ -442,7 +427,7 @@
                                 </td>
                                 <td class="period-cell">
                                     {{ item.record.period or '-' }}
-                                    {% if is_due %}<span class="due-badge">{{ due_label }}</span>{% endif %}
+                                    {% if item.is_due %}<span class="due-badge">{{ item.due_label }}</span>{% endif %}
                                 </td>
                                 <td>{{ item.record.product or '-' }}</td>
                                 <td class="amount-cell">Rp {{ "{:,.0f}".format(item.record.amount or 0).replace(',',
@@ -451,8 +436,8 @@
                                 <td>{{ item.record.days or 0 }}</td>
                                 <td class="profit-cell">Rp {{ "{:,.0f}".format(item.record.profit or 0).replace(',',
                                     '.') }}</td>
-                                </tr>
-                                {% endfor %}
+                            </tr>
+                            {% endfor %}
                         </tbody>
                         <tfoot>
                             <tr class="summary-row">

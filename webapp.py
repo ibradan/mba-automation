@@ -1783,13 +1783,51 @@ def dana_amal_page():
         })
         
         for record in dana_amal_records:
+            # Calculate H-X countdown for this record
+            is_due = False
+            due_label = ""
+            period_str = record.get('period', '')
+            
+            if period_str and ' ~ ' in period_str:
+                try:
+                    parts = period_str.split('~')
+                    if len(parts) > 1:
+                        end_full = parts[1].strip()
+                        end_parts = end_full.split(' ')
+                        if len(end_parts) >= 2:
+                            end_date_part = end_parts[0]  # "02/05/2026"
+                            end_time_part = end_parts[1]  # "12:13:21"
+                            
+                            if '/' in end_date_part:
+                                date_components = end_date_part.split('/')
+                                if len(date_components) == 3:
+                                    m, d, y = date_components
+                                    end_date_str = f"{y}-{m}-{d}"
+                                    
+                                    # Compare with now_plus_2
+                                    if end_date_str <= now_plus_2:
+                                        is_due = True
+                                        today_str = datetime.datetime.now().strftime('%Y-%m-%d')
+                                        
+                                        if end_date_str == today_str:
+                                            due_label = f"Selesai (H-0) {end_time_part}"
+                                        elif end_date_str < today_str:
+                                            due_label = "Selesai (Overdue)"
+                                        else:
+                                            due_label = f"Segera Selesai {end_time_part}"
+                except Exception as e:
+                    # If parsing fails, just skip the due calculation
+                    pass
+            
             all_records.append({
                 'phone_display': display_phone,
                 'record': record,
-                'last_update': last_update
+                'last_update': last_update,
+                'is_due': is_due,
+                'due_label': due_label
             })
-            total_amount += record.get('amount', 0)
-            total_profit += record.get('profit', 0)
+            total_amount += (record.get('amount') or 0)
+            total_profit += (record.get('profit') or 0)
     
     # For due-soon highlighting (today + 2 days)
     now_plus_2 = (datetime.datetime.now() + datetime.timedelta(days=2)).strftime('%Y-%m-%d')
@@ -1799,6 +1837,7 @@ def dana_amal_page():
                          total_amount=total_amount,
                          total_profit=total_profit,
                          now_str=now_plus_2,
+                         accounts_list=accounts_for_js,
                          accounts_json=json_lib.dumps(accounts_for_js))
 
 
