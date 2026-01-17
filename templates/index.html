@@ -146,6 +146,38 @@
       align-items: center;
       gap: 10px;
     }
+
+    .btn-refresh {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 10px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-refresh:hover {
+      background: rgba(16, 185, 129, 0.25);
+      transform: translateY(-1px);
+    }
+
+    .btn-refresh:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .last-refresh-label {
+      font-size: 0.7rem;
+      color: #94a3b8;
+      font-weight: 500;
+    }
   </style>
 </head>
 
@@ -165,7 +197,23 @@
         </div>
 
         <div class="header-right">
-          <!-- Navigation moved to bottom menu -->
+          <button type="button" id="btn-refresh-dashboard" class="btn-refresh" onclick="refreshDashboard()"
+            title="Refresh data">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              class="refresh-icon">
+              <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
+            </svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" class="spinner-icon" style="display:none;">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" opacity="0.25" />
+              <path d="M12 2 A10 10 0 0 1 22 12" stroke="currentColor" stroke-width="2" fill="none"
+                stroke-linecap="round">
+                <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s"
+                  repeatCount="indefinite" />
+              </path>
+            </svg>
+            <span>Refresh</span>
+          </button>
+          <span id="last-refresh-ts" class="last-refresh-label" title="Last refreshed"></span>
         </div>
     </header>
 

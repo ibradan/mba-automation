@@ -380,6 +380,9 @@ function updateStatusRealTime() {
         else queueBadge.classList.remove('active');
       }
 
+      // Hybrid Mode: Start/stop polling based on queue
+      checkQueueAndManagePolling(queueSize);
+
 
 
       let totalModal = 0, totalSaldo = 0, totalPendapatan = 0, totalEstimation = 0;
@@ -516,45 +519,72 @@ function updateStatusRealTime() {
     });
 }
 
+// ================= HYBRID REFRESH MODE =================
+// Only poll when queue > 0 (jobs running), otherwise manual refresh only
+let pollingIntervalId = null;
+let lastQueueSize = 0;
+
+function startSmartPolling() {
+  if (pollingIntervalId) return; // Already running
+  console.log("SMART POLL: Queue active, starting 3s polling...");
+  pollingIntervalId = setInterval(() => {
+    if (!isPolling) updateStatusRealTime();
+  }, 3000);
+}
+
+function stopSmartPolling() {
+  if (pollingIntervalId) {
+    clearInterval(pollingIntervalId);
+    pollingIntervalId = null;
+    console.log("SMART POLL: Queue empty, polling stopped.");
+  }
+}
+
+// Called after each updateStatusRealTime to check queue
+function checkQueueAndManagePolling(queueSize) {
+  if (queueSize > 0 && !pollingIntervalId) {
+    startSmartPolling();
+  } else if (queueSize === 0 && pollingIntervalId) {
+    stopSmartPolling();
+  }
+  lastQueueSize = queueSize;
+}
+
+// Global function for manual refresh button
+function refreshDashboard() {
+  const btn = document.getElementById('btn-refresh-dashboard');
+  if (btn) {
+    btn.disabled = true;
+    const icon = btn.querySelector('.refresh-icon');
+    const spinner = btn.querySelector('.spinner-icon');
+    if (icon) icon.style.display = 'none';
+    if (spinner) spinner.style.display = 'inline';
+  }
+
+  updateStatusRealTime();
+
+  // Update last refresh timestamp
+  const tsEl = document.getElementById('last-refresh-ts');
+  if (tsEl) {
+    const now = new Date();
+    tsEl.textContent = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  setTimeout(() => {
+    if (btn) {
+      btn.disabled = false;
+      const icon = btn.querySelector('.refresh-icon');
+      const spinner = btn.querySelector('.spinner-icon');
+      if (spinner) spinner.style.display = 'none';
+      if (icon) icon.style.display = 'inline';
+    }
+    showToast('Dashboard refreshed!', 'success');
+  }, 1000);
+}
+
 // Initial setup on load
 document.addEventListener('DOMContentLoaded', function () {
-  updateStatusRealTime(); // Run immediately on load
-
-  // Auto-sync trigger on load and periodically
-  performAutoSyncAll();
-
-  let pollingIntervalId = null;
-  let autoSyncIntervalId = setInterval(performAutoSyncAll, 5 * 60 * 1000); // Check every 5 minutes
-
-  const startPolling = (ms) => {
-    if (pollingIntervalId) clearInterval(pollingIntervalId);
-    pollingIntervalId = setInterval(() => {
-      if (!isPolling) updateStatusRealTime();
-    }, ms);
-  };
-
-  // Start with default 2s polling
-  startPolling(2000);
-
-  // SMART POLLING: Slow down when tab is hidden to save battery/thermal
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-      console.log("Tab hidden: Entering low-power polling mode (60s)");
-      startPolling(60000); // Slow down to 1 minute
-      if (autoSyncIntervalId) {
-        clearInterval(autoSyncIntervalId);
-        autoSyncIntervalId = null;
-      }
-    } else {
-      console.log("Tab visible: Entering high-performance mode (2s)");
-      updateStatusRealTime();
-      startPolling(2000);
-      if (!autoSyncIntervalId) {
-        autoSyncIntervalId = setInterval(performAutoSyncAll, 5 * 60 * 1000);
-      }
-    }
-  });
-
+  updateStatusRealTime(); // Run once on load
 
   // Initial progress for existing cards
   document.querySelectorAll('.account-card').forEach(card => {
