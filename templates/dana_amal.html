@@ -240,7 +240,7 @@
         <div class="dana-amal-container">
             <div class="account-selector">
                 <select id="account-select">
-                    <option value="">-- Pilih Akun --</option>
+                    <option value="all">-- Semua Akun --</option>
                     {% for acc in accounts %}
                     <option value="{{ acc.phone_display }}">+62 {{ acc.phone_display }}</option>
                     {% endfor %}
@@ -271,44 +271,45 @@
 
         async function fetchDanaAmal() {
             const select = document.getElementById('account-select');
-            const phone = select.value;
+            const selectedPhone = select.value;
             const btn = document.getElementById('btn-fetch');
             const container = document.getElementById('table-container');
 
-            if (!phone) {
-                alert('Pilih akun terlebih dahulu!');
+            // Collect accounts to process
+            let queue = [];
+            if (!selectedPhone || selectedPhone === 'all') {
+                // All accounts
+                const options = select.options;
+                for (let i = 0; i < options.length; i++) {
+                    if (options[i].value && options[i].value !== 'all') {
+                        queue.push(options[i].value);
+                    }
+                }
+            } else {
+                queue.push(selectedPhone);
+            }
+
+            if (queue.length === 0) {
+                alert('Tidak ada akun untuk diproses.');
                 return;
             }
 
-            // Show loading
+            // UI Init
             btn.disabled = true;
-            btn.innerHTML = '<span class="spinner" style="width:18px;height:18px;border-width:2px;display:inline-block;margin-right:8px;"></span> Mengambil data...';
-            container.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Mengambil data dari MBA...</p></div>';
+            const tableId = 'dana-amal-table';
 
-            try {
-                const res = await fetch(`/api/dana_amal/${phone}`);
-                const data = await res.json();
-
-                if (data.error) {
-                    container.innerHTML = `<div class="empty-state"><p style="color:#ef4444;">Error: ${data.error}</p></div>`;
-                    return;
-                }
-
-                if (!data.records || data.records.length === 0) {
-                    container.innerHTML = '<div class="empty-state"><p>Tidak ada record dana amal untuk akun ini</p></div>';
-                    return;
-                }
-
-                // Build table
-                let totalAmount = 0;
-                let totalProfit = 0;
-
-                let html = `
+            // If table doesn't exist, create it
+            if (!document.getElementById(tableId)) {
+                container.innerHTML = `
+                    <div id="progress-indicator" style="margin-bottom:15px; padding:10px; background:#f0f9ff; border-radius:8px; color:#0369a1; font-weight:600; display:none;">
+                        Menyiapkan...
+                    </div>
                     <div class="table-wrapper">
-                        <table class="records-table">
+                        <table class="records-table" id="${tableId}">
                             <thead>
                                 <tr>
-                                    <th>#</th>
+                                    <th>No</th>
+                                    <th>Akun</th>
                                     <th>Periode</th>
                                     <th>Produk</th>
                                     <th>Invest</th>
@@ -317,53 +318,78 @@
                                     <th>Est. Laba</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody></tbody>
+                            <tfoot>
+                                <tr class="summary-row">
+                                    <td colspan="4" style="text-align:right;">TOTAL</td>
+                                    <td class="total-amount-cell">Rp 0</td>
+                                    <td colspan="2"></td>
+                                    <td class="total-profit-cell">Rp 0</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
                 `;
-
-                data.records.forEach((r, i) => {
-                    totalAmount += r.amount || 0;
-                    totalProfit += r.profit || 0;
-
-                    html += `
-                        <tr>
-                            <td>${i + 1}</td>
-                            <td class="period-cell">${r.period || '-'}</td>
-                            <td>${r.product || '-'}</td>
-                            <td class="amount-cell">Rp ${formatRupiah(r.amount || 0)}</td>
-                            <td class="rate-cell">${r.rate || 0}%</td>
-                            <td>${r.days || 0}</td>
-                            <td class="profit-cell">Rp ${formatRupiah(Math.round(r.profit || 0))}</td>
-                        </tr>
-                    `;
-                });
-
-                // Summary row
-                html += `
-                        <tr class="summary-row">
-                            <td colspan="3" style="text-align:right;">TOTAL</td>
-                            <td class="amount-cell">Rp ${formatRupiah(totalAmount)}</td>
-                            <td colspan="2"></td>
-                            <td class="profit-cell">Rp ${formatRupiah(Math.round(totalProfit))}</td>
-                        </tr>
-                    </tbody>
-                </table>
-                </div>
-                `;
-
-                container.innerHTML = html;
-
-            } catch (err) {
-                console.error(err);
-                container.innerHTML = `<div class="empty-state"><p style="color:#ef4444;">Gagal mengambil data: ${err.message}</p></div>`;
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = `
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
-                    </svg>
-                    Ambil Data
-                `;
+            } else {
+                // Reset body if restarting? Or just append?
+                // For now clear body
+                document.querySelector(`#${tableId} tbody`).innerHTML = '';
+                document.querySelector('.total-amount-cell').textContent = 'Rp 0';
+                document.querySelector('.total-profit-cell').textContent = 'Rp 0';
             }
+
+            const progressEl = document.getElementById('progress-indicator');
+            progressEl.style.display = 'block';
+
+            let grandTotalAmount = 0;
+            let grandTotalProfit = 0;
+            let rowCount = 0;
+
+            // Process one by one
+            for (let i = 0; i < queue.length; i++) {
+                const phone = queue[i];
+                progressEl.innerHTML = `<span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;margin-right:8px;"></span> Memproses akun ${i + 1}/${queue.length}: +62 ${phone}...`;
+
+                try {
+                    const res = await fetch(`/api/dana_amal/${phone}`);
+                    const data = await res.json();
+
+                    if (data.records && data.records.length > 0) {
+                        const tbody = document.querySelector(`#${tableId} tbody`);
+
+                        data.records.forEach(r => {
+                            rowCount++;
+                            grandTotalAmount += r.amount || 0;
+                            grandTotalProfit += r.profit || 0;
+
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `
+                                <td>${rowCount}</td>
+                                <td><span class="status-badge status-active">+62 ${phone}</span></td>
+                                <td class="period-cell">${r.period || '-'}</td>
+                                <td>${r.product || '-'}</td>
+                                <td class="amount-cell">Rp ${formatRupiah(r.amount || 0)}</td>
+                                <td class="rate-cell">${r.rate || 0}%</td>
+                                <td>${r.days || 0}</td>
+                                <td class="profit-cell">Rp ${formatRupiah(Math.round(r.profit || 0))}</td>
+                            `;
+                            tbody.appendChild(tr);
+                        });
+
+                        // Update totals immediately
+                        document.querySelector('.total-amount-cell').textContent = 'Rp ' + formatRupiah(grandTotalAmount);
+                        document.querySelector('.total-profit-cell').textContent = 'Rp ' + formatRupiah(Math.round(grandTotalProfit));
+                    }
+                } catch (e) {
+                    console.error(`Error fetching for ${phone}:`, e);
+                }
+            }
+
+            progressEl.style.backgroundColor = '#dcfce7';
+            progressEl.style.color = '#15803d';
+            progressEl.innerHTML = `✅ Selesai! Berhasil memproses ${queue.length} akun.`;
+
+            btn.disabled = false;
         }
     </script>
 </body>
