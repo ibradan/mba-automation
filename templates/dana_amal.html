@@ -322,12 +322,16 @@
 
             btn.disabled = true;
 
+            // Create status log container
+            let logHtml = `<div style="max-height: 150px; overflow-y: auto; background: #f8fafc; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 0.8rem; border: 1px solid #e2e8f0;">`;
+
             // Create table structure
             container.innerHTML = `
                 <div class="progress-indicator" id="progress-indicator">
                     <span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;margin-right:8px;"></span>
                     Memulai...
                 </div>
+                <div id="status-log-container">${logHtml}</div>
                 <div class="table-wrapper">
                     <table class="records-table" id="dana-amal-table">
                         <thead>
@@ -356,6 +360,8 @@
             `;
 
             const progressEl = document.getElementById('progress-indicator');
+            const logContainer = document.querySelector('#status-log-container > div');
+
             let grandTotalAmount = 0;
             let grandTotalProfit = 0;
             let rowCount = 0;
@@ -394,10 +400,21 @@
                         // Update totals
                         document.querySelector('.total-amount-cell').textContent = 'Rp ' + formatRupiah(grandTotalAmount);
                         document.querySelector('.total-profit-cell').textContent = 'Rp ' + formatRupiah(Math.round(grandTotalProfit));
+
+                        // Log success
+                        logContainer.innerHTML += `<div style="color: green;">✓ +62 ${phone}: Ditemukan ${data.records.length} records</div>`;
+                    } else {
+                        // Log empty
+                        logContainer.innerHTML += `<div style="color: #64748b;">• +62 ${phone}: Tidak ada data investasi</div>`;
                     }
                 } catch (e) {
                     console.error(`Error fetching for ${phone}:`, e);
+                    // Log error
+                    logContainer.innerHTML += `<div style="color: red;">✗ +62 ${phone}: Gagal mengambil data (${e.message || 'Error'})</div>`;
                 }
+
+                // Auto scroll log
+                logContainer.scrollTop = logContainer.scrollHeight;
             }
 
             progressEl.className = 'progress-indicator success';
