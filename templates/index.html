@@ -137,6 +137,12 @@
         transform: rotate(360deg);
       }
     }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
   </style>
 </head>
 
@@ -154,149 +160,152 @@
             </div>
           </div>
         </div>
-        <div class="settings-dropdown">
+
+        <div class="header-right">
           <a href="/dana_amal" class="btn-icon" title="Dana Amal" aria-label="Dana Amal" style="text-decoration: none;">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
             </svg>
           </a>
-          <button type="button" class="btn-icon" id="settings-toggle" title="Pengaturan" aria-label="Pengaturan">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
-              <path
-                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z" />
-            </svg>
-          </button>
-          <div class="settings-menu" id="settings-menu" style="display: none;">
-            <div class="settings-header">Settings</div>
 
-            <div style="padding: 0 12px 0;">
-              <div style="font-size: 12px; color: var(--primary); margin-bottom: 4px;">Logged in as: <b>{{
-                  session.get('user_id') }}</b></div>
-              <a href="{{ url_for('logout') }}" class="btn-small"
-                style="width: 100%; justify-content: center; background: rgba(255, 82, 82, 0.1); color: #ff5252; text-decoration: none; display: flex; align-items: center; margin-bottom: 8px;">
-                Logout
+          <div class="settings-dropdown">
+            <button type="button" class="btn-icon" id="settings-toggle" title="Pengaturan" aria-label="Pengaturan">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+                <path
+                  d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z" />
+              </svg>
+            </button>
+            <div class="settings-menu" id="settings-menu" style="display: none;">
+              <div class="settings-header">Settings</div>
+
+              <div style="padding: 0 12px 0;">
+                <div style="font-size: 12px; color: var(--primary); margin-bottom: 4px;">Logged in as: <b>{{
+                    session.get('user_id') }}</b></div>
+                <a href="{{ url_for('logout') }}" class="btn-small"
+                  style="width: 100%; justify-content: center; background: rgba(255, 82, 82, 0.1); color: #ff5252; text-decoration: none; display: flex; align-items: center; margin-bottom: 8px;">
+                  Logout
+                </a>
+
+                <button type="button" class="btn-small"
+                  onclick="document.getElementById('change-password-form').style.display = document.getElementById('change-password-form').style.display === 'none' ? 'block' : 'none'"
+                  style="width: 100%; justify-content: center; background: rgba(255, 255, 255, 0.05); color: var(--text); border: 1px solid rgba(255,255,255,0.1);">
+                  Ganti Password 🔒
+                </button>
+
+                <form id="change-password-form" action="{{ url_for('change_password') }}" method="POST"
+                  style="display: none; margin-top: 10px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
+                  <div style="margin-bottom: 8px;">
+                    <input type="password" name="old_password" placeholder="Password Lama" class="settings-input"
+                      required style="width: 100%; font-size: 12px;">
+                  </div>
+                  <div style="margin-bottom: 8px;">
+                    <input type="password" name="new_password" placeholder="Password Baru" class="settings-input"
+                      required style="width: 100%; font-size: 12px;">
+                  </div>
+                  <div style="margin-bottom: 8px;">
+                    <input type="password" name="confirm_password" placeholder="Konfirmasi Password Baru"
+                      class="settings-input" required style="width: 100%; font-size: 12px;">
+                  </div>
+                  <button type="submit" class="btn-small"
+                    style="width: 100%; justify-content: center; background: var(--primary); color: #fff;">Simpan
+                    Password</button>
+                </form>
+              </div>
+
+
+
+
+              <!-- Log Level -->
+              {% if session.get('user_id') == 'admin' %}
+              <div class="settings-item">
+                <span>Log Level</span>
+                <select id="setting-loglevel" class="settings-select">
+                  <option value="INFO" {% if settings.get('log_level')=='INFO' %}selected{% endif %}>INFO</option>
+                  <option value="DEBUG" {% if settings.get('log_level')=='DEBUG' %}selected{% endif %}>DEBUG</option>
+                </select>
+              </div>
+              {% endif %}
+
+              <hr class="settings-divider">
+              <div class="settings-header" style="font-size: 11px; opacity: 0.7; margin-bottom: 8px;">Telegram
+                Notification</div>
+
+              <div class="settings-item-vertical">
+                <span>Bot Token</span>
+                <input type="password" id="setting-telegram-token" class="settings-input" placeholder="123456:ABC..."
+                  value="{{ settings.get('telegram_token', '') }}">
+              </div>
+
+              <div class="settings-item-vertical">
+                <span>Chat ID</span>
+                <input type="text" id="setting-telegram-chat-id" class="settings-input" placeholder="987654321"
+                  value="{{ settings.get('telegram_chat_id', '') }}">
+              </div>
+
+              <div style="padding: 0 12px 10px;">
+                <button type="button" id="btn-test-telegram" class="btn-small"
+                  style="width: 100%; justify-content: center; background: #0088cc; color: white; border: none;">
+                  Tes Telegram ✈️
+                </button>
+              </div>
+
+              <hr class="settings-divider">
+
+              <!-- Export/Import -->
+              <div class="settings-actions">
+                <button type="button" id="btn-export" class="btn-small">Export JSON</button>
+                <button type="button" id="btn-import-trigger" class="btn-small">Import JSON</button>
+                <input type="file" id="file-import" style="display: none" accept=".json" />
+              </div>
+
+              <hr class="settings-divider">
+
+              <div style="padding: 0 12px 12px; display: flex; flex-direction: column; gap: 8px;">
+              </div>
+
+              <hr class="settings-divider">
+
+
+              <hr class="settings-divider">
+
+              <a href="/dana_amal" class="settings-link">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                </svg>
+                Dana Amal 💰
               </a>
 
-              <button type="button" class="btn-small"
-                onclick="document.getElementById('change-password-form').style.display = document.getElementById('change-password-form').style.display === 'none' ? 'block' : 'none'"
-                style="width: 100%; justify-content: center; background: rgba(255, 255, 255, 0.05); color: var(--text); border: 1px solid rgba(255,255,255,0.1);">
-                Ganti Password 🔒
+              <button type="button" id="btn-install-app" class="settings-link"
+                style="width: 100%; text-align: left; cursor: pointer;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Install Aplikasi
               </button>
 
-              <form id="change-password-form" action="{{ url_for('change_password') }}" method="POST"
-                style="display: none; margin-top: 10px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
-                <div style="margin-bottom: 8px;">
-                  <input type="password" name="old_password" placeholder="Password Lama" class="settings-input" required
-                    style="width: 100%; font-size: 12px;">
-                </div>
-                <div style="margin-bottom: 8px;">
-                  <input type="password" name="new_password" placeholder="Password Baru" class="settings-input" required
-                    style="width: 100%; font-size: 12px;">
-                </div>
-                <div style="margin-bottom: 8px;">
-                  <input type="password" name="confirm_password" placeholder="Konfirmasi Password Baru"
-                    class="settings-input" required style="width: 100%; font-size: 12px;">
-                </div>
-                <button type="submit" class="btn-small"
-                  style="width: 100%; justify-content: center; background: var(--primary); color: #fff;">Simpan
-                  Password</button>
-              </form>
+
+              {% if session.get('user_id') == 'admin' %}
+              <a href="/logs" class="settings-link">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                  <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                Lihat Log
+              </a>
+              {% endif %}
             </div>
-
-
-
-
-            <!-- Log Level -->
-            {% if session.get('user_id') == 'admin' %}
-            <div class="settings-item">
-              <span>Log Level</span>
-              <select id="setting-loglevel" class="settings-select">
-                <option value="INFO" {% if settings.get('log_level')=='INFO' %}selected{% endif %}>INFO</option>
-                <option value="DEBUG" {% if settings.get('log_level')=='DEBUG' %}selected{% endif %}>DEBUG</option>
-              </select>
-            </div>
-            {% endif %}
-
-            <hr class="settings-divider">
-            <div class="settings-header" style="font-size: 11px; opacity: 0.7; margin-bottom: 8px;">Telegram
-              Notification</div>
-
-            <div class="settings-item-vertical">
-              <span>Bot Token</span>
-              <input type="password" id="setting-telegram-token" class="settings-input" placeholder="123456:ABC..."
-                value="{{ settings.get('telegram_token', '') }}">
-            </div>
-
-            <div class="settings-item-vertical">
-              <span>Chat ID</span>
-              <input type="text" id="setting-telegram-chat-id" class="settings-input" placeholder="987654321"
-                value="{{ settings.get('telegram_chat_id', '') }}">
-            </div>
-
-            <div style="padding: 0 12px 10px;">
-              <button type="button" id="btn-test-telegram" class="btn-small"
-                style="width: 100%; justify-content: center; background: #0088cc; color: white; border: none;">
-                Tes Telegram ✈️
-              </button>
-            </div>
-
-            <hr class="settings-divider">
-
-            <!-- Export/Import -->
-            <div class="settings-actions">
-              <button type="button" id="btn-export" class="btn-small">Export JSON</button>
-              <button type="button" id="btn-import-trigger" class="btn-small">Import JSON</button>
-              <input type="file" id="file-import" style="display: none" accept=".json" />
-            </div>
-
-            <hr class="settings-divider">
-
-            <div style="padding: 0 12px 12px; display: flex; flex-direction: column; gap: 8px;">
-            </div>
-
-            <hr class="settings-divider">
-
-
-            <hr class="settings-divider">
-
-            <a href="/dana_amal" class="settings-link">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-              </svg>
-              Dana Amal 💰
-            </a>
-
-            <button type="button" id="btn-install-app" class="settings-link"
-              style="width: 100%; text-align: left; cursor: pointer;">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="7 10 12 15 17 10"></polyline>
-                <line x1="12" y1="15" x2="12" y2="3"></line>
-              </svg>
-              Install Aplikasi
-            </button>
-
-
-            {% if session.get('user_id') == 'admin' %}
-            <a href="/logs" class="settings-link">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                <polyline points="14 2 14 8 20 8"></polyline>
-                <line x1="16" y1="13" x2="8" y2="13"></line>
-                <line x1="16" y1="17" x2="8" y2="17"></line>
-                <polyline points="10 9 9 9 8 9"></polyline>
-              </svg>
-              Lihat Log
-            </a>
-            {% endif %}
           </div>
-        </div>
     </header>
 
     <!-- ================= FLASH MESSAGE ================= -->
