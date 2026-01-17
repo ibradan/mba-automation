@@ -1754,6 +1754,13 @@ def _handle_single_run(req, sync_only=False):
         return jsonify({"ok": False, "msg": str(e)}), 500
 
 
+@app.route("/settings")
+@login_required
+def settings_page():
+    """Render the dedicated Settings page."""
+    settings = data_manager.load_settings()
+    return render_template('settings.html', settings=settings)
+
 
 @app.route("/dana_amal")
 @login_required
