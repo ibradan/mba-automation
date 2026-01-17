@@ -242,30 +242,28 @@ def scrape_dana_amal_records(page: Page, timeout: int = 30) -> list:
         print(f"  Navigating to Dana Amal page: {full_url}")
         page.goto(full_url, wait_until="domcontentloaded", timeout=timeout * 1000)
         
-        page.wait_for_timeout(3000)
+        page.wait_for_timeout(5000)
         try_close_popups(page)
+        page.wait_for_timeout(2000)
         
-        # Wait for records to load
+        # Wait for records to load - the site uses .van-cell for each record
         try:
-            page.wait_for_selector(".fund-card, .fund-item, [class*='fund']", timeout=8000)
+            page.wait_for_selector(".van-cell", timeout=10000)
         except Exception:
-            print("  No dana amal records found (no .fund-card elements)")
+            print("  No dana amal records found (no .van-cell elements)")
             return []
         
-        # Get all fund record cards/items
-        # Based on screenshot structure, each record has .fund-span-value for period
-        # and multiple .fund-value for amount, rate%, days
-        cards = page.locator(".fund-card, .fund-item, [class*='record-item']").all()
+        # Get all van-cell elements (each represents one investment record)
+        cells = page.locator(".van-cell").all()
+        print(f"  Found {len(cells)} .van-cell elements")
         
-        if not cards:
-            # Try alternative: look for any container with the data
-            # Get all text and parse
-            print("  Trying text-based parsing...")
-            body_text = page.locator("body").text_content()
-            # This is fallback - would need specific parsing
-            
-        for idx, card in enumerate(cards):
+        for idx, cell in enumerate(cells):
             try:
+                # Get full text content of the cell
+                text = cell.text_content(timeout=2000)
+                if not text:
+                    continue
+                
                 record = {
                     'period': '',
                     'product': '',
@@ -273,74 +271,54 @@ def scrape_dana_amal_records(page: Page, timeout: int = 30) -> list:
                     'rate': 0,
                     'days': 0,
                     'profit': 0,
-                    'status': ''
                 }
                 
-                # Get period (date range)
-                try:
-                    period_el = card.locator(".fund-span-value, [class*='period'], [class*='date']").first
-                    if period_el.count() > 0:
-                        record['period'] = period_el.text_content(timeout=1000).strip()
-                except: pass
+                # Parse the text content
+                # Format: "01/16/2026 12:12:21 ~ 02/05/2026 12:13:21Invesco US Shariah EquityPeriode Investasi:20Return (hari):15.0000 %Jumlah investasi:80.000,00 Laba:wait...menerima"
                 
-                # Get product name
-                try:
-                    product_el = card.locator("h3, h4, .fund-title, [class*='title'], [class*='name']").first
-                    if product_el.count() > 0:
-                        record['product'] = product_el.text_content(timeout=1000).strip()
-                except: pass
+                # Extract period (date range)
+                period_match = re.search(r'(\d{2}/\d{2}/\d{4}\s+\d{2}:\d{2}:\d{2}\s*~\s*\d{2}/\d{2}/\d{4}\s+\d{2}:\d{2}:\d{2})', text)
+                if period_match:
+                    record['period'] = period_match.group(1).strip()
                 
-                # Get all .fund-value elements - typically: amount, rate%, days
-                fund_values = card.locator(".fund-value").all()
+                # Extract product name (between period and "Periode Investasi")
+                if 'Periode Investasi' in text:
+                    if period_match:
+                        after_period = text[period_match.end():]
+                        product_end = after_period.find('Periode Investasi')
+                        if product_end > 0:
+                            record['product'] = after_period[:product_end].strip()
                 
-                for i, fv in enumerate(fund_values):
+                # Extract days (Periode Investasi:XX)
+                days_match = re.search(r'Periode Investasi[:\s]*(\d+)', text)
+                if days_match:
+                    record['days'] = int(days_match.group(1))
+                
+                # Extract rate (Return (hari):XX.XXXX %)
+                rate_match = re.search(r'Return\s*\(?hari\)?[:\s]*(\d+[\.,]?\d*)\s*%', text)
+                if rate_match:
+                    rate_str = rate_match.group(1).replace(',', '.')
+                    record['rate'] = float(rate_str)
+                
+                # Extract amount (Jumlah investasi:XX.XXX,XX)
+                amount_match = re.search(r'Jumlah investasi[:\s]*([\d.,]+)', text)
+                if amount_match:
+                    amount_str = amount_match.group(1)
+                    # Convert Indonesian format (80.000,00) to float
+                    amount_str = amount_str.replace('.', '').replace(',', '.')
                     try:
-                        text = fv.text_content(timeout=1000).strip()
-                        
-                        # Parse based on content
-                        if '%' in text:
-                            # This is rate
-                            rate_clean = re.sub(r'[^\d.,]', '', text)
-                            if ',' in rate_clean:
-                                rate_clean = rate_clean.replace(',', '.')
-                            record['rate'] = float(rate_clean) if rate_clean else 0
-                        elif '.' in text and ',' in text:
-                            # This is likely amount (e.g. 80.000,00)
-                            amt_clean = text.replace('.', '').replace(',', '.')
-                            amt_clean = re.sub(r'[^\d.]', '', amt_clean)
-                            if not record['amount']:  # First amount is investment
-                                record['amount'] = float(amt_clean) if amt_clean else 0
-                        elif text.isdigit() or (len(text) <= 3 and text.replace('.','').replace(',','').isdigit()):
-                            # This is likely days (short number)
-                            days_clean = re.sub(r'[^\d]', '', text)
-                            record['days'] = int(days_clean) if days_clean else 0
-                        else:
-                            # Try to parse as amount
-                            amt_clean = re.sub(r'[^\d.,]', '', text)
-                            if amt_clean:
-                                amt_clean = amt_clean.replace('.', '').replace(',', '.')
-                                try:
-                                    val = float(amt_clean)
-                                    if val > 100:  # Likely amount, not days
-                                        record['amount'] = val
-                                except: pass
-                    except: pass
+                        record['amount'] = float(amount_str)
+                    except:
+                        pass
                 
                 # Calculate profit: amount × (rate/100) × days
-                if record['amount'] and record['rate'] and record['days']:
+                if record['amount'] > 0 and record['rate'] > 0 and record['days'] > 0:
                     record['profit'] = record['amount'] * (record['rate'] / 100) * record['days']
-                
-                # Get status (if any)
-                try:
-                    status_el = card.locator("button, .status, [class*='status']").first
-                    if status_el.count() > 0:
-                        record['status'] = status_el.text_content(timeout=1000).strip()
-                except: pass
                 
                 # Only add if we got meaningful data
                 if record['amount'] > 0 or record['period']:
                     records.append(record)
-                    print(f"  Record {idx+1}: Amt={record['amount']}, Rate={record['rate']}%, Days={record['days']}, Profit={record['profit']}")
+                    print(f"  Record {idx+1}: {record['product'][:30]}... Amt={record['amount']}, Rate={record['rate']}%, Days={record['days']}, Profit={record['profit']:.0f}")
                 
             except Exception as e:
                 print(f"  Error parsing record {idx}: {e}")
@@ -349,6 +327,6 @@ def scrape_dana_amal_records(page: Page, timeout: int = 30) -> list:
         print(f"  Successfully scraped {len(records)} dana amal records")
         
     except Exception as e:
-        print(f"Error scraping dana amal: {e}")
+        print(f"  Error in scrape_dana_amal_records: {e}")
     
     return records
