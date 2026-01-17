@@ -272,6 +272,26 @@ function showToast(message, type = 'info') {
   }, 3000);
 }
 
+// Toggle Password Edit Mode
+function togglePwdEdit(btn) {
+  const wrapper = btn.closest('.pwd-wrapper');
+  if (!wrapper) return;
+
+  const viewMode = wrapper.querySelector('.pwd-view-mode');
+  const editMode = wrapper.querySelector('.pwd-edit-mode');
+  const input = wrapper.querySelector('input.pwd');
+
+  if (viewMode && editMode) {
+    viewMode.style.display = 'none';
+    editMode.style.display = 'block';
+
+    if (input) {
+      input.focus();
+    }
+  }
+}
+window.togglePwdEdit = togglePwdEdit;
+
 function animateValue(id, start, end, duration = 500) {
   const el = typeof id === 'string' ? document.getElementById(id) : id;
   if (!el) return;
