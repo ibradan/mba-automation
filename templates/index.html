@@ -270,6 +270,58 @@
       background: rgba(59, 130, 246, 0.2);
       transform: scale(1.05);
     }
+
+    /* Status Actions Container */
+    .status-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* Queue Badge */
+    .queue-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: #f1f5f9;
+      border-radius: 10px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #64748b;
+    }
+
+    .queue-badge .dot {
+      width: 8px;
+      height: 8px;
+      background: #94a3b8;
+      border-radius: 50%;
+    }
+
+    .queue-badge.active {
+      background: rgba(16, 185, 129, 0.1);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .queue-badge.active .dot {
+      background: #10b981;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: 0.5;
+        transform: scale(1.2);
+      }
+    }
   </style>
 </head>
 
@@ -293,22 +345,28 @@
           <div id="status-text" class="status-text">{{ saved|length if saved else 0 }} akun tersimpan</div>
           <div id="last-sync-info" class="status-meta">📅 Klik Refresh untuk sinkronisasi</div>
         </div>
-        <button type="button" id="btn-refresh-dashboard" class="btn-refresh" onclick="refreshAllAccounts()"
-          title="Sync semua akun">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            class="refresh-icon">
-            <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
-          </svg>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="spinner-icon" style="display:none;">
-            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" opacity="0.25" />
-            <path d="M12 2 A10 10 0 0 1 22 12" stroke="currentColor" stroke-width="2" fill="none"
-              stroke-linecap="round">
-              <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s"
-                repeatCount="indefinite" />
-            </path>
-          </svg>
-          <span>Refresh Data</span>
-        </button>
+        <div class="status-actions">
+          <div id="queue-status" class="queue-badge" title="Jumlah antrean tugas saat ini">
+            <span class="dot"></span>
+            Queue: <span id="queue-count">0</span>
+          </div>
+          <button type="button" id="btn-refresh-dashboard" class="btn-refresh" onclick="refreshAllAccounts()"
+            title="Sync semua akun">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              class="refresh-icon">
+              <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
+            </svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="spinner-icon" style="display:none;">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" opacity="0.25" />
+              <path d="M12 2 A10 10 0 0 1 22 12" stroke="currentColor" stroke-width="2" fill="none"
+                stroke-linecap="round">
+                <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s"
+                  repeatCount="indefinite" />
+              </path>
+            </svg>
+            <span>Refresh Data</span>
+          </button>
+        </div>
       </div>
       <!-- Sync Log Container -->
       <div id="sync-log-container" class="sync-log" style="display: none;">
