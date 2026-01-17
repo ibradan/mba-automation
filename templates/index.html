@@ -916,21 +916,24 @@
 
   <!-- ================= BOTTOM NAVIGATION ================= -->
   <nav class="bottom-nav">
-    <a href="/" class="bottom-nav-item active">
+    <a href="/" class="bottom-nav-item active" hx-boost="false" hx-get="/" hx-target="#main-content"
+      hx-select="#main-content" hx-swap="innerHTML" hx-push-url="true">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
         <polyline points="9 22 9 12 15 12 15 22" />
       </svg>
       <span>Tugas & Absen</span>
     </a>
-    <a href="/dana_amal" class="bottom-nav-item">
+    <a href="/dana_amal" class="bottom-nav-item" hx-boost="false" hx-get="/dana_amal" hx-target="#main-content"
+      hx-select="#main-content" hx-swap="innerHTML" hx-push-url="true">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <line x1="12" y1="1" x2="12" y2="23"></line>
         <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
       </svg>
       <span>Dana Amal</span>
     </a>
-    <a href="/settings" class="bottom-nav-item">
+    <a href="/settings" class="bottom-nav-item" hx-boost="false" hx-get="/settings" hx-target="#main-content"
+      hx-select="#main-content" hx-swap="innerHTML" hx-push-url="true">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="3"></circle>
         <path
@@ -941,14 +944,10 @@
     </a>
   </nav>
 
-  <!-- ================= SCRIPTS ================= -->
-  <script src="{{ url_for('static', filename='js/main.js') }}?v=31"></script>
-
   <!-- Loading indicator -->
   <div id="page-loading" class="page-loading" style="display: none;"></div>
 
   <script>
-    // Add loading state on navigation click
     document.querySelectorAll('.bottom-nav-item').forEach(item => {
       item.addEventListener('click', function (e) {
         // Don't add loading if already on this page

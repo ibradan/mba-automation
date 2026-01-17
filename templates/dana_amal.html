@@ -398,395 +398,401 @@
 </head>
 
 <body hx-boost="true">
-    <div class="container">
-        <div class="page-header">
-            <div>
-                <h1 class="main-title">DANA <span>AMAL</span></h1>
-                <p class="subtitle" style="color: #64748b;">Record investasi dan estimasi laba 💰</p>
-            </div>
-            <a href="/" class="back-btn">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="19" y1="12" x2="5" y2="12"></line>
-                    <polyline points="12 19 5 12 12 5"></polyline>
-                </svg>
-                Kembali
-            </a>
-        </div>
-
-        <div class="dana-amal-container">
-            <!-- Refresh & Status Section -->
-            <div
-                style="background: white; padding: 20px; border-radius: 16px; box-shadow: var(--shadow-sm); margin-bottom: 20px;">
-                <div
-                    style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 16px;">
-                    <div style="flex: 1; min-width: 200px;">
-                        <div style="font-size: 0.875rem; font-weight: 700; color: #475569; margin-bottom: 8px;">📊
-                            Status Data</div>
-                        <div id="status-text" style="color: #64748b; font-size: 0.875rem; margin-bottom: 4px;">
-                            {% if all_records %}{{ all_records|length }} records dari cache{% else %}Klik tombol untuk
-                            ambil data{% endif %}
-                        </div>
-                        {% if all_records and all_records|length > 0 %}
-                        <div style="font-size: 0.75rem; color: #94a3b8;">
-                            📅 Update: {{ all_records[0].last_update[:16].replace('T', ' ') if
-                            all_records[0].last_update else '-' }}
-                        </div>
-                        {% endif %}
-                    </div>
-                    <button type="button" class="btn-refresh" id="btn-refresh" onclick="refreshAllData()"
-                        style="align-self: flex-start;">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <path
-                                d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
-                        </svg>
-                        Refresh Data
-                    </button>
+    <div id="main-content">
+        <div class="container">
+            <div class="page-header">
+                <div>
+                    <h1 class="main-title">DANA <span>AMAL</span></h1>
+                    <p class="subtitle" style="color: #64748b;">Record investasi dan estimasi laba 💰</p>
                 </div>
-            </div>
-
-            <!-- Filter Section -->
-            <div class="account-selector">
-                <div
-                    style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 12px;">
-                    <!-- Account Buttons -->
-                    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-                        <span class="account-selector-label">Filter Akun:</span>
-                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                            <div class="account-btn active" onclick="setAccountFilter('all', this)" title="Semua Akun">
-                                All</div>
-                            {% for acc in accounts_list %}
-                            <div class="account-btn" onclick="setAccountFilter('+62 {{ acc.phone_display }}', this)"
-                                title="+62 {{ acc.phone_display }}">
-                                {{ loop.index }}
-                            </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-
-                    <!-- Quick Filter Chip -->
-                    <div class="filter-chip" id="chip-due" onclick="toggleDueFilter(this)"
-                        style="cursor: pointer; user-select: none;">
-                        <span
-                            style="display:inline-block; width:8px; height:8px; background:#10b981; border-radius:50%; margin-right:6px;"></span>
-                        Segera Selesai
-                    </div>
-                </div>
-            </div>
-
-            <div class="search-filter-section" id="filter-results-info" style="display: none; padding: 10px 20px;">
-                <div style="font-size: 0.75rem; color: #94a3b8;">
-                    Menampilkan <span id="visible-count">0</span> dari <span id="total-count">0</span> records
-                </div>
-            </div>
-
-            <div id="table-container">
-                {% if all_records and all_records|length > 0 %}
-                <div class="table-wrapper">
-                    <table class="records-table" id="dana-amal-table">
-                        <thead>
-                            <tr>
-                                <th>No</th>
-                                <th>Akun</th>
-                                <th class="sortable" onclick="handleSort(2, 'hx')">Periode <span
-                                        class="sort-icon">⇅</span></th>
-                                <th>Produk</th>
-                                <th class="sortable" onclick="handleSort(4, 'number')">Invest <span
-                                        class="sort-icon">⇅</span></th>
-                                <th>Rate</th>
-                                <th class="sortable" onclick="handleSort(6, 'number')"> Hari <span
-                                        class="sort-icon">⇅</span></th>
-                                <th class="sortable" onclick="handleSort(7, 'number')">Est. Laba <span
-                                        class="sort-icon">⇅</span></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for item in all_records %}
-                            <tr class="{% if item.is_due %}due-soon-row{% endif %} clickable-row"
-                                data-period="{{ item.record.period or '' }}" data-phone="{{ item.phone_display }}"
-                                onclick="quickLogin('{{ item.phone_display }}')" title="Klik untuk login ke MBA7">
-                                <td>{{ loop.index }}</td>
-                                <td>
-                                    <span class="status-badge status-active">+62 {{ item.phone_display }}</span>
-                                </td>
-                                <td class="period-cell">
-                                    {{ item.hx_display }}
-                                    {% if item.is_due %}<span class="due-badge">{{ item.due_label }}</span>{% endif %}
-                                </td>
-                                <td>{{ item.record.product or '-' }}</td>
-                                <td class="amount-cell">Rp {{ "{:,.0f}".format(item.record.amount or 0).replace(',',
-                                    '.') }}</td>
-                                <td class="rate-cell">{{ item.record.rate or 0 }}%</td>
-                                <td>{{ item.record.days or 0 }}</td>
-                                <td class="profit-cell">Rp {{ "{:,.0f}".format(item.record.profit or 0).replace(',',
-                                    '.') }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                        <tfoot>
-                            <tr class="summary-row">
-                                <td colspan="4" style="text-align:right;">TOTAL</td>
-                                <td class="amount-cell">Rp {{ "{:,.0f}".format(total_amount).replace(',', '.') }}</td>
-                                <td colspan="2"></td>
-                                <td class="profit-cell">Rp {{ "{:,.0f}".format(total_profit).replace(',', '.') }}</td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>
-                {% else %}
-                <div class="empty-state" id="empty-state">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                        <path d="M9 12h6m-3-3v6M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                <a href="/" class="back-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
                     </svg>
-                    <p>Belum ada data dana amal. Klik tombol "Ambil Data Semua Akun" untuk scrape.</p>
+                    Kembali
+                </a>
+            </div>
+
+            <div class="dana-amal-container">
+                <!-- Refresh & Status Section -->
+                <div
+                    style="background: white; padding: 20px; border-radius: 16px; box-shadow: var(--shadow-sm); margin-bottom: 20px;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 16px;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <div style="font-size: 0.875rem; font-weight: 700; color: #475569; margin-bottom: 8px;">📊
+                                Status Data</div>
+                            <div id="status-text" style="color: #64748b; font-size: 0.875rem; margin-bottom: 4px;">
+                                {% if all_records %}{{ all_records|length }} records dari cache{% else %}Klik tombol
+                                untuk
+                                ambil data{% endif %}
+                            </div>
+                            {% if all_records and all_records|length > 0 %}
+                            <div style="font-size: 0.75rem; color: #94a3b8;">
+                                📅 Update: {{ all_records[0].last_update[:16].replace('T', ' ') if
+                                all_records[0].last_update else '-' }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <button type="button" class="btn-refresh" id="btn-refresh" onclick="refreshAllData()"
+                            style="align-self: flex-start;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path
+                                    d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
+                            </svg>
+                            Refresh Data
+                        </button>
+                    </div>
                 </div>
-                {% endif %}
+
+                <!-- Filter Section -->
+                <div class="account-selector">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 12px;">
+                        <!-- Account Buttons -->
+                        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                            <span class="account-selector-label">Filter Akun:</span>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <div class="account-btn active" onclick="setAccountFilter('all', this)"
+                                    title="Semua Akun">
+                                    All</div>
+                                {% for acc in accounts_list %}
+                                <div class="account-btn" onclick="setAccountFilter('+62 {{ acc.phone_display }}', this)"
+                                    title="+62 {{ acc.phone_display }}">
+                                    {{ loop.index }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Quick Filter Chip -->
+                        <div class="filter-chip" id="chip-due" onclick="toggleDueFilter(this)"
+                            style="cursor: pointer; user-select: none;">
+                            <span
+                                style="display:inline-block; width:8px; height:8px; background:#10b981; border-radius:50%; margin-right:6px;"></span>
+                            Segera Selesai
+                        </div>
+                    </div>
+                </div>
+
+                <div class="search-filter-section" id="filter-results-info" style="display: none; padding: 10px 20px;">
+                    <div style="font-size: 0.75rem; color: #94a3b8;">
+                        Menampilkan <span id="visible-count">0</span> dari <span id="total-count">0</span> records
+                    </div>
+                </div>
+
+                <div id="table-container">
+                    {% if all_records and all_records|length > 0 %}
+                    <div class="table-wrapper">
+                        <table class="records-table" id="dana-amal-table">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>Akun</th>
+                                    <th class="sortable" onclick="handleSort(2, 'hx')">Periode <span
+                                            class="sort-icon">⇅</span></th>
+                                    <th>Produk</th>
+                                    <th class="sortable" onclick="handleSort(4, 'number')">Invest <span
+                                            class="sort-icon">⇅</span></th>
+                                    <th>Rate</th>
+                                    <th class="sortable" onclick="handleSort(6, 'number')"> Hari <span
+                                            class="sort-icon">⇅</span></th>
+                                    <th class="sortable" onclick="handleSort(7, 'number')">Est. Laba <span
+                                            class="sort-icon">⇅</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in all_records %}
+                                <tr class="{% if item.is_due %}due-soon-row{% endif %} clickable-row"
+                                    data-period="{{ item.record.period or '' }}" data-phone="{{ item.phone_display }}"
+                                    onclick="quickLogin('{{ item.phone_display }}')" title="Klik untuk login ke MBA7">
+                                    <td>{{ loop.index }}</td>
+                                    <td>
+                                        <span class="status-badge status-active">+62 {{ item.phone_display }}</span>
+                                    </td>
+                                    <td class="period-cell">
+                                        {{ item.hx_display }}
+                                        {% if item.is_due %}<span class="due-badge">{{ item.due_label }}</span>{% endif
+                                        %}
+                                    </td>
+                                    <td>{{ item.record.product or '-' }}</td>
+                                    <td class="amount-cell">Rp {{ "{:,.0f}".format(item.record.amount or 0).replace(',',
+                                        '.') }}</td>
+                                    <td class="rate-cell">{{ item.record.rate or 0 }}%</td>
+                                    <td>{{ item.record.days or 0 }}</td>
+                                    <td class="profit-cell">Rp {{ "{:,.0f}".format(item.record.profit or 0).replace(',',
+                                        '.') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr class="summary-row">
+                                    <td colspan="4" style="text-align:right;">TOTAL</td>
+                                    <td class="amount-cell">Rp {{ "{:,.0f}".format(total_amount).replace(',', '.') }}
+                                    </td>
+                                    <td colspan="2"></td>
+                                    <td class="profit-cell">Rp {{ "{:,.0f}".format(total_profit).replace(',', '.') }}
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state" id="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M9 12h6m-3-3v6M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                        </svg>
+                        <p>Belum ada data dana amal. Klik tombol "Ambil Data Semua Akun" untuk scrape.</p>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
-    </div>
 
-    <script id="accounts-json" type="application/json">{{ accounts_json|safe }}</script>
-    <script>
-        const accountsDataStr = document.getElementById('accounts-json').textContent;
-        const accounts = JSON.parse(accountsDataStr || '[]');
-        function formatRupiah(num) {
-            return new Intl.NumberFormat('id-ID').format(num);
-        }
+        <script id="accounts-json" type="application/json">{{ accounts_json|safe }}</script>
+        <script>
+            const accountsDataStr = document.getElementById('accounts-json').textContent;
+            const accounts = JSON.parse(accountsDataStr || '[]');
+            function formatRupiah(num) {
+                return new Intl.NumberFormat('id-ID').format(num);
+            }
 
-        // Quick Login: Open MBA7 login page
-        function quickLogin(phoneDisplay) {
-            // Just open MBA7 in new tab
-            window.open('https://mba7.com/#/login', '_blank');
-            showToast('🌐 Opening MBA7...', 2000);
-        }
+            // Quick Login: Open MBA7 login page
+            function quickLogin(phoneDisplay) {
+                // Just open MBA7 in new tab
+                window.open('https://mba7.com/#/login', '_blank');
+                showToast('🌐 Opening MBA7...', 2000);
+            }
 
-        // Toast notification helper
-        function showToast(message, duration = 2000) {
-            const existing = document.querySelector('.toast');
-            if (existing) existing.remove();
+            // Toast notification helper
+            function showToast(message, duration = 2000) {
+                const existing = document.querySelector('.toast');
+                if (existing) existing.remove();
 
-            const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.textContent = message;
-            document.body.appendChild(toast);
+                const toast = document.createElement('div');
+                toast.className = 'toast';
+                toast.textContent = message;
+                document.body.appendChild(toast);
 
-            // Trigger animation
-            setTimeout(() => toast.classList.add('show'), 10);
+                // Trigger animation
+                setTimeout(() => toast.classList.add('show'), 10);
 
-            // Remove after duration
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 300);
-            }, duration);
+                // Remove after duration
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                    setTimeout(() => toast.remove(), 300);
+                }, duration);
 
-            return toast;
-        }
+                return toast;
+            }
 
-        function checkDueDate(periodStr) {
-            try {
-                // Format: "01/16/2026 12:12:21 ~ 02/05/2026 12:13:21"
-                const parts = periodStr.split('~');
-                if (parts.length < 2) return { isDue: false };
+            function checkDueDate(periodStr) {
+                try {
+                    // Format: "01/16/2026 12:12:21 ~ 02/05/2026 12:13:21"
+                    const parts = periodStr.split('~');
+                    if (parts.length < 2) return { isDue: false };
 
-                const endFull = parts[1].trim();
-                const endPart = endFull.split(' ')[0]; // "02/05/2026"
-                const endTime = endFull.split(' ')[1]; // "12:13:21"
-                const [m, d, y] = endPart.split('/');
-                const endDate = new Date(y, m - 1, d);
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
+                    const endFull = parts[1].trim();
+                    const endPart = endFull.split(' ')[0]; // "02/05/2026"
+                    const endTime = endFull.split(' ')[1]; // "12:13:21"
+                    const [m, d, y] = endPart.split('/');
+                    const endDate = new Date(y, m - 1, d);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
 
-                const diffTime = endDate.getTime() - today.getTime();
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    const diffTime = endDate.getTime() - today.getTime();
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-                if (diffDays <= 2) {
-                    let label = "Segera";
-                    if (diffDays === 0) label = `Selesai (H-0) ${endTime}`;
-                    else if (diffDays === 1) label = `Selesai (H-1) ${endTime}`;
-                    else if (diffDays === 2) label = `Selesai (H-2) ${endTime}`;
-                    else if (diffDays < 0) label = "Selesai (Overdue)";
+                    if (diffDays <= 2) {
+                        let label = "Segera";
+                        if (diffDays === 0) label = `Selesai (H-0) ${endTime}`;
+                        else if (diffDays === 1) label = `Selesai (H-1) ${endTime}`;
+                        else if (diffDays === 2) label = `Selesai (H-2) ${endTime}`;
+                        else if (diffDays < 0) label = "Selesai (Overdue)";
 
-                    return { isDue: true, label: label };
+                        return { isDue: true, label: label };
+                    }
+                    return { isDue: false };
+                } catch (e) {
+                    return { isDue: false };
                 }
-                return { isDue: false };
-            } catch (e) {
-                return { isDue: false };
-            }
-        }
-
-        let activeAccount = 'all';
-        let showOnlyDue = false;
-        let currentSort = { index: -1, direction: 1 };
-
-        function setAccountFilter(phone, el) {
-            document.querySelectorAll('.account-btn').forEach(btn => btn.classList.remove('active'));
-            el.classList.add('active');
-            activeAccount = phone;
-            applyFilters();
-        }
-
-        function toggleDueFilter(el) {
-            showOnlyDue = !showOnlyDue;
-            el.classList.toggle('active', showOnlyDue);
-            applyFilters();
-        }
-
-        function handleSort(colIdx, type) {
-            const table = document.getElementById("dana-amal-table");
-            const headers = table.querySelectorAll('th.sortable');
-
-            // Update direction
-            if (currentSort.index === colIdx) {
-                currentSort.direction *= -1;
-            } else {
-                currentSort.index = colIdx;
-                currentSort.direction = -1; // Default to desc (high to low)
             }
 
-            // Update header UI
-            headers.forEach(h => h.classList.remove('active'));
-            const activeHeader = Array.from(headers).find(h => h.onclick.toString().includes(colIdx));
-            if (activeHeader) {
-                activeHeader.classList.add('active');
-                activeHeader.querySelector('.sort-icon').textContent = currentSort.direction === 1 ? '↑' : '↓';
+            let activeAccount = 'all';
+            let showOnlyDue = false;
+            let currentSort = { index: -1, direction: 1 };
+
+            function setAccountFilter(phone, el) {
+                document.querySelectorAll('.account-btn').forEach(btn => btn.classList.remove('active'));
+                el.classList.add('active');
+                activeAccount = phone;
+                applyFilters();
             }
 
-            const tbody = table.querySelector('tbody');
-            const rows = Array.from(tbody.querySelectorAll('tr'));
+            function toggleDueFilter(el) {
+                showOnlyDue = !showOnlyDue;
+                el.classList.toggle('active', showOnlyDue);
+                applyFilters();
+            }
 
-            rows.sort((a, b) => {
-                let vA, vB;
+            function handleSort(colIdx, type) {
+                const table = document.getElementById("dana-amal-table");
+                const headers = table.querySelectorAll('th.sortable');
 
-                if (type === 'number') {
-                    vA = parseInt(a.cells[colIdx].textContent.replace(/[^\d]/g, '')) || 0;
-                    vB = parseInt(b.cells[colIdx].textContent.replace(/[^\d]/g, '')) || 0;
-                } else if (type === 'hx') {
-                    // Sort by H-X. We'll use data-period to extract date
-                    const periodA = a.getAttribute('data-period') || '';
-                    const periodB = b.getAttribute('data-period') || '';
-
-                    // Use checkDueDate to get proximity
-                    const infoA = checkDueDate(periodA);
-                    const infoB = checkDueDate(periodB);
-
-                    // Sort order: overdue < H-0 < H-1 < H-2 < others
-                    // But user said "terlama h-x nya dan tercepat", meaning days remaining
-                    const daysA = infoA.isDue ? (periodA.split('~')[1] ? parseHxDays(periodA) : 999) : 999;
-                    const daysB = infoB.isDue ? (periodB.split('~')[1] ? parseHxDays(periodB) : 999) : 999;
-                    vA = daysA;
-                    vB = daysB;
+                // Update direction
+                if (currentSort.index === colIdx) {
+                    currentSort.direction *= -1;
                 } else {
-                    vA = a.cells[colIdx].textContent.toLowerCase();
-                    vB = b.cells[colIdx].textContent.toLowerCase();
+                    currentSort.index = colIdx;
+                    currentSort.direction = -1; // Default to desc (high to low)
                 }
 
-                if (vA < vB) return -1 * currentSort.direction;
-                if (vA > vB) return 1 * currentSort.direction;
-                return 0;
-            });
+                // Update header UI
+                headers.forEach(h => h.classList.remove('active'));
+                const activeHeader = Array.from(headers).find(h => h.onclick.toString().includes(colIdx));
+                if (activeHeader) {
+                    activeHeader.classList.add('active');
+                    activeHeader.querySelector('.sort-icon').textContent = currentSort.direction === 1 ? '↑' : '↓';
+                }
 
-            rows.forEach(row => tbody.appendChild(row));
-            updateRowNumbers();
-        }
+                const tbody = table.querySelector('tbody');
+                const rows = Array.from(tbody.querySelectorAll('tr'));
 
-        function parseHxDays(periodStr) {
-            try {
-                const endPart = periodStr.split('~')[1].trim().split(' ')[0];
-                const [m, d, y] = endPart.split('/');
-                const endDate = new Date(y, m - 1, d);
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                return Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-            } catch (e) { return 999; }
-        }
+                rows.sort((a, b) => {
+                    let vA, vB;
 
-        function updateRowNumbers() {
-            const table = document.getElementById("dana-amal-table");
-            const rows = Array.from(table.querySelectorAll('tbody tr')).filter(r => r.style.display !== 'none');
-            rows.forEach((row, idx) => {
-                row.cells[0].textContent = idx + 1;
-            });
-        }
+                    if (type === 'number') {
+                        vA = parseInt(a.cells[colIdx].textContent.replace(/[^\d]/g, '')) || 0;
+                        vB = parseInt(b.cells[colIdx].textContent.replace(/[^\d]/g, '')) || 0;
+                    } else if (type === 'hx') {
+                        // Sort by H-X. We'll use data-period to extract date
+                        const periodA = a.getAttribute('data-period') || '';
+                        const periodB = b.getAttribute('data-period') || '';
 
-        function applyFilters() {
-            const table = document.getElementById("dana-amal-table");
-            if (!table) return;
+                        // Use checkDueDate to get proximity
+                        const infoA = checkDueDate(periodA);
+                        const infoB = checkDueDate(periodB);
 
-            const rows = table.getElementsByTagName("tbody")[0].getElementsByTagName("tr");
-            const resultsInfo = document.getElementById("filter-results-info");
-            const visibleEl = document.getElementById("visible-count");
-            const totalEl = document.getElementById("total-count");
-
-            let visibleCount = 0;
-            let visibleAmount = 0;
-            let visibleProfit = 0;
-
-            for (let i = 0; i < rows.length; i++) {
-                const row = rows[i];
-                const phoneCell = row.cells[1].textContent;
-                const isDueRow = row.classList.contains('due-soon-row');
-
-                // Account Filter
-                const matchAccount = activeAccount === 'all' || phoneCell.includes(activeAccount);
-
-                // Due Filter
-                const matchDue = !showOnlyDue || isDueRow;
-
-                const show = (matchAccount && matchDue);
-                row.style.display = show ? "" : "none";
-
-                if (show) {
-                    visibleCount++;
-                    const amountCell = row.querySelector('.amount-cell');
-                    const profitCell = row.querySelector('.profit-cell');
-                    if (amountCell) {
-                        const val = amountCell.textContent.replace(/[^\d]/g, '');
-                        visibleAmount += parseInt(val || 0);
+                        // Sort order: overdue < H-0 < H-1 < H-2 < others
+                        // But user said "terlama h-x nya dan tercepat", meaning days remaining
+                        const daysA = infoA.isDue ? (periodA.split('~')[1] ? parseHxDays(periodA) : 999) : 999;
+                        const daysB = infoB.isDue ? (periodB.split('~')[1] ? parseHxDays(periodB) : 999) : 999;
+                        vA = daysA;
+                        vB = daysB;
+                    } else {
+                        vA = a.cells[colIdx].textContent.toLowerCase();
+                        vB = b.cells[colIdx].textContent.toLowerCase();
                     }
-                    if (profitCell) {
-                        const val = profitCell.textContent.replace(/[^\d]/g, '');
-                        visibleProfit += parseInt(val || 0);
+
+                    if (vA < vB) return -1 * currentSort.direction;
+                    if (vA > vB) return 1 * currentSort.direction;
+                    return 0;
+                });
+
+                rows.forEach(row => tbody.appendChild(row));
+                updateRowNumbers();
+            }
+
+            function parseHxDays(periodStr) {
+                try {
+                    const endPart = periodStr.split('~')[1].trim().split(' ')[0];
+                    const [m, d, y] = endPart.split('/');
+                    const endDate = new Date(y, m - 1, d);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    return Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                } catch (e) { return 999; }
+            }
+
+            function updateRowNumbers() {
+                const table = document.getElementById("dana-amal-table");
+                const rows = Array.from(table.querySelectorAll('tbody tr')).filter(r => r.style.display !== 'none');
+                rows.forEach((row, idx) => {
+                    row.cells[0].textContent = idx + 1;
+                });
+            }
+
+            function applyFilters() {
+                const table = document.getElementById("dana-amal-table");
+                if (!table) return;
+
+                const rows = table.getElementsByTagName("tbody")[0].getElementsByTagName("tr");
+                const resultsInfo = document.getElementById("filter-results-info");
+                const visibleEl = document.getElementById("visible-count");
+                const totalEl = document.getElementById("total-count");
+
+                let visibleCount = 0;
+                let visibleAmount = 0;
+                let visibleProfit = 0;
+
+                for (let i = 0; i < rows.length; i++) {
+                    const row = rows[i];
+                    const phoneCell = row.cells[1].textContent;
+                    const isDueRow = row.classList.contains('due-soon-row');
+
+                    // Account Filter
+                    const matchAccount = activeAccount === 'all' || phoneCell.includes(activeAccount);
+
+                    // Due Filter
+                    const matchDue = !showOnlyDue || isDueRow;
+
+                    const show = (matchAccount && matchDue);
+                    row.style.display = show ? "" : "none";
+
+                    if (show) {
+                        visibleCount++;
+                        const amountCell = row.querySelector('.amount-cell');
+                        const profitCell = row.querySelector('.profit-cell');
+                        if (amountCell) {
+                            const val = amountCell.textContent.replace(/[^\d]/g, '');
+                            visibleAmount += parseInt(val || 0);
+                        }
+                        if (profitCell) {
+                            const val = profitCell.textContent.replace(/[^\d]/g, '');
+                            visibleProfit += parseInt(val || 0);
+                        }
                     }
+                }
+
+                // Update row numbers for visible rows
+                updateRowNumbers();
+
+                // Update totals in footer
+                const totalAmountCell = document.querySelector('.summary-row .amount-cell');
+                const totalProfitCell = document.querySelector('.summary-row .profit-cell');
+                if (totalAmountCell) totalAmountCell.textContent = 'Rp ' + formatRupiah(visibleAmount);
+                if (totalProfitCell) totalProfitCell.textContent = 'Rp ' + formatRupiah(Math.round(visibleProfit));
+
+                // Update results info
+                if (activeAccount !== 'all' || showOnlyDue) {
+                    resultsInfo.style.display = "block";
+                    visibleEl.textContent = visibleCount;
+                    totalEl.textContent = rows.length;
+                } else {
+                    resultsInfo.style.display = "none";
                 }
             }
 
-            // Update row numbers for visible rows
-            updateRowNumbers();
+            async function refreshAllData() {
+                const btn = document.getElementById('btn-refresh');
+                const container = document.getElementById('table-container');
+                const statusText = document.getElementById('status-text');
 
-            // Update totals in footer
-            const totalAmountCell = document.querySelector('.summary-row .amount-cell');
-            const totalProfitCell = document.querySelector('.summary-row .profit-cell');
-            if (totalAmountCell) totalAmountCell.textContent = 'Rp ' + formatRupiah(visibleAmount);
-            if (totalProfitCell) totalProfitCell.textContent = 'Rp ' + formatRupiah(Math.round(visibleProfit));
+                if (accounts.length === 0) {
+                    alert('Tidak ada akun tersedia.');
+                    return;
+                }
 
-            // Update results info
-            if (activeAccount !== 'all' || showOnlyDue) {
-                resultsInfo.style.display = "block";
-                visibleEl.textContent = visibleCount;
-                totalEl.textContent = rows.length;
-            } else {
-                resultsInfo.style.display = "none";
-            }
-        }
+                btn.disabled = true;
 
-        async function refreshAllData() {
-            const btn = document.getElementById('btn-refresh');
-            const container = document.getElementById('table-container');
-            const statusText = document.getElementById('status-text');
+                // Create status log container
+                let logHtml = `<div style="max-height: 150px; overflow-y: auto; background: #f8fafc; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 0.8rem; border: 1px solid #e2e8f0;">`;
 
-            if (accounts.length === 0) {
-                alert('Tidak ada akun tersedia.');
-                return;
-            }
-
-            btn.disabled = true;
-
-            // Create status log container
-            let logHtml = `<div style="max-height: 150px; overflow-y: auto; background: #f8fafc; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 0.8rem; border: 1px solid #e2e8f0;">`;
-
-            // Create table structure
-            container.innerHTML = `
+                // Create table structure
+                container.innerHTML = `
                 <div class="progress-indicator" id="progress-indicator">
                     <span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;margin-right:8px;vertical-align:middle;"></span>
                     Memulai...
@@ -819,49 +825,49 @@
                 </div>
             `;
 
-            const progressEl = document.getElementById('progress-indicator');
-            const logContainer = document.querySelector('#status-log-container > div');
+                const progressEl = document.getElementById('progress-indicator');
+                const logContainer = document.querySelector('#status-log-container > div');
 
-            let grandTotalAmount = 0;
-            let grandTotalProfit = 0;
-            let rowCount = 0;
+                let grandTotalAmount = 0;
+                let grandTotalProfit = 0;
+                let rowCount = 0;
 
-            // Process accounts one by one
-            for (let i = 0; i < accounts.length; i++) {
-                const phone = accounts[i].phone_display;
-                progressEl.innerHTML = `<span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;margin-right:8px;vertical-align:middle;"></span> Memproses akun ${i + 1}/${accounts.length}: +62 ${phone}...`;
+                // Process accounts one by one
+                for (let i = 0; i < accounts.length; i++) {
+                    const phone = accounts[i].phone_display;
+                    progressEl.innerHTML = `<span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;margin-right:8px;vertical-align:middle;"></span> Memproses akun ${i + 1}/${accounts.length}: +62 ${phone}...`;
 
-                try {
-                    const res = await fetch(`/api/dana_amal/${phone}`);
+                    try {
+                        const res = await fetch(`/api/dana_amal/${phone}`);
 
-                    // Handle non-OK responses or non-JSON content
-                    if (!res.ok) {
-                        const errorText = await res.text();
-                        let errorMsg = `Server Error (${res.status})`;
-                        if (res.status === 504 || res.status === 502) errorMsg = "Server Timeout (Website Berat)";
-                        throw new Error(errorMsg);
-                    }
+                        // Handle non-OK responses or non-JSON content
+                        if (!res.ok) {
+                            const errorText = await res.text();
+                            let errorMsg = `Server Error (${res.status})`;
+                            if (res.status === 504 || res.status === 502) errorMsg = "Server Timeout (Website Berat)";
+                            throw new Error(errorMsg);
+                        }
 
-                    const contentType = res.headers.get("content-type");
-                    if (!contentType || !contentType.includes("application/json")) {
-                        throw new Error("Server Error (Bukan JSON - Kemungkinan Timeout)");
-                    }
+                        const contentType = res.headers.get("content-type");
+                        if (!contentType || !contentType.includes("application/json")) {
+                            throw new Error("Server Error (Bukan JSON - Kemungkinan Timeout)");
+                        }
 
-                    const data = await res.json();
+                        const data = await res.json();
 
-                    if (data.records && data.records.length > 0) {
-                        const tbody = document.querySelector('#dana-amal-table tbody');
+                        if (data.records && data.records.length > 0) {
+                            const tbody = document.querySelector('#dana-amal-table tbody');
 
-                        data.records.forEach(r => {
-                            rowCount++;
-                            grandTotalAmount += r.amount || 0;
-                            grandTotalProfit += r.profit || 0;
+                            data.records.forEach(r => {
+                                rowCount++;
+                                grandTotalAmount += r.amount || 0;
+                                grandTotalProfit += r.profit || 0;
 
-                            const dueInfo = checkDueDate(r.period || "");
-                            const tr = document.createElement('tr');
-                            if (dueInfo.isDue) tr.className = 'due-soon-row';
+                                const dueInfo = checkDueDate(r.period || "");
+                                const tr = document.createElement('tr');
+                                if (dueInfo.isDue) tr.className = 'due-soon-row';
 
-                            tr.innerHTML = `
+                                tr.innerHTML = `
                                 <td>${rowCount}</td>
                                 <td>
                                     <span class="status-badge status-active">+62 ${phone}</span>
@@ -877,70 +883,70 @@
                                 <td>${r.days || 0}</td>
                                 <td class="profit-cell">Rp ${formatRupiah(Math.round(r.profit || 0))}</td>
                             `;
-                            tbody.appendChild(tr);
-                        });
+                                tbody.appendChild(tr);
+                            });
 
-                        // Update totals
-                        document.querySelector('.total-amount-cell').textContent = 'Rp ' + formatRupiah(grandTotalAmount);
-                        document.querySelector('.total-profit-cell').textContent = 'Rp ' + formatRupiah(Math.round(grandTotalProfit));
+                            // Update totals
+                            document.querySelector('.total-amount-cell').textContent = 'Rp ' + formatRupiah(grandTotalAmount);
+                            document.querySelector('.total-profit-cell').textContent = 'Rp ' + formatRupiah(Math.round(grandTotalProfit));
 
-                        // Log success with timestamp
+                            // Log success with timestamp
+                            const timeStr = new Date().toLocaleTimeString('id-ID');
+                            logContainer.innerHTML += `<div style="color: green;">✓ [${timeStr}] +62 ${phone}: Ditemukan ${data.records.length} records</div>`;
+                        } else {
+                            // Log empty or error msg
+                            const timeStr = new Date().toLocaleTimeString('id-ID');
+                            const msg = data.status_msg || 'Tidak ada data investasi';
+                            logContainer.innerHTML += `<div style="color: #64748b;">• [${timeStr}] +62 ${phone}: ${msg}</div>`;
+                        }
+                    } catch (e) {
+                        console.error(`Error fetching for ${phone}:`, e);
+                        // Log error
                         const timeStr = new Date().toLocaleTimeString('id-ID');
-                        logContainer.innerHTML += `<div style="color: green;">✓ [${timeStr}] +62 ${phone}: Ditemukan ${data.records.length} records</div>`;
-                    } else {
-                        // Log empty or error msg
-                        const timeStr = new Date().toLocaleTimeString('id-ID');
-                        const msg = data.status_msg || 'Tidak ada data investasi';
-                        logContainer.innerHTML += `<div style="color: #64748b;">• [${timeStr}] +62 ${phone}: ${msg}</div>`;
+                        logContainer.innerHTML += `<div style="color: red;">✗ [${timeStr}] +62 ${phone}: Gagal (${e.message || 'Error'})</div>`;
                     }
-                } catch (e) {
-                    console.error(`Error fetching for ${phone}:`, e);
-                    // Log error
-                    const timeStr = new Date().toLocaleTimeString('id-ID');
-                    logContainer.innerHTML += `<div style="color: red;">✗ [${timeStr}] +62 ${phone}: Gagal (${e.message || 'Error'})</div>`;
+
+                    // Auto scroll log
+                    logContainer.scrollTop = logContainer.scrollHeight;
+
+                    // Add 1s delay to prevent resource spike on Pi
+                    if (i < accounts.length - 1) {
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
                 }
 
-                // Auto scroll log
-                logContainer.scrollTop = logContainer.scrollHeight;
-
-                // Add 1s delay to prevent resource spike on Pi
-                if (i < accounts.length - 1) {
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                }
+                progressEl.className = 'progress-indicator success';
+                progressEl.innerHTML = `✓ SELESAI: Berhasil memproses ${accounts.length} akun.`;
+                btn.disabled = false;
             }
 
-            progressEl.className = 'progress-indicator success';
-            progressEl.innerHTML = `✓ SELESAI: Berhasil memproses ${accounts.length} akun.`;
-            btn.disabled = false;
-        }
+            // Apply highlights to initial data on load
+            document.addEventListener('DOMContentLoaded', () => {
+                const table = document.getElementById('dana-amal-table');
+                if (!table) return;
 
-        // Apply highlights to initial data on load
-        document.addEventListener('DOMContentLoaded', () => {
-            const table = document.getElementById('dana-amal-table');
-            if (!table) return;
-
-            const rows = table.querySelectorAll('tbody tr');
-            rows.forEach(row => {
-                const period = row.getAttribute('data-period');
-                if (period) {
-                    const dueInfo = checkDueDate(period);
-                    if (dueInfo.isDue) {
-                        row.classList.add('due-soon-row');
-                        const periodCell = row.querySelector('.period-cell');
-                        if (periodCell) {
-                            let badge = periodCell.querySelector('.due-badge');
-                            if (!badge) {
-                                badge = document.createElement('span');
-                                badge.className = 'due-badge';
-                                periodCell.appendChild(badge);
+                const rows = table.querySelectorAll('tbody tr');
+                rows.forEach(row => {
+                    const period = row.getAttribute('data-period');
+                    if (period) {
+                        const dueInfo = checkDueDate(period);
+                        if (dueInfo.isDue) {
+                            row.classList.add('due-soon-row');
+                            const periodCell = row.querySelector('.period-cell');
+                            if (periodCell) {
+                                let badge = periodCell.querySelector('.due-badge');
+                                if (!badge) {
+                                    badge = document.createElement('span');
+                                    badge.className = 'due-badge';
+                                    periodCell.appendChild(badge);
+                                }
+                                badge.innerText = dueInfo.label;
                             }
-                            badge.innerText = dueInfo.label;
                         }
                     }
-                }
+                });
             });
-        });
-    </script>
+        </script>
 </body>
 
 </html>
