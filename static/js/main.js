@@ -247,71 +247,7 @@ async function performAutoSyncAll() {
   }
 }
 
-// ================= MANUAL SYNC ALL BUTTON =================
-async function performManualSyncAll() {
-  const btn = document.getElementById('sync-all-btn');
-  if (!btn) return;
 
-  const syncIcon = btn.querySelector('.sync-icon');
-  const spinnerIcon = btn.querySelector('.spinner-icon');
-  const checkIcon = btn.querySelector('.check-icon');
-
-  // Show loading state
-  btn.disabled = true;
-  if (syncIcon) syncIcon.style.display = 'none';
-  if (checkIcon) checkIcon.style.display = 'none';
-  if (spinnerIcon) spinnerIcon.style.display = 'inline';
-
-  const cards = Array.from(document.querySelectorAll('.account-card[data-phone]'));
-  let syncCount = 0;
-
-  showToast(`Syncing ${cards.length} accounts...`, 'info');
-
-  for (const card of cards) {
-    const phone = card.dataset.phone;
-    if (!phone) continue;
-
-    try {
-      const formData = new FormData();
-      formData.append('phone', phone);
-      const res = await fetch('/sync_single', { method: 'POST', body: formData });
-      const data = await res.json();
-      if (data.ok) {
-        syncCount++;
-      }
-    } catch (err) {
-      console.error('Sync failed for', phone, err);
-    }
-
-    // Delay between accounts to avoid overwhelming server
-    await new Promise(r => setTimeout(r, 500));
-  }
-
-  // Show green checkmark
-  btn.disabled = false;
-  if (spinnerIcon) spinnerIcon.style.display = 'none';
-  if (syncIcon) syncIcon.style.display = 'none';
-  if (checkIcon) checkIcon.style.display = 'inline';
-
-  showToast(`✓ Synced ${syncCount}/${cards.length} accounts`, 'success');
-
-  // Revert to sync icon after 5 seconds
-  setTimeout(() => {
-    if (checkIcon) checkIcon.style.display = 'none';
-    if (syncIcon) syncIcon.style.display = 'inline';
-  }, 5000);
-
-  // Refresh dashboard
-  setTimeout(updateStatusRealTime, 1000);
-}
-
-// Attach Sync All button handler
-document.addEventListener('DOMContentLoaded', function () {
-  const syncAllBtn = document.getElementById('sync-all-btn');
-  if (syncAllBtn) {
-    syncAllBtn.addEventListener('click', performManualSyncAll);
-  }
-});
 
 // ================= GLOBAL FUNCTIONS (Moved from index.html) =================
 
