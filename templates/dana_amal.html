@@ -149,19 +149,100 @@
         }
 
         .due-badge {
-            background: #fee2e2;
-            color: #ef4444;
+            background: #ecfdf5;
+            color: #059669;
             font-size: 0.65rem;
             font-weight: 700;
-            padding: 2px 6px;
-            border-radius: 4px;
-            margin-left: 6px;
-            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 20px;
+            margin-left: 10px;
+            display: inline-flex;
+            align-items: center;
             text-transform: uppercase;
+            border: 1px solid #10b98133;
+            letter-spacing: 0.5px;
         }
 
         .due-soon-row {
-            background: #fff5f5 !important;
+            background: #f0fdf4 !important;
+        }
+
+        .due-soon-row:hover {
+            background: #def7e5 !important;
+        }
+
+        .search-filter-section {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .search-wrapper {
+            position: relative;
+            flex-grow: 1;
+        }
+
+        .search-wrapper input {
+            width: 100%;
+            padding: 12px 16px 12px 44px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.2s;
+            background: #f8fafc;
+        }
+
+        .search-wrapper input:focus {
+            border-color: #10b981;
+            background: white;
+            box-shadow: 0 0 0 4px #10b98118;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            pointer-events: none;
+        }
+
+        .filter-chips {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 2px;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .filter-chip {
+            padding: 8px 16px;
+            background: #f1f5f9;
+            color: #64748b;
+            border-radius: 10px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+            white-space: nowrap;
+        }
+
+        .filter-chip:hover {
+            background: #e2e8f0;
+        }
+
+        .filter-chip.active {
+            background: #10b981;
+            color: white;
+            box-shadow: 0 4px 12px #10b98133;
         }
 
         .back-btn {
@@ -265,7 +346,7 @@
         </div>
 
         <div class="dana-amal-container">
-            <div class="refresh-section">
+            <div class="refresh-section" style="margin-bottom: 20px;">
                 <button type="button" class="btn-refresh" id="btn-refresh" onclick="refreshAllData()">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
@@ -276,6 +357,32 @@
                     {% if all_records %}{{ all_records|length }} records dari cache{% else %}Klik tombol untuk ambil
                     data{% endif %}
                 </span>
+            </div>
+
+            <div class="search-filter-section">
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                    <div class="search-wrapper" style="min-width: 280px;">
+                        <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        <input type="text" id="global-search" placeholder="Cari akun, produk, atau periode..."
+                            onkeyup="applyFilters()">
+                    </div>
+                    <div class="filter-chips">
+                        <div class="filter-chip active" onclick="setChipFilter('all', this)">Semua</div>
+                        <div class="filter-chip" onclick="setChipFilter('due', this)">
+                            <span
+                                style="display:inline-block; width:8px; height:8px; background:#10b981; border-radius:50%; margin-right:6px;"></span>
+                            Segera Selesai
+                        </div>
+                    </div>
+                </div>
+                <div id="filter-results-info" style="font-size: 0.75rem; color: #94a3b8; display: none;">
+                    Menampilkan <span id="visible-count">0</span> dari <span id="total-count">0</span> records
+                </div>
             </div>
 
             <div id="table-container">
@@ -290,24 +397,8 @@
                                 <th>Produk</th>
                                 <th>Invest</th>
                                 <th>Rate</th>
-                                <th>Hari</th>
+                                <th> Hari</th>
                                 <th>Est. Laba</th>
-                            </tr>
-                            <tr class="filter-row">
-                                <td></td>
-                                <td><input type="text" class="filter-input" placeholder="Filter Akun..."
-                                        onkeyup="filterTable(1)"></td>
-                                <td><input type="text" class="filter-input" placeholder="Filter Tgl..."
-                                        onkeyup="filterTable(2)"></td>
-                                <td><input type="text" class="filter-input" placeholder="Filter Produk..."
-                                        onkeyup="filterTable(3)"></td>
-                                <td><input type="text" class="filter-input" placeholder="Filter Rp..."
-                                        onkeyup="filterTable(4)"></td>
-                                <td><input type="text" class="filter-input" placeholder="Filter %..."
-                                        onkeyup="filterTable(5)"></td>
-                                <td><input type="text" class="filter-input" placeholder="Filter Hari..."
-                                        onkeyup="filterTable(6)"></td>
-                                <td></td>
                             </tr>
                         </thead>
                         <tbody>
@@ -394,29 +485,75 @@
             }
         }
 
-        function filterTable(colIdx) {
+        let activeChip = 'all';
+
+        function setChipFilter(type, el) {
+            document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
+            activeChip = type;
+            applyFilters();
+        }
+
+        function applyFilters() {
             const table = document.getElementById("dana-amal-table");
-            const filters = table.getElementsByClassName("filter-input");
+            if (!table) return;
+
+            const searchValue = document.getElementById("global-search").value.toLowerCase();
             const rows = table.getElementsByTagName("tbody")[0].getElementsByTagName("tr");
+            const resultsInfo = document.getElementById("filter-results-info");
+            const visibleEl = document.getElementById("visible-count");
+            const totalEl = document.getElementById("total-count");
+
+            let visibleCount = 0;
+            let visibleAmount = 0;
+            let visibleProfit = 0;
 
             for (let i = 0; i < rows.length; i++) {
-                let showRow = true;
-                for (let j = 0; j < filters.length; j++) {
-                    const filterValue = filters[j].value.toLowerCase();
-                    if (!filterValue) continue;
+                const row = rows[i];
+                const text = row.textContent.toLowerCase();
+                const isDueRow = row.classList.contains('due-soon-row');
 
-                    // Filter inputs are mapped to columns: 1 (Akun), 2 (Tgl), 3 (Produk), 4 (Invest), 5 (Rate), 6 (Hari)
-                    const cellIdx = j + 1;
-                    const cell = rows[i].getElementsByTagName("td")[cellIdx];
-                    if (cell) {
-                        const cellText = cell.textContent || cell.innerText;
-                        if (cellText.toLowerCase().indexOf(filterValue) === -1) {
-                            showRow = false;
-                            break;
-                        }
+                // Check Global Search
+                const matchSearch = text.indexOf(searchValue) > -1;
+
+                // Check Chip Filter
+                let matchChip = true;
+                if (activeChip === 'due') {
+                    matchChip = isDueRow;
+                }
+
+                const show = (matchSearch && matchChip);
+                row.style.display = show ? "" : "none";
+
+                if (show) {
+                    visibleCount++;
+                    // Parse values from data attributes or cells for totals
+                    const amountCell = row.querySelector('.amount-cell');
+                    const profitCell = row.querySelector('.profit-cell');
+                    if (amountCell) {
+                        const val = amountCell.textContent.replace(/[^\d]/g, '');
+                        visibleAmount += parseInt(val || 0);
+                    }
+                    if (profitCell) {
+                        const val = profitCell.textContent.replace(/[^\d]/g, '');
+                        visibleProfit += parseInt(val || 0);
                     }
                 }
-                rows[i].style.display = showRow ? "" : "none";
+            }
+
+            // Update totals in footer
+            const totalAmountCell = document.querySelector('.summary-row .amount-cell');
+            const totalProfitCell = document.querySelector('.summary-row .profit-cell');
+            if (totalAmountCell) totalAmountCell.textContent = 'Rp ' + formatRupiah(visibleAmount);
+            if (totalProfitCell) totalProfitCell.textContent = 'Rp ' + formatRupiah(Math.round(visibleProfit));
+
+            // Update results info
+            if (searchValue || activeChip !== 'all') {
+                resultsInfo.style.display = "block";
+                visibleEl.textContent = visibleCount;
+                totalEl.textContent = rows.length;
+            } else {
+                resultsInfo.style.display = "none";
             }
         }
 
