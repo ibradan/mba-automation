@@ -2605,3 +2605,46 @@ body {
   }
 }
 
+
+/* ================= LOADING INDICATOR ================= */
+.page-loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: transparent;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.page-loading::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), #10b981);
+  animation: loading-progress 1.5s ease-in-out infinite;
+}
+
+@keyframes loading-progress {
+  0% { width: 0%; left: 0; }
+  50% { width: 60%; left: 20%; }
+  100% { width: 0%; left: 100%; }
+}
+
+.bottom-nav-item.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.bottom-nav-item.loading svg {
+  animation: nav-pulse 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes nav-pulse {
+  from { transform: scale(1); }
+  to { transform: scale(0.9); }
+}

@@ -6,6 +6,9 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Settings - TERNAK UANG</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=32" />
+    <!-- Prefetch other pages -->
+    <link rel="prefetch" href="/" as="document">
+    <link rel="prefetch" href="/dana_amal" as="document">
     <style>
         .settings-page {
             padding: 20px;
@@ -376,7 +379,22 @@
                 console.error('Failed to save log level:', err);
             }
         });
+
+        // Loading state on navigation
+        document.querySelectorAll('.bottom-nav-item').forEach(item => {
+            item.addEventListener('click', function (e) {
+                if (this.classList.contains('active')) {
+                    e.preventDefault();
+                    return;
+                }
+                document.getElementById('page-loading').style.display = 'block';
+                this.classList.add('loading');
+            });
+        });
     </script>
+
+    <!-- Loading indicator -->
+    <div id="page-loading" class="page-loading" style="display: none;"></div>
 </body>
 
 </html>

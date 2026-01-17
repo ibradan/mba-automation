@@ -17,6 +17,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Preahvihear&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Prefetch other pages for faster navigation -->
+  <link rel="prefetch" href="/dana_amal" as="document">
+  <link rel="prefetch" href="/settings" as="document">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     /* Staggered entry for cards */
@@ -936,6 +939,25 @@
 
   <!-- ================= SCRIPTS ================= -->
   <script src="{{ url_for('static', filename='js/main.js') }}?v=31"></script>
+
+  <!-- Loading indicator -->
+  <div id="page-loading" class="page-loading" style="display: none;"></div>
+
+  <script>
+    // Add loading state on navigation click
+    document.querySelectorAll('.bottom-nav-item').forEach(item => {
+      item.addEventListener('click', function (e) {
+        // Don't add loading if already on this page
+        if (this.classList.contains('active')) {
+          e.preventDefault();
+          return;
+        }
+        // Show loading
+        document.getElementById('page-loading').style.display = 'block';
+        this.classList.add('loading');
+      });
+    });
+  </script>
 </body>
 
 </html>
