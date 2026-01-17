@@ -984,8 +984,8 @@ function toggleGlobalChart(btn) {
 
   if (isHidden) {
     btn.classList.add('active');
-    // The global chart is typically rendered on load/update, 
-    // but we can trigger a resize or re-render if needed here.
+    // Render the global chart when opening
+    renderGlobalChart();
   } else {
     btn.classList.remove('active');
   }
@@ -1334,6 +1334,258 @@ function shiftChartDate(e, btn, direction) {
 
   const row = wrapper.closest('.account-card');
   renderChart(row, canvas);
+}
+
+// ================= GLOBAL CHART RENDERING =================
+let globalHistoryData = {}; // Aggregated history from all accounts
+
+function aggregateGlobalHistory() {
+  // Collect and aggregate history data from all account cards
+  const cards = document.querySelectorAll('.account-card[data-history]');
+  const aggregated = {};
+
+  cards.forEach(card => {
+    try {
+      const historyStr = card.dataset.history;
+      if (!historyStr || historyStr === '{}') return;
+
+      const history = JSON.parse(historyStr);
+      Object.keys(history).forEach(date => {
+        if (!aggregated[date]) {
+          aggregated[date] = { income: 0, balance: 0, withdrawal: 0 };
+        }
+        aggregated[date].income += (history[date].income || 0);
+        aggregated[date].balance += (history[date].balance || 0);
+        aggregated[date].withdrawal += (history[date].withdrawal || 0);
+      });
+    } catch (e) {
+      console.error('Error parsing history for global chart:', e);
+    }
+  });
+
+  globalHistoryData = aggregated;
+  return aggregated;
+}
+
+function renderGlobalChart() {
+  const canvas = document.getElementById('globalChart');
+  if (!canvas) return;
+
+  // Aggregate data from all accounts
+  const history = aggregateGlobalHistory();
+  const dates = Object.keys(history).sort();
+
+  if (dates.length === 0) {
+    // No data available
+    return;
+  }
+
+  // PAGINATION
+  let endIndex = parseInt(canvas.dataset.endIndex);
+  if (isNaN(endIndex) || endIndex > dates.length) endIndex = dates.length;
+  if (endIndex < 7) endIndex = Math.min(7, dates.length);
+
+  let startIndex = endIndex - 7;
+  if (startIndex < 0) startIndex = 0;
+
+  const slicedDates = dates.slice(startIndex, endIndex);
+
+  // Update nav buttons
+  const wrapper = document.getElementById('global-chart-wrapper');
+  if (wrapper) {
+    const prevBtn = wrapper.querySelector('.prev');
+    const nextBtn = wrapper.querySelector('.next');
+    if (prevBtn) prevBtn.disabled = startIndex <= 0;
+    if (nextBtn) nextBtn.disabled = endIndex >= dates.length;
+    canvas.dataset.endIndex = endIndex;
+  }
+
+  const incomeData = [], balanceData = [], withdrawalData = [];
+  slicedDates.forEach(date => {
+    const entry = history[date];
+    incomeData.push(entry.income || 0);
+    balanceData.push(entry.balance || 0);
+    withdrawalData.push(entry.withdrawal || 0);
+  });
+
+  // Destroy old chart
+  if (canvas.chartInstance) canvas.chartInstance.destroy();
+
+  const ctx = canvas.getContext('2d');
+
+  // Create gradients for fill
+  const modalGradient = ctx.createLinearGradient(0, 0, 0, 240);
+  modalGradient.addColorStop(0, 'rgba(234, 88, 12, 0.25)');
+  modalGradient.addColorStop(1, 'rgba(234, 88, 12, 0.01)');
+
+  const saldoGradient = ctx.createLinearGradient(0, 0, 0, 240);
+  saldoGradient.addColorStop(0, 'rgba(37, 99, 235, 0.25)');
+  saldoGradient.addColorStop(1, 'rgba(37, 99, 235, 0.01)');
+
+  const pendapatanGradient = ctx.createLinearGradient(0, 0, 0, 240);
+  pendapatanGradient.addColorStop(0, 'rgba(5, 150, 105, 0.25)');
+  pendapatanGradient.addColorStop(1, 'rgba(5, 150, 105, 0.01)');
+
+  canvas.chartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: slicedDates,
+      datasets: [
+        {
+          label: 'Total Modal',
+          data: incomeData,
+          borderColor: '#ea580c',
+          backgroundColor: modalGradient,
+          borderWidth: 3,
+          pointRadius: 5,
+          pointBackgroundColor: '#ea580c',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointHoverRadius: 8,
+          tension: 0.3,
+          fill: true
+        },
+        {
+          label: 'Total Saldo',
+          data: balanceData,
+          borderColor: '#2563eb',
+          backgroundColor: saldoGradient,
+          borderWidth: 3,
+          pointRadius: 5,
+          pointBackgroundColor: '#2563eb',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointHoverRadius: 8,
+          tension: 0.3,
+          fill: true
+        },
+        {
+          label: 'Total Pendapatan (Net)',
+          data: withdrawalData,
+          borderColor: '#059669',
+          backgroundColor: pendapatanGradient,
+          borderWidth: 3,
+          pointRadius: 5,
+          pointBackgroundColor: '#059669',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointHoverRadius: 8,
+          tension: 0.3,
+          fill: true
+        }
+      ]
+    },
+    options: {
+      animation: {
+        duration: 1500,
+        easing: 'easeOutQuart',
+        loop: false
+      },
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false
+      },
+      plugins: {
+        legend: {
+          position: 'top',
+          align: 'end',
+          labels: {
+            color: '#64748b',
+            font: { size: 12, family: "'Inter', sans-serif", weight: 600 },
+            usePointStyle: true,
+            pointStyle: 'circle',
+            padding: 20,
+            boxWidth: 8,
+            boxHeight: 8
+          }
+        },
+        tooltip: {
+          enabled: true,
+          backgroundColor: 'rgba(15, 23, 42, 0.98)',
+          titleColor: '#fff',
+          bodyColor: '#e2e8f0',
+          titleFont: { size: 13, weight: 600, family: "'Inter', sans-serif" },
+          bodyFont: { size: 12, family: "'Inter', sans-serif" },
+          borderColor: '#cbd5e1',
+          borderWidth: 1,
+          cornerRadius: 12,
+          padding: 14,
+          displayColors: true,
+          usePointStyle: true,
+          callbacks: {
+            label: function (context) {
+              let label = context.dataset.label || '';
+              if (label) {
+                label += ': ';
+              }
+              if (context.parsed.y !== null) {
+                label += 'Rp ' + context.parsed.y.toLocaleString('id-ID');
+              }
+              return label;
+            },
+            footer: function (tooltipItems) {
+              const chart = tooltipItems[0].chart;
+              const index = tooltipItems[0].dataIndex;
+              const modal = chart.data.datasets[0].data[index];
+              const pendapatan = chart.data.datasets[2].data[index];
+              const profit = pendapatan - modal;
+              const sign = profit > 0 ? '+' : '';
+              return '\nKeuntungan: ' + sign + 'Rp ' + profit.toLocaleString('id-ID');
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#64748b', font: { size: 10, family: "'Inter', sans-serif", weight: 600 } },
+          grid: { display: true, color: 'rgba(0,0,0,0.05)', drawBorder: false }
+        },
+        y: {
+          ticks: {
+            color: '#64748b',
+            padding: 10,
+            font: { size: 10, family: "'Inter', sans-serif", weight: 600 },
+            callback: function (value) {
+              if (value >= 1000000) return (value / 1000000).toFixed(1) + 'jt';
+              if (value >= 1000) return (value / 1000).toFixed(0) + 'k';
+              return value;
+            }
+          },
+          grid: { color: 'rgba(0,0,0,0.08)', drawBorder: false },
+          beginAtZero: true
+        }
+      }
+    }
+  });
+
+  canvas.style.height = '240px';
+  canvas.style.width = '100%';
+}
+
+function shiftGlobalChartDate(e, btn, direction) {
+  e.preventDefault();
+  e.stopPropagation();
+
+  const canvas = document.getElementById('globalChart');
+  if (!canvas) return;
+
+  const dates = Object.keys(globalHistoryData).sort();
+  if (dates.length === 0) return;
+
+  let endIndex = parseInt(canvas.dataset.endIndex);
+  if (isNaN(endIndex)) endIndex = dates.length;
+
+  endIndex += (direction * 7);
+
+  // Bounds check
+  if (endIndex < 7) endIndex = Math.min(7, dates.length);
+  if (endIndex > dates.length) endIndex = dates.length;
+
+  canvas.dataset.endIndex = endIndex;
+
+  renderGlobalChart();
 }
 
 function fireConfetti() {
