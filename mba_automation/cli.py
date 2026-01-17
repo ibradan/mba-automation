@@ -27,6 +27,7 @@ current_run_data = {
     'balance': 0.0,
     'points': 0.0,
     'calendar': [],
+    'dana_amal_records': [],
     'is_sync': False
 }
 
@@ -116,6 +117,10 @@ def save_progress() -> None:
                             'points': final_points,
                             'calendar': final_calendar
                         }
+                        
+                        # Store dana_amal_records at account level (not daily)
+                        if data.get('dana_amal_records'):
+                            acc['dana_amal_records'] = data['dana_amal_records']
                         
                         ts = datetime.datetime.now().isoformat()
                         acc['last_sync_ts'] = ts
@@ -238,6 +243,7 @@ def main() -> None:
                 'balance': 0.0,
                 'points': 0.0,
                 'calendar': [],
+                'dana_amal_records': [],
                 'is_sync': args.sync
             })
             
@@ -261,7 +267,7 @@ def main() -> None:
                     save_progress()
 
                 try:
-                    c, t, i, w, b, p, cal = automation_run(
+                    c, t, i, w, b, p, cal, dana_amal = automation_run(
                         playwright, phone=phone, password=password, 
                         headless=final_headless, slow_mo=args.slow_mo, 
                         iterations=args.iterations, review_text=args.review, 
@@ -276,7 +282,8 @@ def main() -> None:
                         'withdrawal': w,
                         'balance': b,
                         'points': p,
-                        'calendar': cal
+                        'calendar': cal,
+                        'dana_amal_records': dana_amal
                     })
                     
                     if args.sync or (c >= t and t > 0):

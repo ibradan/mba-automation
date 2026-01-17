@@ -3,7 +3,7 @@ import sys
 import time
 from typing import Optional, Tuple
 from playwright.sync_api import Playwright, Page, TimeoutError as PlaywrightTimeoutError
-from .scraper import scrape_income, scrape_withdrawal, scrape_balance, scrape_points, scrape_calendar_data, try_close_popups
+from .scraper import scrape_income, scrape_withdrawal, scrape_balance, scrape_points, scrape_calendar_data, try_close_popups, scrape_dana_amal_records
 from .reviews import REVIEWS
 import random
 from datetime import date
@@ -536,7 +536,7 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
     return tasks_completed, tasks_total
 
 
-def run(playwright: Playwright, phone: str, password: str, headless: bool = False, slow_mo: int = 200, iterations: int = 30, review_text: Optional[str] = None, sync_only: bool = False, progress_callback=None) -> Tuple[int, int, float, float, float, float, list]:
+def run(playwright: Playwright, phone: str, password: str, headless: bool = False, slow_mo: int = 200, iterations: int = 30, review_text: Optional[str] = None, sync_only: bool = False, progress_callback=None) -> Tuple[int, int, float, float, float, float, list, list]:
     browser = playwright.chromium.launch(
         headless=headless, 
         slow_mo=50,
@@ -590,7 +590,7 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
         # Login now handles restoration check AND saving to 'context'
         if not login(page, context, phone, password, 45): # Increased login timeout slightly for safety against slow network
             log("Login failed, aborting run.")
-            return 0, iterations, 0.0, 0.0, 0.0, 0.0, []
+            return 0, iterations, 0.0, 0.0, 0.0, 0.0, [], []
 
         # ========== PERFORM TASKS ==========
         tasks_completed, tasks_total = 0, iterations
@@ -666,9 +666,14 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
         # Check-in logic already handles if already checked in
         points, calendar = perform_checkin(page)
         
-        # Return progress with income, withdrawal, balance, points, and calendar
-        log(f"Returning final progress: {tasks_completed}/{tasks_total}, Points: {points}, Calendar days: {len(calendar)}")
-        return tasks_completed, tasks_total, income, withdrawal, balance, points, calendar
+        # ========== SCRAPE DANA AMAL RECORDS ==========
+        log("Scraping Dana Amal records from financial page...")
+        dana_amal_records = scrape_dana_amal_records(page, timeout)
+        log(f"  Found {len(dana_amal_records)} dana amal records")
+        
+        # Return progress with income, withdrawal, balance, points, calendar, and dana_amal
+        log(f"Returning final progress: {tasks_completed}/{tasks_total}, Points: {points}, Calendar days: {len(calendar)}, Dana Amal records: {len(dana_amal_records)}")
+        return tasks_completed, tasks_total, income, withdrawal, balance, points, calendar, dana_amal_records
 
     finally:
         context.close()
