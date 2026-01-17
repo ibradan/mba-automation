@@ -53,14 +53,10 @@ function autoSave() {
   }, 1500);
 }
 
-// Initialize Application (Runs on Load & HTMX Swap)
-function initApp() {
+// Attach auto-save to all inputs
+document.addEventListener('DOMContentLoaded', function () {
   const form = document.getElementById('automation-form');
   if (form) {
-    // Remove old listeners to prevent duplication if any
-    form.removeEventListener('input', autoSave);
-    form.removeEventListener('change', autoSave);
-
     form.addEventListener('input', autoSave);
     form.addEventListener('change', autoSave);
     // console.log('Auto-save enabled');
@@ -71,11 +67,7 @@ function initApp() {
   const settingsMenu = document.getElementById('settings-menu');
 
   if (settingsToggle && settingsMenu) {
-    // Clone node to clear old listeners if re-initializing
-    const newToggle = settingsToggle.cloneNode(true);
-    settingsToggle.parentNode.replaceChild(newToggle, settingsToggle);
-
-    newToggle.addEventListener('click', function (e) {
+    settingsToggle.addEventListener('click', function (e) {
       e.preventDefault();
       e.stopPropagation();
       settingsMenu.style.display = settingsMenu.style.display === 'none' ? 'block' : 'none';
@@ -83,22 +75,11 @@ function initApp() {
 
     // Close dropdown when clicking outside
     document.addEventListener('click', function (e) {
-      if (!newToggle.contains(e.target) && !settingsMenu.contains(e.target)) {
+      if (!settingsToggle.contains(e.target) && !settingsMenu.contains(e.target)) {
         settingsMenu.style.display = 'none';
       }
     });
   }
-}
-
-// Run on initial load
-document.addEventListener('DOMContentLoaded', initApp);
-
-// Run after HTMX swap
-document.addEventListener('htmx:afterSwap', function (evt) {
-  initApp();
-  // Hide loading indicator
-  document.getElementById('page-loading').style.display = 'none';
-  document.querySelectorAll('.bottom-nav-item').forEach(el => el.classList.remove('loading'));
 });
 
 function removeRow(btn) {

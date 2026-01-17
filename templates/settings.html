@@ -9,8 +9,6 @@
     <!-- Prefetch other pages -->
     <link rel="prefetch" href="/" as="document">
     <link rel="prefetch" href="/dana_amal" as="document">
-    <!-- HTMX for fast navigation -->
-    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <style>
         .settings-page {
             padding: 20px;
@@ -170,219 +168,126 @@
     </style>
 </head>
 
-<body hx-boost="true">
-    <div id="main-content">
-        <div class="container">
-            <div class="settings-page">
-                <a href="/" class="back-btn">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="19" y1="12" x2="5" y2="12"></line>
-                        <polyline points="12 19 5 12 12 5"></polyline>
-                    </svg>
-                    Kembali
-                </a>
+<body>
+    <div class="container">
+        <div class="settings-page">
+            <a href="/" class="back-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                Kembali
+            </a>
 
-                <h1 style="font-size: 1.5rem; font-weight: 700; color: #1e293b; margin-bottom: 24px;">⚙️ Settings</h1>
+            <h1 style="font-size: 1.5rem; font-weight: 700; color: #1e293b; margin-bottom: 24px;">⚙️ Settings</h1>
 
-                <!-- User Info -->
-                <div class="settings-card">
-                    <h3>👤 Account</h3>
-                    <div
-                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                        <span class="user-badge">{{ session.get('user_id') }}</span>
-                        <a href="{{ url_for('logout') }}" class="settings-btn danger" style="width: auto;">
-                            Logout
-                        </a>
-                    </div>
-
-                    <form action="{{ url_for('change_password') }}" method="POST">
-                        <div class="form-group">
-                            <label>Password Lama</label>
-                            <input type="password" name="old_password" class="settings-input-field"
-                                placeholder="Masukkan password lama" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Password Baru</label>
-                            <input type="password" name="new_password" class="settings-input-field"
-                                placeholder="Masukkan password baru" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Konfirmasi Password</label>
-                            <input type="password" name="confirm_password" class="settings-input-field"
-                                placeholder="Ulangi password baru" required>
-                        </div>
-                        <button type="submit" class="settings-btn primary">🔒 Simpan Password</button>
-                    </form>
-                </div>
-
-                <!-- Telegram -->
-                <div class="settings-card">
-                    <h3>✈️ Telegram Notification</h3>
-                    <div class="form-group">
-                        <label>Bot Token</label>
-                        <input type="password" id="setting-telegram-token" class="settings-input-field"
-                            placeholder="123456:ABC..." value="{{ settings.get('telegram_token', '') }}">
-                    </div>
-                    <div class="form-group">
-                        <label>Chat ID</label>
-                        <input type="text" id="setting-telegram-chat-id" class="settings-input-field"
-                            placeholder="987654321" value="{{ settings.get('telegram_chat_id', '') }}">
-                    </div>
-                    <button type="button" id="btn-test-telegram" class="settings-btn telegram">
-                        Tes Telegram ✈️
-                    </button>
-                </div>
-
-                <!-- Export/Import -->
-                <div class="settings-card">
-                    <h3>📦 Data Management</h3>
-                    <div class="action-grid">
-                        <button type="button" id="btn-export" class="settings-btn secondary">
-                            📤 Export JSON
-                        </button>
-                        <button type="button" id="btn-import-trigger" class="settings-btn secondary">
-                            📥 Import JSON
-                        </button>
-                        <input type="file" id="file-import" style="display: none" accept=".json" />
-                    </div>
-                </div>
-
-                {% if session.get('user_id') == 'admin' %}
-                <!-- Admin Only -->
-                <div class="settings-card">
-                    <h3>🔧 Admin Settings</h3>
-                    <div class="settings-row">
-                        <label>Log Level</label>
-                        <select id="setting-loglevel" class="settings-input-field" style="width: auto;">
-                            <option value="INFO" {% if settings.get('log_level')=='INFO' %}selected{% endif %}>INFO
-                            </option>
-                            <option value="DEBUG" {% if settings.get('log_level')=='DEBUG' %}selected{% endif %}>DEBUG
-                            </option>
-                        </select>
-                    </div>
-                    <a href="/logs" class="settings-btn secondary" style="margin-top: 12px;">
-                        📋 Lihat Log
+            <!-- User Info -->
+            <div class="settings-card">
+                <h3>👤 Account</h3>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <span class="user-badge">{{ session.get('user_id') }}</span>
+                    <a href="{{ url_for('logout') }}" class="settings-btn danger" style="width: auto;">
+                        Logout
                     </a>
                 </div>
-                {% endif %}
 
-                <!-- Install App -->
-                <div class="settings-card">
-                    <h3>📱 Install App</h3>
-                    <button type="button" id="btn-install-app" class="settings-btn primary">
-                        ⬇️ Install Aplikasi
+                <form action="{{ url_for('change_password') }}" method="POST">
+                    <div class="form-group">
+                        <label>Password Lama</label>
+                        <input type="password" name="old_password" class="settings-input-field"
+                            placeholder="Masukkan password lama" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password Baru</label>
+                        <input type="password" name="new_password" class="settings-input-field"
+                            placeholder="Masukkan password baru" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Konfirmasi Password</label>
+                        <input type="password" name="confirm_password" class="settings-input-field"
+                            placeholder="Ulangi password baru" required>
+                    </div>
+                    <button type="submit" class="settings-btn primary">🔒 Simpan Password</button>
+                </form>
+            </div>
+
+            <!-- Telegram -->
+            <div class="settings-card">
+                <h3>✈️ Telegram Notification</h3>
+                <div class="form-group">
+                    <label>Bot Token</label>
+                    <input type="password" id="setting-telegram-token" class="settings-input-field"
+                        placeholder="123456:ABC..." value="{{ settings.get('telegram_token', '') }}">
+                </div>
+                <div class="form-group">
+                    <label>Chat ID</label>
+                    <input type="text" id="setting-telegram-chat-id" class="settings-input-field"
+                        placeholder="987654321" value="{{ settings.get('telegram_chat_id', '') }}">
+                </div>
+                <button type="button" id="btn-test-telegram" class="settings-btn telegram">
+                    Tes Telegram ✈️
+                </button>
+            </div>
+
+            <!-- Export/Import -->
+            <div class="settings-card">
+                <h3>📦 Data Management</h3>
+                <div class="action-grid">
+                    <button type="button" id="btn-export" class="settings-btn secondary">
+                        📤 Export JSON
                     </button>
+                    <button type="button" id="btn-import-trigger" class="settings-btn secondary">
+                        📥 Import JSON
+                    </button>
+                    <input type="file" id="file-import" style="display: none" accept=".json" />
                 </div>
             </div>
+
+            {% if session.get('user_id') == 'admin' %}
+            <!-- Admin Only -->
+            <div class="settings-card">
+                <h3>🔧 Admin Settings</h3>
+                <div class="settings-row">
+                    <label>Log Level</label>
+                    <select id="setting-loglevel" class="settings-input-field" style="width: auto;">
+                        <option value="INFO" {% if settings.get('log_level')=='INFO' %}selected{% endif %}>INFO</option>
+                        <option value="DEBUG" {% if settings.get('log_level')=='DEBUG' %}selected{% endif %}>DEBUG
+                        </option>
+                    </select>
+                </div>
+                <a href="/logs" class="settings-btn secondary" style="margin-top: 12px;">
+                    📋 Lihat Log
+                </a>
+            </div>
+            {% endif %}
+
+            <!-- Install App -->
+            <div class="settings-card">
+                <h3>📱 Install App</h3>
+                <button type="button" id="btn-install-app" class="settings-btn primary">
+                    ⬇️ Install Aplikasi
+                </button>
+            </div>
         </div>
-
-        <!-- Scripts moved INSIDE main-content for re-execution -->
-        <script>
-            // Test Telegram
-            document.getElementById('btn-test-telegram')?.addEventListener('click', async () => {
-                const token = document.getElementById('setting-telegram-token').value;
-                const chatId = document.getElementById('setting-telegram-chat-id').value;
-
-                if (!token || !chatId) {
-                    alert('Lengkapi Bot Token dan Chat ID dulu!');
-                    return;
-                }
-
-                try {
-                    const res = await fetch('/api/test_telegram', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ token, chat_id: chatId })
-                    });
-                    const data = await res.json();
-                    alert(data.message || data.error);
-                } catch (e) {
-                    alert('Gagal mengirim: ' + e.message);
-                }
-            });
-
-            // Export
-            document.getElementById('btn-export')?.addEventListener('click', () => {
-                window.location.href = '/export_accounts';
-            });
-
-            // Import
-            document.getElementById('btn-import-trigger')?.addEventListener('click', () => {
-                document.getElementById('file-import').click();
-            });
-
-            document.getElementById('file-import')?.addEventListener('change', async (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-
-                const formData = new FormData();
-                formData.append('file', file);
-
-                try {
-                    const res = await fetch('/import_accounts', {
-                        method: 'POST',
-                        body: formData
-                    });
-                    const data = await res.json();
-                    alert(data.message || 'Import berhasil!');
-                    location.reload();
-                } catch (e) {
-                    alert('Gagal import: ' + e.message);
-                }
-            });
-
-            // Install App (PWA)
-            let deferredPrompt;
-            window.addEventListener('beforeinstallprompt', (e) => {
-                e.preventDefault();
-                deferredPrompt = e;
-            });
-
-            document.getElementById('btn-install-app')?.addEventListener('click', async () => {
-                if (deferredPrompt) {
-                    deferredPrompt.prompt();
-                    const { outcome } = await deferredPrompt.userChoice;
-                    deferredPrompt = null;
-                } else {
-                    alert('Aplikasi sudah terinstall atau browser tidak support PWA');
-                }
-            });
-
-            // Log Level change
-            document.getElementById('setting-loglevel')?.addEventListener('change', async (e) => {
-                try {
-                    await fetch('/api/settings', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ log_level: e.target.value })
-                    });
-                } catch (err) {
-                    console.error('Failed to save log level:', err);
-                }
-            });
-        </script>
-    </div> <!-- End #main-content -->
+    </div>
 
     <!-- ================= BOTTOM NAVIGATION ================= -->
     <nav class="bottom-nav">
-        <a href="/" class="bottom-nav-item" hx-boost="false" hx-get="/" hx-target="#main-content"
-            hx-select="#main-content" hx-swap="innerHTML" hx-push-url="true">
+        <a href="/" class="bottom-nav-item">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
                 <polyline points="9 22 9 12 15 12 15 22" />
             </svg>
             <span>Tugas & Absen</span>
         </a>
-        <a href="/dana_amal" class="bottom-nav-item" hx-boost="false" hx-get="/dana_amal" hx-target="#main-content"
-            hx-select="#main-content" hx-swap="innerHTML" hx-push-url="true">
+        <a href="/dana_amal" class="bottom-nav-item">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="12" y1="1" x2="12" y2="23"></line>
                 <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
             </svg>
             <span>Dana Amal</span>
         </a>
-        <a href="/settings" class="bottom-nav-item active" hx-boost="false" hx-get="/settings" hx-target="#main-content"
-            hx-select="#main-content" hx-swap="innerHTML" hx-push-url="true">
+        <a href="/settings" class="bottom-nav-item active">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="3"></circle>
                 <path
@@ -392,9 +297,92 @@
             <span>Settings</span>
         </a>
     </nav>
-    <div id="page-loading" class="page-loading" style="display: none;"></div>
 
     <script>
+        // Test Telegram
+        document.getElementById('btn-test-telegram')?.addEventListener('click', async () => {
+            const token = document.getElementById('setting-telegram-token').value;
+            const chatId = document.getElementById('setting-telegram-chat-id').value;
+
+            if (!token || !chatId) {
+                alert('Lengkapi Bot Token dan Chat ID dulu!');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/test_telegram', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token, chat_id: chatId })
+                });
+                const data = await res.json();
+                alert(data.message || data.error);
+            } catch (e) {
+                alert('Gagal mengirim: ' + e.message);
+            }
+        });
+
+        // Export
+        document.getElementById('btn-export')?.addEventListener('click', () => {
+            window.location.href = '/export_accounts';
+        });
+
+        // Import
+        document.getElementById('btn-import-trigger')?.addEventListener('click', () => {
+            document.getElementById('file-import').click();
+        });
+
+        document.getElementById('file-import')?.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const res = await fetch('/import_accounts', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                alert(data.message || 'Import berhasil!');
+                location.reload();
+            } catch (e) {
+                alert('Gagal import: ' + e.message);
+            }
+        });
+
+        // Install App (PWA)
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+        });
+
+        document.getElementById('btn-install-app')?.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                deferredPrompt = null;
+            } else {
+                alert('Aplikasi sudah terinstall atau browser tidak support PWA');
+            }
+        });
+
+        // Log Level change
+        document.getElementById('setting-loglevel')?.addEventListener('change', async (e) => {
+            try {
+                await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ log_level: e.target.value })
+                });
+            } catch (err) {
+                console.error('Failed to save log level:', err);
+            }
+        });
+
+        // Loading state on navigation
         document.querySelectorAll('.bottom-nav-item').forEach(item => {
             item.addEventListener('click', function (e) {
                 if (this.classList.contains('active')) {
@@ -406,6 +394,9 @@
             });
         });
     </script>
+
+    <!-- Loading indicator -->
+    <div id="page-loading" class="page-loading" style="display: none;"></div>
 </body>
 
 </html>
