@@ -1755,9 +1755,100 @@ def _handle_single_run(req, sync_only=False):
 
 
 
+@app.route("/dana_amal")
+@login_required
+def dana_amal_page():
+    """Render the Dana Amal (financial records) page."""
+    accounts = data_manager.load_accounts()
+    current_user = session.get('user_id')
+    
+    results = []
+    for acc in accounts:
+        if acc.get('owner', 'admin') != current_user:
+            continue
+        phone = acc.get("phone", "")
+        results.append({
+            "phone_display": phone_display(phone)
+        })
+    
+    return render_template('dana_amal.html', accounts=results)
+
+
+@app.route("/api/dana_amal/<phone_display>")
+@login_required
+def api_dana_amal(phone_display):
+    """API endpoint to fetch dana amal records by scraping."""
+    from mba_automation.scraper import scrape_dana_amal_records
+    from playwright.sync_api import sync_playwright
+    
+    try:
+        norm = normalize_phone(phone_display)
+        if not norm:
+            return jsonify({"error": "Invalid phone number"}), 400
+        
+        # Find account
+        accounts = data_manager.load_accounts()
+        current_user = session.get('user_id')
+        acc = None
+        for a in accounts:
+            if a.get('owner', 'admin') != current_user:
+                continue
+            if normalize_phone(a.get('phone', '')) == norm:
+                acc = a
+                break
+        
+        if not acc:
+            return jsonify({"error": "Account not found"}), 404
+        
+        pwd = acc.get('password', '')
+        if not pwd:
+            return jsonify({"error": "Password not set for this account"}), 400
+        
+        # Scrape using Playwright
+        records = []
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            context = browser.new_context()
+            page = context.new_page()
+            
+            try:
+                # Login first
+                page.goto("https://mba7.com/#/login", wait_until="domcontentloaded", timeout=30000)
+                page.wait_for_timeout(2000)
+                
+                # Fill login form
+                phone_input = page.locator("input[type='text'], input[type='tel']").first
+                pwd_input = page.locator("input[type='password']").first
+                
+                if phone_input.count() > 0 and pwd_input.count() > 0:
+                    phone_input.fill(phone_display)
+                    page.wait_for_timeout(300)
+                    pwd_input.fill(pwd)
+                    page.wait_for_timeout(300)
+                    
+                    # Click login button
+                    login_btn = page.locator("button:has-text('Masuk'), button:has-text('Login'), button[type='submit']").first
+                    if login_btn.count() > 0:
+                        login_btn.click()
+                        page.wait_for_timeout(3000)
+                
+                # Now scrape dana amal
+                records = scrape_dana_amal_records(page, timeout=30)
+                
+            finally:
+                browser.close()
+        
+        return jsonify({"records": records})
+        
+    except Exception as e:
+        logger.exception("Dana Amal API error: %s", e)
+        return jsonify({"error": str(e)}), 500
+
+
 
 
 @app.route("/estimation")
+
 def estimation_page():
     """Render the dedicated estimation page."""
     accounts = data_manager.load_accounts()

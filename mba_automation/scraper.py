@@ -229,3 +229,126 @@ def scrape_calendar_data(page: Page, timeout: int = 30) -> list:
         print(f"  Error scraping calendar: {e}")
     
     return calendar_data
+
+
+def scrape_dana_amal_records(page: Page, timeout: int = 30) -> list:
+    """
+    Scrapes dana amal (financial) records from the /financial/record page.
+    Returns a list of dicts with: period, product, amount, rate, days, profit
+    """
+    records = []
+    try:
+        full_url = "https://mba7.com/#/financial/record"
+        print(f"  Navigating to Dana Amal page: {full_url}")
+        page.goto(full_url, wait_until="domcontentloaded", timeout=timeout * 1000)
+        
+        page.wait_for_timeout(3000)
+        try_close_popups(page)
+        
+        # Wait for records to load
+        try:
+            page.wait_for_selector(".fund-card, .fund-item, [class*='fund']", timeout=8000)
+        except Exception:
+            print("  No dana amal records found (no .fund-card elements)")
+            return []
+        
+        # Get all fund record cards/items
+        # Based on screenshot structure, each record has .fund-span-value for period
+        # and multiple .fund-value for amount, rate%, days
+        cards = page.locator(".fund-card, .fund-item, [class*='record-item']").all()
+        
+        if not cards:
+            # Try alternative: look for any container with the data
+            # Get all text and parse
+            print("  Trying text-based parsing...")
+            body_text = page.locator("body").text_content()
+            # This is fallback - would need specific parsing
+            
+        for idx, card in enumerate(cards):
+            try:
+                record = {
+                    'period': '',
+                    'product': '',
+                    'amount': 0,
+                    'rate': 0,
+                    'days': 0,
+                    'profit': 0,
+                    'status': ''
+                }
+                
+                # Get period (date range)
+                try:
+                    period_el = card.locator(".fund-span-value, [class*='period'], [class*='date']").first
+                    if period_el.count() > 0:
+                        record['period'] = period_el.text_content(timeout=1000).strip()
+                except: pass
+                
+                # Get product name
+                try:
+                    product_el = card.locator("h3, h4, .fund-title, [class*='title'], [class*='name']").first
+                    if product_el.count() > 0:
+                        record['product'] = product_el.text_content(timeout=1000).strip()
+                except: pass
+                
+                # Get all .fund-value elements - typically: amount, rate%, days
+                fund_values = card.locator(".fund-value").all()
+                
+                for i, fv in enumerate(fund_values):
+                    try:
+                        text = fv.text_content(timeout=1000).strip()
+                        
+                        # Parse based on content
+                        if '%' in text:
+                            # This is rate
+                            rate_clean = re.sub(r'[^\d.,]', '', text)
+                            if ',' in rate_clean:
+                                rate_clean = rate_clean.replace(',', '.')
+                            record['rate'] = float(rate_clean) if rate_clean else 0
+                        elif '.' in text and ',' in text:
+                            # This is likely amount (e.g. 80.000,00)
+                            amt_clean = text.replace('.', '').replace(',', '.')
+                            amt_clean = re.sub(r'[^\d.]', '', amt_clean)
+                            if not record['amount']:  # First amount is investment
+                                record['amount'] = float(amt_clean) if amt_clean else 0
+                        elif text.isdigit() or (len(text) <= 3 and text.replace('.','').replace(',','').isdigit()):
+                            # This is likely days (short number)
+                            days_clean = re.sub(r'[^\d]', '', text)
+                            record['days'] = int(days_clean) if days_clean else 0
+                        else:
+                            # Try to parse as amount
+                            amt_clean = re.sub(r'[^\d.,]', '', text)
+                            if amt_clean:
+                                amt_clean = amt_clean.replace('.', '').replace(',', '.')
+                                try:
+                                    val = float(amt_clean)
+                                    if val > 100:  # Likely amount, not days
+                                        record['amount'] = val
+                                except: pass
+                    except: pass
+                
+                # Calculate profit: amount × (rate/100) × days
+                if record['amount'] and record['rate'] and record['days']:
+                    record['profit'] = record['amount'] * (record['rate'] / 100) * record['days']
+                
+                # Get status (if any)
+                try:
+                    status_el = card.locator("button, .status, [class*='status']").first
+                    if status_el.count() > 0:
+                        record['status'] = status_el.text_content(timeout=1000).strip()
+                except: pass
+                
+                # Only add if we got meaningful data
+                if record['amount'] > 0 or record['period']:
+                    records.append(record)
+                    print(f"  Record {idx+1}: Amt={record['amount']}, Rate={record['rate']}%, Days={record['days']}, Profit={record['profit']}")
+                
+            except Exception as e:
+                print(f"  Error parsing record {idx}: {e}")
+                continue
+        
+        print(f"  Successfully scraped {len(records)} dana amal records")
+        
+    except Exception as e:
+        print(f"Error scraping dana amal: {e}")
+    
+    return records
