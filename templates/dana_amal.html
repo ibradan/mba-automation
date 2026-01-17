@@ -357,6 +357,8 @@
                     {% if all_records %}{{ all_records|length }} records dari cache{% else %}Klik tombol untuk ambil
                     data{% endif %}
                 </span>
+                <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 4px;">💡 Tip: Jika warna masih merah, tekan
+                    Ctrl+F5 untuk refresh cache.</div>
             </div>
 
             <div class="search-filter-section">
@@ -404,11 +406,20 @@
                         <tbody>
                             {% for item in all_records %}
                             {% set is_due = false %}
+                            {% set due_label = "" %}
                             {% if item.record.period and ' ~ ' in item.record.period %}
-                            {% set endPart = item.record.period.split('~')[1].strip().split(' ')[0] %}
-                            {% set p_m, p_d, p_y = endPart.split('/') %}
+                            {% set endPartFull = item.record.period.split('~')[1].strip() %}
+                            {% set endDatePart = endPartFull.split(' ')[0] %}
+                            {% set endTimePart = endPartFull.split(' ')[1] %}
+                            {% set p_m, p_d, p_y = endDatePart.split('/') %}
                             {% set endDateStr = p_y ~ '-' ~ p_m ~ '-' ~ p_d %}
-                            {% if endDateStr <= now_str %} {% set is_due=true %} {% endif %} {% endif %} <tr
+
+                            {# Logic to calculate H-X roughly (since Jinja date math is limited, we compare strings) #}
+                            {% if endDateStr <= now_str %} {% set is_due=true %} {% if endDateStr==now_str %} {% set
+                                due_label="Selesai (H-0) " ~ endTimePart %} {% elif endDateStr < now_str %} {% set
+                                due_label="Selesai (Overdue)" %} {% else %} {# Very naive comparison for H-1/H-2 if
+                                needed, but we'll stick to a generic label for server-side if it's complex #} {% set
+                                due_label="Segera Selesai " ~ endTimePart %} {% endif %} {% endif %} {% endif %} <tr
                                 class="{% if is_due %}due-soon-row{% endif %}"
                                 data-period="{{ item.record.period or '' }}">
                                 <td>{{ loop.index }}</td>
@@ -421,7 +432,7 @@
                                 </td>
                                 <td class="period-cell">
                                     {{ item.record.period or '-' }}
-                                    {% if is_due %}<span class="due-badge">Segera Selesai</span>{% endif %}
+                                    {% if is_due %}<span class="due-badge">{{ due_label }}</span>{% endif %}
                                 </td>
                                 <td>{{ item.record.product or '-' }}</td>
                                 <td class="amount-cell">Rp {{ "{:,.0f}".format(item.record.amount or 0).replace(',',
@@ -468,9 +479,11 @@
             try {
                 // Format: "01/16/2026 12:12:21 ~ 02/05/2026 12:13:21"
                 const parts = periodStr.split('~');
-                if (parts.length < 2) return false;
+                if (parts.length < 2) return { isDue: false };
 
-                const endPart = parts[1].trim().split(' ')[0]; // "02/05/2026"
+                const endFull = parts[1].trim();
+                const endPart = endFull.split(' ')[0]; // "02/05/2026"
+                const endTime = endFull.split(' ')[1]; // "12:13:21"
                 const [m, d, y] = endPart.split('/');
                 const endDate = new Date(y, m - 1, d);
                 const today = new Date();
@@ -479,9 +492,18 @@
                 const diffTime = endDate.getTime() - today.getTime();
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-                return diffDays <= 2; // Return true if end date is today, tomorrow, or overdue
+                if (diffDays <= 2) {
+                    let label = "Segera";
+                    if (diffDays === 0) label = `Selesai (H-0) ${endTime}`;
+                    else if (diffDays === 1) label = `Selesai (H-1) ${endTime}`;
+                    else if (diffDays === 2) label = `Selesai (H-2) ${endTime}`;
+                    else if (diffDays < 0) label = "Selesai (Overdue)";
+
+                    return { isDue: true, label: label };
+                }
+                return { isDue: false };
             } catch (e) {
-                return false;
+                return { isDue: false };
             }
         }
 
@@ -575,7 +597,7 @@
             // Create table structure
             container.innerHTML = `
                 <div class="progress-indicator" id="progress-indicator">
-                    <span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;margin-right:8px;"></span>
+                    <span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;margin-right:8px;vertical-align:middle;"></span>
                     Memulai...
                 </div>
                 <div id="status-log-container">${logHtml}</div>
@@ -644,9 +666,9 @@
                             grandTotalAmount += r.amount || 0;
                             grandTotalProfit += r.profit || 0;
 
-                            const isDue = checkDueDate(r.period || "");
+                            const dueInfo = checkDueDate(r.period || "");
                             const tr = document.createElement('tr');
-                            if (isDue) tr.className = 'due-soon-row';
+                            if (dueInfo.isDue) tr.className = 'due-soon-row';
 
                             tr.innerHTML = `
                                 <td>${rowCount}</td>
@@ -656,7 +678,7 @@
                                 </td>
                                 <td class="period-cell">
                                     ${r.period || '-'}
-                                    ${isDue ? '<span class="due-badge">Segera Selesai</span>' : ''}
+                                    ${dueInfo.isDue ? `<span class="due-badge">${dueInfo.label}</span>` : ''}
                                 </td>
                                 <td>${r.product || '-'}</td>
                                 <td class="amount-cell">Rp ${formatRupiah(r.amount || 0)}</td>
@@ -709,14 +731,20 @@
             const rows = table.querySelectorAll('tbody tr');
             rows.forEach(row => {
                 const period = row.getAttribute('data-period');
-                if (period && checkDueDate(period)) {
-                    row.classList.add('due-soon-row');
-                    const periodCell = row.querySelector('.period-cell');
-                    if (periodCell && !periodCell.querySelector('.due-badge')) {
-                        const badge = document.createElement('span');
-                        badge.className = 'due-badge';
-                        badge.innerText = 'Segera Selesai';
-                        periodCell.appendChild(badge);
+                if (period) {
+                    const dueInfo = checkDueDate(period);
+                    if (dueInfo.isDue) {
+                        row.classList.add('due-soon-row');
+                        const periodCell = row.querySelector('.period-cell');
+                        if (periodCell) {
+                            let badge = periodCell.querySelector('.due-badge');
+                            if (!badge) {
+                                badge = document.createElement('span');
+                                badge.className = 'due-badge';
+                                periodCell.appendChild(badge);
+                            }
+                            badge.innerText = dueInfo.label;
+                        }
                     }
                 }
             });
