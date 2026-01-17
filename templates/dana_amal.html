@@ -545,68 +545,15 @@
     <script>
         const accountsDataStr = document.getElementById('accounts-json').textContent;
         const accounts = JSON.parse(accountsDataStr || '[]');
-
         function formatRupiah(num) {
             return new Intl.NumberFormat('id-ID').format(num);
         }
 
-        // Quick Login: Copy credentials and open MBA7
-        async function quickLogin(phoneDisplay) {
-            try {
-                // Remove spaces and ensure 62 prefix
-                let cleanPhone = phoneDisplay.replace(/\s/g, '');
-                if (!cleanPhone.startsWith('62')) {
-                    cleanPhone = '62' + cleanPhone;
-                }
-
-                // Show loading indicator
-                showToast('⏳ Mengambil credentials...');
-
-                // Fetch credentials from backend
-                const res = await fetch(`/api/get_credentials/${cleanPhone}`);
-                if (!res.ok) {
-                    showToast('❌ Gagal mengambil data akun', 3000);
-                    return;
-                }
-
-                const data = await res.json();
-                const phone = data.phone || '';
-                const password = data.password || '';
-
-                // Copy to clipboard
-                const textToCopy = `Phone: ${phone}\nPassword: ${password}`;
-
-                try {
-                    // Modern Clipboard API (works on mobile too)
-                    if (navigator.clipboard && navigator.clipboard.writeText) {
-                        await navigator.clipboard.writeText(textToCopy);
-                    } else {
-                        // Fallback for older browsers
-                        const textarea = document.createElement('textarea');
-                        textarea.value = textToCopy;
-                        textarea.style.position = 'fixed';
-                        textarea.style.opacity = '0';
-                        document.body.appendChild(textarea);
-                        textarea.select();
-                        document.execCommand('copy');
-                        document.body.removeChild(textarea);
-                    }
-
-                    // Show success toast
-                    showToast('📋 Credentials copied! Opening MBA7...', 3000);
-
-                    // Open MBA7 in new tab
-                    window.open('https://mba7.com/#/login', '_blank');
-
-                } catch (copyErr) {
-                    showToast(`📋 Phone: ${phone} | Password: ${password}`, 5000);
-                    window.open('https://mba7.com/#/login', '_blank');
-                }
-
-            } catch (err) {
-                console.error('Quick login error:', err);
-                showToast('❌ Error: ' + err.message, 3000);
-            }
+        // Quick Login: Open MBA7 login page
+        function quickLogin(phoneDisplay) {
+            // Just open MBA7 in new tab
+            window.open('https://mba7.com/#/login', '_blank');
+            showToast('🌐 Opening MBA7...', 2000);
         }
 
         // Toast notification helper
