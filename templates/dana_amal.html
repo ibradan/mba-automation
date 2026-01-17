@@ -9,6 +9,8 @@
     <!-- Prefetch other pages -->
     <link rel="prefetch" href="/" as="document">
     <link rel="prefetch" href="/settings" as="document">
+    <!-- HTMX for fast navigation -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <style>
         .dana-amal-container {
             margin-top: 20px;
@@ -395,7 +397,7 @@
     </style>
 </head>
 
-<body>
+<body hx-boost="true">
     <div class="container">
         <div class="page-header">
             <div>

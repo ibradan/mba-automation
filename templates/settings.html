@@ -9,6 +9,8 @@
     <!-- Prefetch other pages -->
     <link rel="prefetch" href="/" as="document">
     <link rel="prefetch" href="/dana_amal" as="document">
+    <!-- HTMX for fast navigation -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <style>
         .settings-page {
             padding: 20px;
@@ -168,7 +170,7 @@
     </style>
 </head>
 
-<body>
+<body hx-boost="true">
     <div class="container">
         <div class="settings-page">
             <a href="/" class="back-btn">
