@@ -553,11 +553,14 @@
         // Quick Login: Copy credentials and open MBA7
         async function quickLogin(phoneDisplay) {
             try {
+                // Remove spaces from phone display format
+                const cleanPhone = phoneDisplay.replace(/\s/g, '');
+
                 // Show loading indicator (optional)
                 const toast = showToast('⏳ Mengambil credentials...');
 
                 // Fetch credentials from backend
-                const res = await fetch(`/api/get_credentials/${phoneDisplay}`);
+                const res = await fetch(`/api/get_credentials/${cleanPhone}`);
                 if (!res.ok) {
                     showToast('❌ Gagal mengambil data akun', 3000);
                     return;
