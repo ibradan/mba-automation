@@ -171,78 +171,85 @@
             background: #def7e5 !important;
         }
 
-        .search-filter-section {
+        /* Account Filter Buttons */
+        .account-selector {
             display: flex;
-            flex-direction: column;
-            gap: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
             margin-bottom: 20px;
             padding: 20px;
             background: white;
             border-radius: 16px;
             box-shadow: var(--shadow-sm);
+            align-items: center;
         }
 
-        .search-wrapper {
-            position: relative;
-            flex-grow: 1;
+        .account-selector-label {
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: #475569;
+            margin-right: 8px;
         }
 
-        .search-wrapper input {
-            width: 100%;
-            padding: 12px 16px 12px 44px;
-            border: 1.5px solid #e2e8f0;
-            border-radius: 12px;
-            font-size: 0.95rem;
-            outline: none;
-            transition: all 0.2s;
-            background: #f8fafc;
-        }
-
-        .search-wrapper input:focus {
-            border-color: #10b981;
-            background: white;
-            box-shadow: 0 0 0 4px #10b98118;
-        }
-
-        .search-icon {
-            position: absolute;
-            left: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #94a3b8;
-            pointer-events: none;
-        }
-
-        .filter-chips {
+        .account-btn {
+            width: 32px;
+            height: 32px;
             display: flex;
-            gap: 10px;
-            overflow-x: auto;
-            padding-bottom: 2px;
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-
-        .filter-chip {
-            padding: 8px 16px;
+            align-items: center;
+            justify-content: center;
             background: #f1f5f9;
             color: #64748b;
-            border-radius: 10px;
+            border-radius: 50%;
             font-size: 0.875rem;
-            font-weight: 600;
+            font-weight: 700;
             cursor: pointer;
             transition: all 0.2s;
             border: 1px solid transparent;
-            white-space: nowrap;
         }
 
-        .filter-chip:hover {
+        .account-btn:hover {
             background: #e2e8f0;
+            color: #1e293b;
         }
 
-        .filter-chip.active {
+        .account-btn.active {
             background: #10b981;
             color: white;
-            box-shadow: 0 4px 12px #10b98133;
+            box-shadow: 0 4px 10px #10b98144;
+            transform: translateY(-2px);
+        }
+
+        /* Sortable Headers */
+        .sortable {
+            cursor: pointer;
+            position: relative;
+            padding-right: 20px !important;
+            user-select: none;
+        }
+
+        .sortable:hover {
+            background: #f8fafc;
+        }
+
+        .sort-icon {
+            position: absolute;
+            right: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0.3;
+            transition: all 0.2s;
+            font-size: 0.75rem;
+        }
+
+        .sortable.active .sort-icon {
+            opacity: 1;
+            color: #10b981;
+        }
+
+        .quick-filter-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
         }
 
         .back-btn {
@@ -361,28 +368,27 @@
                     Ctrl+F5 untuk refresh cache.</div>
             </div>
 
-            <div class="search-filter-section">
-                <div
-                    style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-                    <div class="search-wrapper" style="min-width: 280px;">
-                        <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                        </svg>
-                        <input type="text" id="global-search" placeholder="Cari akun, produk, atau periode..."
-                            onkeyup="applyFilters()">
-                    </div>
-                    <div class="filter-chips">
-                        <div class="filter-chip active" onclick="setChipFilter('all', this)">Semua</div>
-                        <div class="filter-chip" onclick="setChipFilter('due', this)">
-                            <span
-                                style="display:inline-block; width:8px; height:8px; background:#10b981; border-radius:50%; margin-right:6px;"></span>
-                            Segera Selesai
-                        </div>
+            <div class="account-selector">
+                <span class="account-selector-label">Pilih Akun:</span>
+                <div class="account-btn active" onclick="setAccountFilter('all', this)" title="Semua Akun">All</div>
+                {% for acc in accounts_json|from_json %}
+                <div class="account-btn" onclick="setAccountFilter('+62 {{ acc.phone_display }}', this)"
+                    title="+62 {{ acc.phone_display }}">
+                    {{ loop.index }}
+                </div>
+                {% endfor %}
+
+                <div style="margin-left: auto; display: flex; gap: 8px;">
+                    <div class="filter-chip" id="chip-due" onclick="toggleDueFilter(this)">
+                        <span
+                            style="display:inline-block; width:8px; height:8px; background:#10b981; border-radius:50%; margin-right:6px;"></span>
+                        Segera Selesai
                     </div>
                 </div>
-                <div id="filter-results-info" style="font-size: 0.75rem; color: #94a3b8; display: none;">
+            </div>
+
+            <div class="search-filter-section" id="filter-results-info" style="display: none; padding: 10px 20px;">
+                <div style="font-size: 0.75rem; color: #94a3b8;">
                     Menampilkan <span id="visible-count">0</span> dari <span id="total-count">0</span> records
                 </div>
             </div>
@@ -395,12 +401,16 @@
                             <tr>
                                 <th>No</th>
                                 <th>Akun</th>
-                                <th>Periode</th>
+                                <th class="sortable" onclick="handleSort(2, 'hx')">Periode <span
+                                        class="sort-icon">⇅</span></th>
                                 <th>Produk</th>
-                                <th>Invest</th>
+                                <th class="sortable" onclick="handleSort(4, 'number')">Invest <span
+                                        class="sort-icon">⇅</span></th>
                                 <th>Rate</th>
-                                <th> Hari</th>
-                                <th>Est. Laba</th>
+                                <th class="sortable" onclick="handleSort(6, 'number')"> Hari <span
+                                        class="sort-icon">⇅</span></th>
+                                <th class="sortable" onclick="handleSort(7, 'number')">Est. Laba <span
+                                        class="sort-icon">⇅</span></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -507,20 +517,104 @@
             }
         }
 
-        let activeChip = 'all';
+        let activeAccount = 'all';
+        let showOnlyDue = false;
+        let currentSort = { index: -1, direction: 1 };
 
-        function setChipFilter(type, el) {
-            document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+        function setAccountFilter(phone, el) {
+            document.querySelectorAll('.account-btn').forEach(btn => btn.classList.remove('active'));
             el.classList.add('active');
-            activeChip = type;
+            activeAccount = phone;
             applyFilters();
+        }
+
+        function toggleDueFilter(el) {
+            showOnlyDue = !showOnlyDue;
+            el.classList.toggle('active', showOnlyDue);
+            applyFilters();
+        }
+
+        function handleSort(colIdx, type) {
+            const table = document.getElementById("dana-amal-table");
+            const headers = table.querySelectorAll('th.sortable');
+
+            // Update direction
+            if (currentSort.index === colIdx) {
+                currentSort.direction *= -1;
+            } else {
+                currentSort.index = colIdx;
+                currentSort.direction = -1; // Default to desc (high to low)
+            }
+
+            // Update header UI
+            headers.forEach(h => h.classList.remove('active'));
+            const activeHeader = Array.from(headers).find(h => h.onclick.toString().includes(colIdx));
+            if (activeHeader) {
+                activeHeader.classList.add('active');
+                activeHeader.querySelector('.sort-icon').textContent = currentSort.direction === 1 ? '↑' : '↓';
+            }
+
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+
+            rows.sort((a, b) => {
+                let vA, vB;
+
+                if (type === 'number') {
+                    vA = parseInt(a.cells[colIdx].textContent.replace(/[^\d]/g, '')) || 0;
+                    vB = parseInt(b.cells[colIdx].textContent.replace(/[^\d]/g, '')) || 0;
+                } else if (type === 'hx') {
+                    // Sort by H-X. We'll use data-period to extract date
+                    const periodA = a.getAttribute('data-period') || '';
+                    const periodB = b.getAttribute('data-period') || '';
+
+                    // Use checkDueDate to get proximity
+                    const infoA = checkDueDate(periodA);
+                    const infoB = checkDueDate(periodB);
+
+                    // Sort order: overdue < H-0 < H-1 < H-2 < others
+                    // But user said "terlama h-x nya dan tercepat", meaning days remaining
+                    const daysA = infoA.isDue ? (periodA.split('~')[1] ? parseHxDays(periodA) : 999) : 999;
+                    const daysB = infoB.isDue ? (periodB.split('~')[1] ? parseHxDays(periodB) : 999) : 999;
+                    vA = daysA;
+                    vB = daysB;
+                } else {
+                    vA = a.cells[colIdx].textContent.toLowerCase();
+                    vB = b.cells[colIdx].textContent.toLowerCase();
+                }
+
+                if (vA < vB) return -1 * currentSort.direction;
+                if (vA > vB) return 1 * currentSort.direction;
+                return 0;
+            });
+
+            rows.forEach(row => tbody.appendChild(row));
+            updateRowNumbers();
+        }
+
+        function parseHxDays(periodStr) {
+            try {
+                const endPart = periodStr.split('~')[1].trim().split(' ')[0];
+                const [m, d, y] = endPart.split('/');
+                const endDate = new Date(y, m - 1, d);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                return Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+            } catch (e) { return 999; }
+        }
+
+        function updateRowNumbers() {
+            const table = document.getElementById("dana-amal-table");
+            const rows = Array.from(table.querySelectorAll('tbody tr')).filter(r => r.style.display !== 'none');
+            rows.forEach((row, idx) => {
+                row.cells[0].textContent = idx + 1;
+            });
         }
 
         function applyFilters() {
             const table = document.getElementById("dana-amal-table");
             if (!table) return;
 
-            const searchValue = document.getElementById("global-search").value.toLowerCase();
             const rows = table.getElementsByTagName("tbody")[0].getElementsByTagName("tr");
             const resultsInfo = document.getElementById("filter-results-info");
             const visibleEl = document.getElementById("visible-count");
@@ -532,24 +626,20 @@
 
             for (let i = 0; i < rows.length; i++) {
                 const row = rows[i];
-                const text = row.textContent.toLowerCase();
+                const phoneCell = row.cells[1].textContent;
                 const isDueRow = row.classList.contains('due-soon-row');
 
-                // Check Global Search
-                const matchSearch = text.indexOf(searchValue) > -1;
+                // Account Filter
+                const matchAccount = activeAccount === 'all' || phoneCell.includes(activeAccount);
 
-                // Check Chip Filter
-                let matchChip = true;
-                if (activeChip === 'due') {
-                    matchChip = isDueRow;
-                }
+                // Due Filter
+                const matchDue = !showOnlyDue || isDueRow;
 
-                const show = (matchSearch && matchChip);
+                const show = (matchAccount && matchDue);
                 row.style.display = show ? "" : "none";
 
                 if (show) {
                     visibleCount++;
-                    // Parse values from data attributes or cells for totals
                     const amountCell = row.querySelector('.amount-cell');
                     const profitCell = row.querySelector('.profit-cell');
                     if (amountCell) {
@@ -563,6 +653,9 @@
                 }
             }
 
+            // Update row numbers for visible rows
+            updateRowNumbers();
+
             // Update totals in footer
             const totalAmountCell = document.querySelector('.summary-row .amount-cell');
             const totalProfitCell = document.querySelector('.summary-row .profit-cell');
@@ -570,7 +663,7 @@
             if (totalProfitCell) totalProfitCell.textContent = 'Rp ' + formatRupiah(Math.round(visibleProfit));
 
             // Update results info
-            if (searchValue || activeChip !== 'all') {
+            if (activeAccount !== 'all' || showOnlyDue) {
                 resultsInfo.style.display = "block";
                 visibleEl.textContent = visibleCount;
                 totalEl.textContent = rows.length;
