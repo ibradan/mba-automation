@@ -297,7 +297,9 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
         if "login" in page.url:
             resurrect_session()
 
-        if tasks_completed < tasks_total:
+        # ALWAYS TRY TO RUN - removed check for tasks_completed < tasks_total
+        # This allows manual runs even when tasks appear complete
+        if True:  # Was: if tasks_completed < tasks_total:
             # Click Mendapatkan button (button 1: Grab/List)
             try:
                 # 1. Try User's Simple Selector first
