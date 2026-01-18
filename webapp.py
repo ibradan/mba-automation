@@ -524,19 +524,19 @@ def phone_display(normalized: str) -> str:
 
 
 def _get_iterations_for_level(level: str) -> int:
-    """Map account level to task iterations count."""
+    """Map account level to task iterations count. DOUBLED for safety margin."""
     lvl_up = (level or '').upper()
     if lvl_up == 'E1':
-        return 15
+        return 30   # Was 15, doubled
     elif lvl_up == 'E2':
-        return 30
+        return 60   # Was 30, doubled
     elif lvl_up == 'E3':
-        return 60
+        return 120  # Was 60, doubled
     else:
         try:
-            return int(level)
+            return int(level) * 2  # Double custom values too
         except:
-            return 30
+            return 60  # Default doubled
 
 
 @app.route("/api/accounts")
