@@ -539,6 +539,65 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
                 # Use the HIGHER value between scraped and accumulated
                 tasks_completed = max(tasks_completed, scraped_completed)
                 tasks_total = scraped_total
+                
+                # ========== GUARANTEE 100% COMPLETION ==========
+                # If not fully completed, retry the automation loop
+                retry_count = 0
+                max_retries = 3
+                while tasks_completed < tasks_total and retry_count < max_retries:
+                    retry_count += 1
+                    remaining = tasks_total - tasks_completed
+                    log(f"🔄 RETRY {retry_count}/{max_retries}: Still {remaining} tasks remaining ({tasks_completed}/{tasks_total})")
+                    
+                    # Go back to grab page and try again
+                    try:
+                        page.goto("https://mba7.com/#/grab", timeout=45000)
+                        page.wait_for_timeout(3000)
+                        try_close_popups(page)
+                        
+                        # Mini loop to complete remaining tasks
+                        for _ in range(remaining + 5):  # +5 buffer
+                            try:
+                                # Click Sedang Berlangsung
+                                el = page.get_by_text("Sedang Berlangsung").nth(1)
+                                if el.is_visible(timeout=2000):
+                                    el.click(force=True)
+                                    page.wait_for_timeout(500)
+                                    
+                                    # Click Kirim
+                                    k_btn = page.get_by_role("button", name="Kirim")
+                                    if k_btn.is_visible(timeout=2000):
+                                        k_btn.click(force=True)
+                                        tasks_completed += 1
+                                        log(f"✓ Retry task done: {tasks_completed}/{tasks_total}")
+                                        
+                                        # Click confirm
+                                        try:
+                                            page.get_by_role("button", name="Mengonfirmasi").click(timeout=1500)
+                                        except:
+                                            pass
+                                        
+                                        if tasks_completed >= tasks_total:
+                                            log(f"🎉 All tasks completed!")
+                                            break
+                            except:
+                                pass
+                        
+                        # Re-check progress
+                        page.goto("https://mba7.com/#/ticket", timeout=30000)
+                        page.wait_for_timeout(2000)
+                        pe = page.locator(".van-progress__pivot").first
+                        if pe.count() > 0:
+                            txt = pe.text_content(timeout=2000)
+                            if txt and "/" in txt:
+                                p = txt.split("/")
+                                tasks_completed = int(p[0].strip())
+                                tasks_total = int(p[1].strip())
+                                log(f"After retry: {tasks_completed}/{tasks_total}")
+                    except Exception as e:
+                        log(f"Retry error: {e}")
+                        break
+                
     except Exception as e:
         log(f"Could not re-scrape progress: {e}")
         # Keep accumulated value - DON'T reset to 0!
