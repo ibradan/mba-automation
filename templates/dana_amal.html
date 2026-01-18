@@ -441,6 +441,75 @@
                 font-size: 0.75rem;
             }
         }
+
+        /* Distribution Chart */
+        .distribution-chart {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 20px;
+        }
+
+        .distribution-title {
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: #475569;
+            margin-bottom: 16px;
+        }
+
+        .distribution-bars {
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+            height: 80px;
+        }
+
+        .dist-bar-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .dist-bar {
+            width: 100%;
+            max-width: 40px;
+            background: #3b82f6;
+            border-radius: 4px 4px 0 0;
+            transition: height 0.5s ease;
+            min-height: 4px;
+        }
+
+        .dist-bar.urgent {
+            background: #eab308;
+        }
+
+        .dist-bar.warning {
+            background: #10b981;
+        }
+
+        .dist-bar.normal {
+            background: #3b82f6;
+        }
+
+        .dist-bar.far {
+            background: #94a3b8;
+        }
+
+        .dist-label {
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: #64748b;
+            text-align: center;
+        }
+
+        .dist-count {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #334155;
+        }
     </style>
 </head>
 
@@ -490,6 +559,39 @@
                         </svg>
                         Refresh Data
                     </button>
+                </div>
+            </div>
+
+            <!-- Distribution Chart -->
+            <div class="distribution-chart" id="distribution-chart">
+                <div class="distribution-title">📊 Distribusi Periode (H-Days)</div>
+                <div class="distribution-bars" id="distribution-bars">
+                    <!-- Bars will be populated by JS -->
+                    <div class="dist-bar-group">
+                        <div class="dist-count" id="dist-count-0">-</div>
+                        <div class="dist-bar urgent" id="dist-bar-0" style="height: 4px;"></div>
+                        <div class="dist-label">H-0~2</div>
+                    </div>
+                    <div class="dist-bar-group">
+                        <div class="dist-count" id="dist-count-1">-</div>
+                        <div class="dist-bar warning" id="dist-bar-1" style="height: 4px;"></div>
+                        <div class="dist-label">H-3~7</div>
+                    </div>
+                    <div class="dist-bar-group">
+                        <div class="dist-count" id="dist-count-2">-</div>
+                        <div class="dist-bar normal" id="dist-bar-2" style="height: 4px;"></div>
+                        <div class="dist-label">H-8~14</div>
+                    </div>
+                    <div class="dist-bar-group">
+                        <div class="dist-count" id="dist-count-3">-</div>
+                        <div class="dist-bar normal" id="dist-bar-3" style="height: 4px;"></div>
+                        <div class="dist-label">H-15~21</div>
+                    </div>
+                    <div class="dist-bar-group">
+                        <div class="dist-count" id="dist-count-4">-</div>
+                        <div class="dist-bar far" id="dist-bar-4" style="height: 4px;"></div>
+                        <div class="dist-label">H-22+</div>
+                    </div>
                 </div>
             </div>
 
@@ -714,6 +816,36 @@
                         if (fill) fill.style.background = '#3b82f6';
                         label.textContent = "✅ " + label.textContent;
                     }
+                }
+            });
+
+            // Calculate distribution chart
+            const distribution = [0, 0, 0, 0, 0]; // H-0~2, H-3~7, H-8~14, H-15~21, H-22+
+            visuals.forEach(v => {
+                const raw = v.dataset.periodRaw;
+                if (!raw) return;
+                const data = calculateProgress(raw);
+                const days = data.daysLeft;
+
+                if (days <= 2) distribution[0]++;
+                else if (days <= 7) distribution[1]++;
+                else if (days <= 14) distribution[2]++;
+                else if (days <= 21) distribution[3]++;
+                else distribution[4]++;
+            });
+
+            // Render distribution bars
+            const maxCount = Math.max(...distribution, 1);
+            const maxHeight = 60; // px
+            distribution.forEach((count, i) => {
+                const countEl = document.getElementById(`dist-count-${i}`);
+                const barEl = document.getElementById(`dist-bar-${i}`);
+                if (countEl) countEl.textContent = count;
+                if (barEl) {
+                    const height = Math.max(4, (count / maxCount) * maxHeight);
+                    setTimeout(() => {
+                        barEl.style.height = height + 'px';
+                    }, 200);
                 }
             });
 
