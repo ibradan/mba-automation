@@ -427,126 +427,15 @@
             letter-spacing: 0.3px;
         }
 
-        /* Mobile Card Layout Styles */
-        .card-view {
-            display: none;
-            gap: 16px;
-            flex-direction: column;
-        }
 
-        .da-card {
-            background: white;
-            border-radius: 16px;
-            padding: 16px;
-            box-shadow: var(--shadow-sm);
-            border: 2px solid transparent;
-            transition: all 0.2s;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .da-card:active {
-            transform: scale(0.98);
-        }
-
-        .da-card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-
-        .product-badge {
-            background: #f1f5f9;
-            color: #64748b;
-            padding: 4px 10px;
-            border-radius: 8px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-
-        .da-card-body {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .da-card-stats {
-            display: flex;
-            justify-content: space-between;
-            background: #f8fafc;
-            padding: 12px;
-            border-radius: 12px;
-            margin-top: 8px;
-        }
-
-        .da-stat {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-
-        .da-stat label {
-            font-size: 0.65rem;
-            color: #94a3b8;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .da-stat .val {
-            font-size: 0.9rem;
-            font-weight: 700;
-            color: #334155;
-        }
-
-        .da-stat .val.profit {
-            color: #059669;
-        }
-
-        .da-stat .val.rate {
-            color: #8b5cf6;
-        }
-
-        .period-visual-mobile {
-            width: 100%;
-        }
-
-        .progress-bar-bg.large {
-            height: 10px;
-            border-radius: 5px;
-            background: #f1f5f9;
-            margin-bottom: 6px;
-        }
-
-        .days-left-text-mobile {
-            font-size: 0.8rem;
-            font-weight: 700;
-            color: #334155;
-            text-align: right;
-        }
 
         /* Responsive Toggles */
         @media (max-width: 768px) {
-            .hidden-on-mobile {
-                display: none !important;
-            }
 
-            .hidden-on-desktop {
-                display: flex !important;
-            }
-
-            .records-table {
-                display: none;
-            }
-
-            .card-view {
-                display: flex;
-            }
-        }
-
-        @media (min-width: 769px) {
-            .hidden-on-desktop {
-                display: none !important;
+            .records-table th,
+            .records-table td {
+                padding: 10px 8px;
+                font-size: 0.75rem;
             }
         }
     </style>
@@ -640,7 +529,7 @@
                 {% if all_records and all_records|length > 0 %}
 
                 <!-- Desktop Table View -->
-                <div class="table-view hidden-on-mobile">
+                <div class="table-view">
                     <div class="table-wrapper">
                         <table class="records-table" id="dana-amal-table">
                             <thead>
@@ -708,61 +597,7 @@
                     </div>
                 </div>
 
-                <!-- Mobile Card View -->
-                <div class="card-view hidden-on-desktop" id="card-container">
-                    {% for item in all_records %}
-                    <div class="da-card {% if item.is_due %}da-card-due{% endif %}"
-                        data-period="{{ item.record.period or '' }}" data-phone="{{ item.phone_display }}"
-                        onclick="quickLogin('{{ item.phone_display }}')">
 
-                        <div class="da-card-header">
-                            <span class="status-badge status-active">{{ item.phone_display[-4:] }}</span>
-                            <span class="product-badge">{{ item.record.product or '-' }}</span>
-                        </div>
-
-                        <div class="da-card-body">
-                            <!-- Visual Progress - Duplicate logic for mobile but styled larger -->
-                            <div class="period-visual-mobile" data-period-raw="{{ item.record.period }}">
-                                <div class="progress-bar-bg large">
-                                    <div class="progress-bar-fill" style="width: 0%"></div>
-                                </div>
-                                <div class="days-left-text-mobile">Calculating...</div>
-                            </div>
-
-                            <div class="da-card-stats">
-                                <div class="da-stat">
-                                    <label>Invest</label>
-                                    <div class="val">Rp {{ "{:,.0f}".format(item.record.amount or 0).replace(',', '.')
-                                        }}</div>
-                                </div>
-                                <div class="da-stat text-center">
-                                    <label>Rate</label>
-                                    <div class="val rate">{{ item.record.rate or 0 }}%</div>
-                                </div>
-                                <div class="da-stat text-right">
-                                    <label>Est. Laba</label>
-                                    <div class="val profit">Rp {{ "{:,.0f}".format(item.record.profit or 0).replace(',',
-                                        '.') }}</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-
-                    <!-- Mobile Totals -->
-                    <div class="da-card summary-card">
-                        <div class="da-card-stats">
-                            <div class="da-stat">
-                                <label>Total Invest</label>
-                                <div class="val">Rp {{ "{:,.0f}".format(total_amount).replace(',', '.') }}</div>
-                            </div>
-                            <div class="da-stat text-right">
-                                <label>Total Laba</label>
-                                <div class="val profit">Rp {{ "{:,.0f}".format(total_profit).replace(',', '.') }}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
                 {% else %}
                 <div class="empty-state" id="empty-state">
@@ -864,14 +699,10 @@
                         fill.style.background = '#eab308'; // Gold/Yellow
                         label.style.color = '#ca8a04';
                         label.style.fontWeight = '800';
-                        const card = v.closest('.da-card');
-                        if (card) card.style.borderColor = '#eab308';
                     } else if (data.colorClass === 'warning') {
                         fill.style.background = '#10b981'; // Green but bright
                         label.style.color = '#059669';
                         label.style.fontWeight = '700';
-                        const card = v.closest('.da-card');
-                        if (card) card.style.borderColor = '#10b981';
                     } else if (data.colorClass === 'finished') {
                         fill.style.background = '#3b82f6'; // Blue
                         label.textContent = "✅ " + label.textContent;
@@ -1007,13 +838,6 @@
                 tableRows = Array.from(table.getElementsByTagName("tbody")[0].getElementsByTagName("tr"));
             }
 
-            // Apply to cards
-            const cardContainer = document.getElementById('card-container');
-            let cards = [];
-            if (cardContainer) {
-                cards = Array.from(cardContainer.querySelectorAll('.da-card:not(.summary-card)'));
-            }
-
             const resultsInfo = document.getElementById("filter-results-info");
             const visibleEl = document.getElementById("visible-count");
             const totalEl = document.getElementById("total-count");
@@ -1054,17 +878,6 @@
                 }
             });
 
-            // Apply to cards (independent logic for visibility, but totals share same data source so we track visibleCount from table rows primarily if available, else counting cards would be double counting if we did both. 
-            // Since table rows are primary source of truth for totals, we rely on them. But if mobile only, we might rely on cards. 
-            // Safe bet: calculate totals from whatever is processed. If both exist, we might double count if we aren't careful.
-            // Wait, usually both exist in DOM but one is hidden via CSS. 
-            // So we should only sum up ONCE. We summed up tableRows above.
-
-            cards.forEach(card => {
-                const show = checkFilter(card, 'card');
-                card.style.display = show ? "" : "none";
-            });
-
             // Update row numbers for visible table rows
             updateRowNumbers();
 
@@ -1074,22 +887,12 @@
             if (totalAmountCell) totalAmountCell.textContent = 'Rp ' + formatRupiah(visibleAmount);
             if (totalProfitCell) totalProfitCell.textContent = 'Rp ' + formatRupiah(Math.round(visibleProfit));
 
-            // Update totals in mobile summary card
-            const mobileSumCard = document.querySelector('.summary-card');
-            if (mobileSumCard) {
-                const amountVal = mobileSumCard.querySelector('.da-stat:first-child .val');
-                const profitVal = mobileSumCard.querySelector('.da-stat:last-child .val');
-                if (amountVal) amountVal.textContent = 'Rp ' + formatRupiah(visibleAmount);
-                if (profitVal) profitVal.textContent = 'Rp ' + formatRupiah(Math.round(visibleProfit));
-                mobileSumCard.style.display = (visibleCount > 0) ? "block" : "none";
-            }
-
             // Update results info
             if (activeAccount !== 'all' || showOnlyDue) {
                 resultsInfo.style.display = "block";
                 visibleEl.textContent = visibleCount;
                 // Total is total unique items, which effectively is tableRows.length
-                totalEl.textContent = tableRows.length || cards.length;
+                totalEl.textContent = tableRows.length;
             } else {
                 resultsInfo.style.display = "none";
             }
@@ -1119,7 +922,7 @@
                 <div id="status-log-container">${logHtml}</div>
                 
                 <!-- Table View -->
-                <div class="table-view hidden-on-mobile">
+                <div class="table-view">
                     <div class="table-wrapper">
                         <table class="records-table" id="dana-amal-table">
                             <thead>
@@ -1145,23 +948,6 @@
                             </tfoot>
                         </table>
                     </div>
-                </div>
-
-                <!-- Card View -->
-                <div class="card-view hidden-on-desktop" id="card-container">
-                    <!-- Cards will be appended here -->
-                    <div class="da-card summary-card" style="display:none; order: 9999;">
-                        <div class="da-card-stats">
-                             <div class="da-stat">
-                                <label>Total Invest</label>
-                                <div class="val total-amount-card">Rp 0</div>
-                            </div>
-                             <div class="da-stat text-right">
-                                <label>Total Laba</label>
-                                <div class="val profit total-profit-card">Rp 0</div>
-                            </div>
-                        </div>
-                     </div>
                 </div>
             `;
 
@@ -1240,46 +1026,6 @@
                                 <td class="profit-cell">Rp ${formatRupiah(Math.round(r.profit || 0))}</td>
                             `;
                             tbody.appendChild(tr);
-
-                            // ---- 2. Append to Card View ----
-                            const card = document.createElement('div');
-                            card.className = `da-card ${dueInfo.daysLeft <= 0 ? 'da-card-due' : ''}`;
-                            card.setAttribute('data-period', r.period || '');
-                            card.setAttribute('data-phone', phone);
-                            card.onclick = () => quickLogin(phone);
-                            if (dueInfo.colorClass === 'urgent') card.style.borderColor = '#eab308';
-                            if (dueInfo.colorClass === 'warning') card.style.borderColor = '#10b981';
-
-                            card.innerHTML = `
-                                <div class="da-card-header">
-                                    <span class="status-badge status-active">${phone.slice(-4)}</span>
-                                    <span class="product-badge">${r.product || '-'}</span>
-                                </div>
-                                <div class="da-card-body">
-                                    <div class="period-visual-mobile" data-period-raw="${r.period || ''}">
-                                        <div class="progress-bar-bg large">
-                                            <div class="progress-bar-fill" style="width: ${dueInfo.pct}%; background: ${dueInfo.colorClass === 'urgent' ? '#eab308' : (dueInfo.colorClass === 'warning' ? '#10b981' : '#3b82f6')}"></div>
-                                        </div>
-                                        <div class="days-left-text-mobile" style="${dueInfo.colorClass === 'urgent' ? 'color:#ca8a04' : (dueInfo.colorClass === 'warning' ? 'color:#059669' : '')}">${dueInfo.label}</div>
-                                    </div>
-                                    <div class="da-card-stats">
-                                        <div class="da-stat">
-                                            <label>Invest</label>
-                                            <div class="val">Rp ${formatRupiah(r.amount || 0)}</div>
-                                        </div>
-                                        <div class="da-stat text-center">
-                                            <label>Rate</label>
-                                            <div class="val rate">${r.rate || 0}%</div>
-                                        </div>
-                                        <div class="da-stat text-right">
-                                            <label>Est. Laba</label>
-                                            <div class="val profit">Rp ${formatRupiah(Math.round(r.profit || 0))}</div>
-                                        </div>
-                                    </div>
-                                </div>
-                             `;
-                            // Insert before summary card
-                            cardContainer.insertBefore(card, summaryCard);
                         });
 
                         // Update totals
@@ -1288,9 +1034,6 @@
 
                         document.querySelector('.total-amount-cell').textContent = totalAmStr;
                         document.querySelector('.total-profit-cell').textContent = totalPrStr;
-                        document.querySelector('.total-amount-card').textContent = totalAmStr;
-                        document.querySelector('.total-profit-card').textContent = totalPrStr;
-                        summaryCard.style.display = 'block';
 
                         // Log success with timestamp
                         const timeStr = new Date().toLocaleTimeString('id-ID');
