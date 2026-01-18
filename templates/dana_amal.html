@@ -541,19 +541,41 @@
                             </thead>
                             <tbody>
                                 {% for item in all_records %}
+                                {% set due_info = calculate_progress_jinja(item.record.period) if item.record.period
+                                else {'pct': 0, 'days_left': 999, 'color_class': 'normal', 'label': '-'} %}
+                                {% set row_style = "--progress: " ~ due_info.pct ~ "%;" %}
+                                {% set bar_color = '#3b82f6' %}
+                                {% if due_info.color_class == 'urgent' %}
+                                {% set bar_color = '#eab308' %}
+                                {% elif due_info.color_class == 'warning' %}
+                                {% set bar_color = '#10b981' %}
+                                {% endif %}
+
+                                {% set text_style = '' %}
+                                {% if due_info.color_class == 'urgent' %}
+                                {% set text_style = 'color:#ca8a04; font-weight:700;' %}
+                                {% elif due_info.color_class == 'warning' %}
+                                {% set text_style = 'color:#059669; font-weight:700;' %}
+                                {% endif %}
+
+                                {% set tr_style = row_style ~ " --bar-color: " ~ bar_color ~ ";" %}
+
                                 <tr class="{% if item.is_due %}due-soon-row{% endif %} clickable-row"
                                     data-period="{{ item.record.period or '' }}" data-phone="{{ item.phone_display }}"
-                                    onclick="quickLogin('{{ item.phone_display }}')" title="Klik untuk login ke MBA7">
+                                    onclick="quickLogin('{{ item.phone_display }}')" title="Klik untuk login ke MBA7"
+                                    style="{{ tr_style }}">
                                     <td>{{ loop.index }}</td>
                                     <td>
                                         <span class="status-badge status-active">{{ item.phone_display[-4:] }}</span>
                                     </td>
                                     <td>
-                                        <!-- Period Column -->
+                                        <!-- Simplified Period Column -->
                                         <div class="period-text">{{ item.record.period.split('~')[1].split(' ')[0] if
                                             item.record.period and '~' in item.record.period else item.record.period }}
                                         </div>
-                                        <div class="days-left-text">Counting...</div>
+                                        <div class="days-left-text" style="{{ text_style }}">
+                                            {{ due_info.label }}
+                                        </div>
                                     </td>
                                     <td>{{ item.record.product or '-' }}</td>
                                     <td class="amount-cell">Rp {{ "{:,.0f}".format(item.record.amount or 0).replace(',',
@@ -634,28 +656,22 @@
                 if (daysLeftCeil <= 0) {
                     pct = 100;
                 } else {
-                    pct = Math.max(5, Math.min(100, (1 - (daysLeftCeil / standardMaxDays)) * 100));
+                    pct = Math.max(0, Math.min(100, (1 - (daysLeftCeil / standardMaxDays)) * 100));
                 }
 
-                // Calculate hours remaining (for display)
-                const hoursLeft = Math.floor((remainingMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-
-                let label = `H-${daysLeftCeil}`;
-                if (hoursLeft > 0 && daysLeftCeil < 30) {
-                    label += ` (${hoursLeft}j)`;
-                }
+                let label = `${daysLeftCeil} Hari Lagi`;
                 let colorClass = 'normal'; // default blue/green
 
                 if (daysLeftCeil < 0) {
-                    label = "✅ SELESAI";
+                    label = "SELESAI (Overdue)";
                     pct = 100;
                     colorClass = 'finished';
                 } else if (daysLeftCeil == 0) {
-                    label = `💰 CAIR (${hoursLeft}j)`;
+                    label = "CAIR HARI INI 💰";
                     colorClass = 'urgent';
                     pct = 100;
                 } else if (daysLeftCeil <= 2) {
-                    label = `H-${daysLeftCeil} (${hoursLeft}j) Segera!`;
+                    label = `${daysLeftCeil} Hari Lagi (Segera)`;
                     colorClass = 'warning';
                 }
 
@@ -672,38 +688,8 @@
 
         // Render progress bars on load
         document.addEventListener('DOMContentLoaded', () => {
-            // Apply row progress styles
-            const table = document.getElementById('dana-amal-table');
-            if (table) {
-                const rows = table.querySelectorAll('tbody tr');
-                rows.forEach(row => {
-                    const period = row.getAttribute('data-period');
-                    if (period) {
-                        const data = calculateProgress(period);
+            // Initial applyFilters calls
 
-                        // Apply CSS variables
-                        row.style.setProperty('--progress', data.pct + '%');
-
-                        let barColor = '#3b82f6';
-                        if (data.colorClass === 'urgent') barColor = '#eab308';
-                        if (data.colorClass === 'warning') barColor = '#10b981';
-                        row.style.setProperty('--bar-color', barColor);
-
-                        // Update days left text
-                        const daysText = row.querySelector('.days-left-text');
-                        if (daysText) {
-                            daysText.textContent = data.label;
-                            if (data.colorClass === 'urgent') {
-                                daysText.style.color = '#ca8a04';
-                                daysText.style.fontWeight = '700';
-                            } else if (data.colorClass === 'warning') {
-                                daysText.style.color = '#059669';
-                                daysText.style.fontWeight = '700';
-                            }
-                        }
-                    }
-                });
-            }
 
             // Initial call to update totals/counts based on default filter (all)
             applyFilters();
