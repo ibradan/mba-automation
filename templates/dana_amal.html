@@ -608,7 +608,7 @@
                             {% for acc in accounts_list %}
                             <div class="account-btn" onclick="setAccountFilter('+62 {{ acc.phone_display }}', this)"
                                 title="+62 {{ acc.phone_display }}">
-                                {{ loop.index }}
+                                {{ acc.phone_display[-4:] }}
                             </div>
                             {% endfor %}
                         </div>
