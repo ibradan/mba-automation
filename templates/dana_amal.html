@@ -637,19 +637,25 @@
                     pct = Math.max(5, Math.min(100, (1 - (daysLeftCeil / standardMaxDays)) * 100));
                 }
 
-                let label = `${daysLeftCeil} Hari Lagi`;
+                // Calculate hours remaining (for display)
+                const hoursLeft = Math.floor((remainingMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+                let label = `H-${daysLeftCeil}`;
+                if (hoursLeft > 0 && daysLeftCeil < 30) {
+                    label += ` (${hoursLeft}j)`;
+                }
                 let colorClass = 'normal'; // default blue/green
 
                 if (daysLeftCeil < 0) {
-                    label = "SELESAI (Overdue)";
+                    label = "✅ SELESAI";
                     pct = 100;
                     colorClass = 'finished';
                 } else if (daysLeftCeil == 0) {
-                    label = "CAIR HARI INI 💰";
+                    label = `💰 CAIR (${hoursLeft}j)`;
                     colorClass = 'urgent';
                     pct = 100;
                 } else if (daysLeftCeil <= 2) {
-                    label = `${daysLeftCeil} Hari Lagi (Segera)`;
+                    label = `H-${daysLeftCeil} (${hoursLeft}j) Segera!`;
                     colorClass = 'warning';
                 }
 
