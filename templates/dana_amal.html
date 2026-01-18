@@ -633,39 +633,51 @@
                 const parts = periodStr.split('~');
                 if (parts.length < 2) return { pct: 0, daysLeft: 999, label: '-' };
 
-                const startStr = parts[0].trim();
                 const endStr = parts[1].trim();
-
-                const startDate = new Date(startStr);
                 const endDate = new Date(endStr);
                 const now = new Date();
 
-                const totalMs = endDate - startDate;
-                const elapsedMs = now - startDate;
                 const remainingMs = endDate - now;
 
-                let pct = (elapsedMs / totalMs) * 100;
-                pct = Math.max(0, Math.min(100, pct)); // clamp 0-100
-
                 // Days left
-                const daysLeft = Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
+                const daysLeft = Math.floor(remainingMs / (1000 * 60 * 60 * 24)); // Use floor for conservative estimate, or ceil? Original used ceil.
+                // Revert to ceil to match "Hari Lagi" logic
+                const daysLeftCeil = Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
 
-                let label = `${daysLeft} Hari Lagi`;
+                // Standardize visual progress based on 30 days max
+                // Closer to 0 days = Full Bar
+                // > 30 days = Empty Bar
+                const standardMaxDays = 30;
+                let pct = 0;
+
+                if (daysLeftCeil <= 0) {
+                    pct = 100;
+                } else {
+                    pct = Math.max(0, Math.min(100, (1 - (daysLeftCeil / standardMaxDays)) * 100));
+                }
+
+                let label = `${daysLeftCeil} Hari Lagi`;
                 let colorClass = 'normal'; // default blue/green
 
-                if (daysLeft < 0) {
+                if (daysLeftCeil < 0) {
                     label = "SELESAI (Overdue)";
                     pct = 100;
                     colorClass = 'finished';
-                } else if (daysLeft == 0) {
+                } else if (daysLeftCeil == 0) {
                     label = "CAIR HARI INI 💰";
                     colorClass = 'urgent';
-                } else if (daysLeft <= 2) {
-                    label = `${daysLeft} Hari Lagi (Segera)`;
+                    pct = 100;
+                } else if (daysLeftCeil <= 2) {
+                    label = `${daysLeftCeil} Hari Lagi (Segera)`;
                     colorClass = 'warning';
                 }
 
-                return { pct, daysLeft, label, colorClass };
+                // Override Pct for visual consistency on short durations
+                // If it's a very short duration task (e.g. 6 days total), 
+                // the user prefers to see it "fuller" because it's "soon".
+                // The 30-day normalization handles this (6 days left = 80% full).
+
+                return { pct, daysLeft: daysLeftCeil, label, colorClass };
             } catch (e) {
                 return { pct: 0, daysLeft: 999, label: 'Error', colorClass: 'normal' };
             }
