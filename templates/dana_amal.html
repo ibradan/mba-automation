@@ -541,23 +541,9 @@
                             </thead>
                             <tbody>
                                 {% for item in all_records %}
-                                {% set due_info = calculate_progress_jinja(item.record.period) if item.record.period
-                                else {'pct': 0, 'days_left': 999, 'color_class': 'normal', 'label': '-'} %}
-                                {% set row_style = "--progress: " ~ due_info.pct ~ "%;" %}
+                                {% set row_style = "--progress: 0%;" %}
                                 {% set bar_color = '#3b82f6' %}
-                                {% if due_info.color_class == 'urgent' %}
-                                {% set bar_color = '#eab308' %}
-                                {% elif due_info.color_class == 'warning' %}
-                                {% set bar_color = '#10b981' %}
-                                {% endif %}
-
                                 {% set text_style = '' %}
-                                {% if due_info.color_class == 'urgent' %}
-                                {% set text_style = 'color:#ca8a04; font-weight:700;' %}
-                                {% elif due_info.color_class == 'warning' %}
-                                {% set text_style = 'color:#059669; font-weight:700;' %}
-                                {% endif %}
-
                                 {% set tr_style = row_style ~ " --bar-color: " ~ bar_color ~ ";" %}
 
                                 <tr class="{% if item.is_due %}due-soon-row{% endif %} clickable-row"
@@ -688,8 +674,38 @@
 
         // Render progress bars on load
         document.addEventListener('DOMContentLoaded', () => {
-            // Initial applyFilters calls
+            // Calculate and apply progress styles to each row
+            const table = document.getElementById('dana-amal-table');
+            if (table) {
+                const rows = table.querySelectorAll('tbody tr');
+                rows.forEach(row => {
+                    const period = row.getAttribute('data-period');
+                    if (period) {
+                        const info = calculateProgress(period);
 
+                        // Apply CSS variables for row chart
+                        row.style.setProperty('--progress', info.pct + '%');
+
+                        let barColor = '#3b82f6';
+                        if (info.colorClass === 'urgent') barColor = '#eab308';
+                        if (info.colorClass === 'warning') barColor = '#10b981';
+                        row.style.setProperty('--bar-color', barColor);
+
+                        // Update the days-left-text
+                        const daysText = row.querySelector('.days-left-text');
+                        if (daysText) {
+                            daysText.textContent = info.label;
+                            if (info.colorClass === 'urgent') {
+                                daysText.style.color = '#ca8a04';
+                                daysText.style.fontWeight = '700';
+                            } else if (info.colorClass === 'warning') {
+                                daysText.style.color = '#059669';
+                                daysText.style.fontWeight = '700';
+                            }
+                        }
+                    }
+                });
+            }
 
             // Initial call to update totals/counts based on default filter (all)
             applyFilters();
