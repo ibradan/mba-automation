@@ -393,28 +393,40 @@
             }
         }
 
-        .records-table tr {
-            position: relative;
-            background-image: linear-gradient(90deg, var(--bar-color, #3b82f6) var(--progress, 0%), transparent var(--progress, 0%));
-            background-size: 100% 4px;
-            /* Thickness of the line */
-            background-repeat: no-repeat;
-            background-position: top left;
-            transition: background-size 0.5s ease;
+        /* Progress Bar Visuals */
+        .period-visual {
+            width: 100px;
+            min-width: 100px;
         }
 
-        /* Progress Bar Visuals - Removed old bar, keeping text styles */
         .period-text {
             font-size: 0.75rem;
             font-weight: 600;
             color: #334155;
+            margin-bottom: 4px;
+        }
+
+        .progress-bar-bg {
+            width: 100%;
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 3px;
+            overflow: hidden;
             margin-bottom: 2px;
         }
 
+        .progress-bar-fill {
+            height: 100%;
+            background: #3b82f6;
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
         .days-left-text {
-            font-weight: 500;
+            font-weight: 600;
             letter-spacing: 0.3px;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             color: #64748b;
         }
 
@@ -541,26 +553,23 @@
                             </thead>
                             <tbody>
                                 {% for item in all_records %}
-                                {% set row_style = "--progress: 0%;" %}
-                                {% set bar_color = '#3b82f6' %}
-                                {% set text_style = '' %}
-                                {% set tr_style = row_style ~ " --bar-color: " ~ bar_color ~ ";" %}
-
                                 <tr class="{% if item.is_due %}due-soon-row{% endif %} clickable-row"
                                     data-period="{{ item.record.period or '' }}" data-phone="{{ item.phone_display }}"
-                                    onclick="quickLogin('{{ item.phone_display }}')" title="Klik untuk login ke MBA7"
-                                    style="{{ tr_style }}">
+                                    onclick="quickLogin('{{ item.phone_display }}')" title="Klik untuk login ke MBA7">
                                     <td>{{ loop.index }}</td>
                                     <td>
                                         <span class="status-badge status-active">{{ item.phone_display[-4:] }}</span>
                                     </td>
                                     <td>
-                                        <!-- Simplified Period Column -->
-                                        <div class="period-text">{{ item.record.period.split('~')[1].split(' ')[0] if
-                                            item.record.period and '~' in item.record.period else item.record.period }}
-                                        </div>
-                                        <div class="days-left-text" style="{{ text_style }}">
-                                            Calculating...
+                                        <!-- Progress Bar in Column -->
+                                        <div class="period-visual" data-period-raw="{{ item.record.period }}">
+                                            <div class="period-text">{{ item.record.period.split('~')[1].split(' ')[0]
+                                                if item.record.period and '~' in item.record.period else
+                                                item.record.period }}</div>
+                                            <div class="progress-bar-bg">
+                                                <div class="progress-bar-fill" style="width: 0%"></div>
+                                            </div>
+                                            <div class="days-left-text">Loading...</div>
                                         </div>
                                     </td>
                                     <td>{{ item.record.product or '-' }}</td>
@@ -645,19 +654,19 @@
                     pct = Math.max(0, Math.min(100, (1 - (daysLeftCeil / standardMaxDays)) * 100));
                 }
 
-                let label = `${daysLeftCeil} Hari Lagi`;
+                let label = `H-${daysLeftCeil}`;
                 let colorClass = 'normal'; // default blue/green
 
                 if (daysLeftCeil < 0) {
-                    label = "SELESAI (Overdue)";
+                    label = "SELESAI";
                     pct = 100;
                     colorClass = 'finished';
                 } else if (daysLeftCeil == 0) {
-                    label = "CAIR HARI INI 💰";
+                    label = "H-0 💰";
                     colorClass = 'urgent';
                     pct = 100;
                 } else if (daysLeftCeil <= 2) {
-                    label = `${daysLeftCeil} Hari Lagi (Segera)`;
+                    label = `H-${daysLeftCeil}`;
                     colorClass = 'warning';
                 }
 
@@ -674,38 +683,39 @@
 
         // Render progress bars on load
         document.addEventListener('DOMContentLoaded', () => {
-            // Calculate and apply progress styles to each row
-            const table = document.getElementById('dana-amal-table');
-            if (table) {
-                const rows = table.querySelectorAll('tbody tr');
-                rows.forEach(row => {
-                    const period = row.getAttribute('data-period');
-                    if (period) {
-                        const info = calculateProgress(period);
+            // Calculate and apply progress styles to each period-visual
+            const visuals = document.querySelectorAll('.period-visual');
+            visuals.forEach(v => {
+                const raw = v.dataset.periodRaw;
+                if (!raw) return;
 
-                        // Apply CSS variables for row chart
-                        row.style.setProperty('--progress', info.pct + '%');
+                const data = calculateProgress(raw);
+                const fill = v.querySelector('.progress-bar-fill');
+                const label = v.querySelector('.days-left-text');
 
-                        let barColor = '#3b82f6';
-                        if (info.colorClass === 'urgent') barColor = '#eab308';
-                        if (info.colorClass === 'warning') barColor = '#10b981';
-                        row.style.setProperty('--bar-color', barColor);
+                // Animate width
+                setTimeout(() => {
+                    if (fill) fill.style.width = data.pct + '%';
+                }, 100);
 
-                        // Update the days-left-text
-                        const daysText = row.querySelector('.days-left-text');
-                        if (daysText) {
-                            daysText.textContent = info.label;
-                            if (info.colorClass === 'urgent') {
-                                daysText.style.color = '#ca8a04';
-                                daysText.style.fontWeight = '700';
-                            } else if (info.colorClass === 'warning') {
-                                daysText.style.color = '#059669';
-                                daysText.style.fontWeight = '700';
-                            }
-                        }
+                if (label) {
+                    label.textContent = data.label;
+
+                    // Color logic
+                    if (data.colorClass === 'urgent') {
+                        if (fill) fill.style.background = '#eab308';
+                        label.style.color = '#ca8a04';
+                        label.style.fontWeight = '700';
+                    } else if (data.colorClass === 'warning') {
+                        if (fill) fill.style.background = '#10b981';
+                        label.style.color = '#059669';
+                        label.style.fontWeight = '700';
+                    } else if (data.colorClass === 'finished') {
+                        if (fill) fill.style.background = '#3b82f6';
+                        label.textContent = "✅ " + label.textContent;
                     }
-                });
-            }
+                }
+            });
 
             // Initial call to update totals/counts based on default filter (all)
             applyFilters();
