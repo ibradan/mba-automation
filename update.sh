@@ -9,9 +9,17 @@ echo "🔄 Updating MBA Automation..."
 echo "📥 Pulling from Git..."
 git pull origin user-custom-version
 
-# Restart the service
-echo "🔁 Restarting service..."
-sudo systemctl restart mba-automation
+# Restart the service with full stop/start cycle
+echo "🔁 Stopping service..."
+sudo systemctl stop mba-automation
+
+# Kill any remaining gunicorn workers
+echo "🔪 Killing stale workers..."
+sudo pkill -9 gunicorn 2>/dev/null || true
+sleep 2
+
+echo "🚀 Starting service..."
+sudo systemctl start mba-automation
 
 echo "✅ Update complete!"
 echo "📊 Service status:"
