@@ -393,39 +393,29 @@
             }
         }
 
-        /* Progress Bar Visuals */
-        .period-visual {
-            width: 100px;
-            min-width: 100px;
+        .records-table tr {
+            position: relative;
+            background-image: linear-gradient(90deg, var(--bar-color, #3b82f6) var(--progress, 0%), transparent var(--progress, 0%));
+            background-size: 100% 4px;
+            /* Thickness of the line */
+            background-repeat: no-repeat;
+            background-position: top left;
+            transition: background-size 0.5s ease;
         }
 
+        /* Progress Bar Visuals - Removed old bar, keeping text styles */
         .period-text {
             font-size: 0.75rem;
             font-weight: 600;
             color: #334155;
-            margin-bottom: 4px;
-        }
-
-        .progress-bar-bg {
-            width: 100%;
-            height: 6px;
-            background: #e2e8f0;
-            border-radius: 3px;
-            overflow: hidden;
             margin-bottom: 2px;
-        }
-
-        .progress-bar-fill {
-            height: 100%;
-            background: #3b82f6;
-            border-radius: 3px;
-            width: 0%;
-            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .days-left-text {
             font-weight: 500;
             letter-spacing: 0.3px;
+            font-size: 0.75rem;
+            color: #64748b;
         }
 
 
@@ -551,27 +541,24 @@
                             </thead>
                             <tbody>
                                 {% for item in all_records %}
+                                {% set due_info = calculate_progress_jinja(item.record.period) if item.record.period
+                                else {'pct': 0, 'days_left': 999, 'color_class': 'normal', 'label': '-'} %}
                                 <tr class="{% if item.is_due %}due-soon-row{% endif %} clickable-row"
                                     data-period="{{ item.record.period or '' }}" data-phone="{{ item.phone_display }}"
-                                    onclick="quickLogin('{{ item.phone_display }}')" title="Klik untuk login ke MBA7">
+                                    onclick="quickLogin('{{ item.phone_display }}')" title="Klik untuk login ke MBA7"
+                                    style="--progress: {{ due_info.pct }}%; --bar-color: {{ '#eab308' if due_info.color_class == 'urgent' else ('#10b981' if due_info.color_class == 'warning' else '#3b82f6') }};">
                                     <td>{{ loop.index }}</td>
                                     <td>
                                         <span class="status-badge status-active">{{ item.phone_display[-4:] }}</span>
                                     </td>
                                     <td>
-                                        <!-- Progress Visualization Wrapper -->
-                                        <div class="period-visual" data-period-raw="{{ item.record.period }}">
-                                            <div class="period-text">{{ item.record.period.split('~')[1].split(' ')[0]
-                                                if
-                                                item.record.period and '~' in item.record.period else item.record.period
-                                                }}
-                                            </div>
-                                            <div class="progress-bar-bg">
-                                                <div class="progress-bar-fill" style="width: 0%"></div>
-                                            </div>
-                                            <div class="days-left-text" style="font-size: 0.7rem; color: #64748b;">
-                                                Counting...
-                                            </div>
+                                        <!-- Simplified Period Column -->
+                                        <div class="period-text">{{ item.record.period.split('~')[1].split(' ')[0] if
+                                            item.record.period and '~' in item.record.period else item.record.period }}
+                                        </div>
+                                        <div class="days-left-text"
+                                            style="{{ 'color:#ca8a04; font-weight:700;' if due_info.color_class == 'urgent' else ('color:#059669; font-weight:700;' if due_info.color_class == 'warning' else '') }}">
+                                            {{ due_info.label }}
                                         </div>
                                     </td>
                                     <td>{{ item.record.product or '-' }}</td>
@@ -685,45 +672,8 @@
 
         // Render progress bars on load
         document.addEventListener('DOMContentLoaded', () => {
-            const visuals = document.querySelectorAll('.period-visual, .period-visual-mobile');
-            visuals.forEach(v => {
-                const raw = v.dataset.periodRaw;
-                if (!raw) return;
+            // Initial applyFilters calls
 
-                const data = calculateProgress(raw);
-                const fill = v.querySelector('.progress-bar-fill');
-
-                let labelSelector = '.days-left-text';
-                if (v.classList.contains('period-visual-mobile')) {
-                    labelSelector = '.days-left-text-mobile';
-                }
-                const label = v.querySelector(labelSelector);
-
-                // Animate width
-                setTimeout(() => {
-                    fill.style.width = data.pct + '%';
-                }, 100);
-
-                if (label) {
-                    label.textContent = data.label;
-
-                    // Color logic
-                    if (data.colorClass === 'urgent') {
-                        fill.style.background = '#eab308'; // Gold/Yellow
-                        label.style.color = '#ca8a04';
-                        label.style.fontWeight = '800';
-                    } else if (data.colorClass === 'warning') {
-                        fill.style.background = '#10b981'; // Green but bright
-                        label.style.color = '#059669';
-                        label.style.fontWeight = '700';
-                    } else if (data.colorClass === 'finished') {
-                        fill.style.background = '#3b82f6'; // Blue
-                        label.textContent = "✅ " + label.textContent;
-                    } else {
-                        fill.style.background = '#3b82f6'; // Standard Blue
-                    }
-                }
-            });
 
             // Initial call to update totals/counts based on default filter (all)
             applyFilters();
@@ -1014,7 +964,19 @@
                             tr.setAttribute('data-period', r.period || '');
                             tr.setAttribute('data-phone', phone);
                             tr.onclick = () => quickLogin(phone);
-                            if (dueInfo.daysLeft <= 0) tr.classList.add('due-soon-row'); // Simple check reusing logic
+                            if (dueInfo.daysLeft <= 0) tr.classList.add('due-soon-row');
+
+                            // Set CSS variables for the row chart
+                            tr.style.setProperty('--progress', dueInfo.pct + '%');
+
+                            let barColor = '#3b82f6'; // Default Blue
+                            if (dueInfo.colorClass === 'urgent') barColor = '#eab308'; // Gold
+                            if (dueInfo.colorClass === 'warning') barColor = '#10b981'; // Green
+                            if (dueInfo.colorClass === 'finished') barColor = '#3b82f6'; // Blue (or maybe gray/darker blue?)
+
+                            tr.style.setProperty('--bar-color', barColor);
+
+                            const periodStart = (r.period && r.period.includes('~')) ? r.period.split('~')[1].split(' ')[0] : (r.period || '-');
 
                             tr.innerHTML = `
                                 <td>${rowCount}</td>
@@ -1023,13 +985,10 @@
                                     <div style="font-size: 0.65rem; color: #94a3b8; margin-top: 2px;">Update: ${new Date().toLocaleString('id-ID')}</div>
                                 </td>
                                 <td>
-                                    <!-- Progress Visualization -->
-                                    <div class="period-visual" data-period-raw="${r.period || ''}">
-                                        <div class="period-text">${(r.period && r.period.includes('~')) ? r.period.split('~')[1].split(' ')[0] : (r.period || '-')}</div>
-                                        <div class="progress-bar-bg">
-                                            <div class="progress-bar-fill" style="width: ${dueInfo.pct}%; background: ${dueInfo.colorClass === 'urgent' ? '#eab308' : (dueInfo.colorClass === 'warning' ? '#10b981' : '#3b82f6')}"></div>
-                                        </div>
-                                        <div class="days-left-text" style="font-size: 0.7rem; color: #64748b;">${dueInfo.label}</div>
+                                    <!-- Simplified Period Column -->
+                                    <div class="period-text">${periodStart}</div>
+                                    <div class="days-left-text" style="${dueInfo.colorClass === 'urgent' ? 'color:#ca8a04; font-weight:700;' : (dueInfo.colorClass === 'warning' ? 'color:#059669; font-weight:700;' : '')}">
+                                        ${dueInfo.label}
                                     </div>
                                 </td>
                                 <td>${r.product || '-'}</td>
