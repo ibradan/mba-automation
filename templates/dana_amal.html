@@ -634,7 +634,7 @@
                 if (daysLeftCeil <= 0) {
                     pct = 100;
                 } else {
-                    pct = Math.max(0, Math.min(100, (1 - (daysLeftCeil / standardMaxDays)) * 100));
+                    pct = Math.max(5, Math.min(100, (1 - (daysLeftCeil / standardMaxDays)) * 100));
                 }
 
                 let label = `${daysLeftCeil} Hari Lagi`;
