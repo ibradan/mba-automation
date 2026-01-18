@@ -272,6 +272,35 @@ function showToast(message, type = 'info') {
   }, 3000);
 }
 
+// Add message to Run Activity Log (persistent mini log)
+function addRunLog(message, type = 'info') {
+  const logArea = document.getElementById('run-activity-log');
+  if (!logArea) return;
+
+  const now = new Date();
+  const time = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+  let icon = '📋';
+  let color = '#64748b';
+  if (type === 'start') { icon = '🚀'; color = '#3b82f6'; }
+  if (type === 'success') { icon = '✅'; color = '#10b981'; }
+  if (type === 'error') { icon = '❌'; color = '#ef4444'; }
+  if (type === 'progress') { icon = '⏳'; color = '#f59e0b'; }
+
+  const line = document.createElement('div');
+  line.className = 'run-log-line';
+  line.style.color = color;
+  line.innerHTML = `<span class="log-time">[${time}]</span> ${icon} ${message}`;
+
+  logArea.appendChild(line);
+  logArea.scrollTop = logArea.scrollHeight; // Auto scroll to bottom
+
+  // Keep only last 20 lines
+  while (logArea.children.length > 20) {
+    logArea.removeChild(logArea.firstChild);
+  }
+}
+
 // Toggle Password Edit Mode
 function togglePwdEdit(btn) {
   const wrapper = btn.closest('.pwd-wrapper');
@@ -744,6 +773,7 @@ function attachPlayButtons() {
 
         if (data.ok) {
           showToast('Automation started for +62' + phone, 'success');
+          addRunLog('Started automation for +62' + phone, 'start');
           setTimeout(updateStatusRealTime, 500);
 
           btn.disabled = false;
@@ -751,12 +781,14 @@ function attachPlayButtons() {
           spinnerIcon.style.display = 'none';
         } else {
           showToast('Gagal: ' + data.msg, 'error');
+          addRunLog('Failed +62' + phone + ': ' + data.msg, 'error');
           btn.disabled = false;
           originalIcon.style.display = 'inline';
           spinnerIcon.style.display = 'none';
         }
       } catch (err) {
         showToast('Gagal menghubungi server.', 'error');
+        addRunLog('Server error for +62' + phone, 'error');
         console.error(err);
         btn.disabled = false;
         originalIcon.style.display = 'inline';
