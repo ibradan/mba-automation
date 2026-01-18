@@ -210,6 +210,9 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
     tasks_total = iterations
     loop_count = 0  # Track actual completed iterations in this session
 
+    # DEBUG: Log what we received
+    log(f"🔍 [DEBUG] perform_tasks called with iterations={iterations}")
+
     def resurrect_session():
         """Helper to re-login if session is lost."""
         log("⚠️ Session lost! Attempting to resurrect...")
@@ -261,20 +264,30 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
         progress_element = page.locator(".van-progress__pivot").first
         if progress_element.count() > 0 and progress_element.is_visible(timeout=3000):
             progress_text = progress_element.text_content(timeout=1000)
-            log(f"Initial progress check: {progress_text}")
+            log(f"🔍 [DEBUG] Initial progress from page: '{progress_text}'")
             if progress_text and "/" in progress_text:
                 parts = progress_text.split("/")
                 initial_completed = int(parts[0].strip())
                 scraped_total = int(parts[1].strip())
                 
+                log(f"🔍 [DEBUG] Parsed: completed={initial_completed}, scraped_total={scraped_total}, current tasks_total={tasks_total}")
+                
                 # Use higher of configured or scraped total (handles E3=60 correctly)
                 if scraped_total > tasks_total:
                     tasks_total = scraped_total
-                    log(f"Updated tasks_total from page: {tasks_total}")
+                    log(f"🔍 [DEBUG] Updated tasks_total from page: {tasks_total}")
+                elif scraped_total < tasks_total:
+                    # IMPORTANT: Also update if scraped is different!
+                    log(f"🔍 [DEBUG] WARNING: scraped_total ({scraped_total}) < configured iterations ({tasks_total})")
+                    # Use scraped value as it's the actual task count on the page
+                    tasks_total = scraped_total
+                    log(f"🔍 [DEBUG] Using scraped tasks_total: {tasks_total}")
                 
                 if initial_completed > tasks_completed:
                     tasks_completed = initial_completed
                     log(f"Resuming from {tasks_completed}/{tasks_total}")
+        else:
+            log(f"🔍 [DEBUG] Progress element not found or not visible!")
     except Exception as e:
         log(f"Initial progress scrape failed (assuming 0): {e}")
 
@@ -363,6 +376,7 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
             # Calculate remaining iterations
             # We just did 1, so subtract 1 more
             remaining_iterations = max(0, tasks_total - tasks_completed - 1)
+            log(f"🔍 [DEBUG] Loop calculation: tasks_total={tasks_total}, tasks_completed={tasks_completed}, remaining_iterations={remaining_iterations}")
             log(f"Tasks completed: {tasks_completed + 1}/{tasks_total}. Remaining loops: {remaining_iterations}")
             
             loop_count = 1 # We already did one
