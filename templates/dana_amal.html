@@ -426,6 +426,129 @@
             font-weight: 500;
             letter-spacing: 0.3px;
         }
+
+        /* Mobile Card Layout Styles */
+        .card-view {
+            display: none;
+            gap: 16px;
+            flex-direction: column;
+        }
+
+        .da-card {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: var(--shadow-sm);
+            border: 2px solid transparent;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .da-card:active {
+            transform: scale(0.98);
+        }
+
+        .da-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .product-badge {
+            background: #f1f5f9;
+            color: #64748b;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .da-card-body {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .da-card-stats {
+            display: flex;
+            justify-content: space-between;
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 12px;
+            margin-top: 8px;
+        }
+
+        .da-stat {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .da-stat label {
+            font-size: 0.65rem;
+            color: #94a3b8;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .da-stat .val {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #334155;
+        }
+
+        .da-stat .val.profit {
+            color: #059669;
+        }
+
+        .da-stat .val.rate {
+            color: #8b5cf6;
+        }
+
+        .period-visual-mobile {
+            width: 100%;
+        }
+
+        .progress-bar-bg.large {
+            height: 10px;
+            border-radius: 5px;
+            background: #f1f5f9;
+            margin-bottom: 6px;
+        }
+
+        .days-left-text-mobile {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #334155;
+            text-align: right;
+        }
+
+        /* Responsive Toggles */
+        @media (max-width: 768px) {
+            .hidden-on-mobile {
+                display: none !important;
+            }
+
+            .hidden-on-desktop {
+                display: flex !important;
+            }
+
+            .records-table {
+                display: none;
+            }
+
+            .card-view {
+                display: flex;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .hidden-on-desktop {
+                display: none !important;
+            }
+        }
     </style>
 </head>
 
@@ -515,67 +638,132 @@
 
             <div id="table-container">
                 {% if all_records and all_records|length > 0 %}
-                <div class="table-wrapper">
-                    <table class="records-table" id="dana-amal-table">
-                        <thead>
-                            <tr>
-                                <th>No</th>
-                                <th>Akun</th>
-                                <th class="sortable" onclick="handleSort(2, 'hx')">Periode <span
-                                        class="sort-icon">⇅</span></th>
-                                <th>Produk</th>
-                                <th class="sortable" onclick="handleSort(4, 'number')">Invest <span
-                                        class="sort-icon">⇅</span></th>
-                                <th>Rate</th>
-                                <th class="sortable" onclick="handleSort(6, 'number')"> Hari <span
-                                        class="sort-icon">⇅</span></th>
-                                <th class="sortable" onclick="handleSort(7, 'number')">Est. Laba <span
-                                        class="sort-icon">⇅</span></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for item in all_records %}
-                            <tr class="{% if item.is_due %}due-soon-row{% endif %} clickable-row"
-                                data-period="{{ item.record.period or '' }}" data-phone="{{ item.phone_display }}"
-                                onclick="quickLogin('{{ item.phone_display }}')" title="Klik untuk login ke MBA7">
-                                <td>{{ loop.index }}</td>
-                                <td>
-                                    <span class="status-badge status-active">+62 {{ item.phone_display }}</span>
-                                </td>
-                                <td>
-                                    <!-- Progress Visualization Wrapper -->
-                                    <div class="period-visual" data-period-raw="{{ item.record.period }}">
-                                        <div class="period-text">{{ item.record.period.split('~')[1].split(' ')[0] if
-                                            item.record.period and '~' in item.record.period else item.record.period }}
+
+                <!-- Desktop Table View -->
+                <div class="table-view hidden-on-mobile">
+                    <div class="table-wrapper">
+                        <table class="records-table" id="dana-amal-table">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>Akun</th>
+                                    <th class="sortable" onclick="handleSort(2, 'hx')">Periode <span
+                                            class="sort-icon">⇅</span></th>
+                                    <th>Produk</th>
+                                    <th class="sortable" onclick="handleSort(4, 'number')">Invest <span
+                                            class="sort-icon">⇅</span></th>
+                                    <th>Rate</th>
+                                    <th class="sortable" onclick="handleSort(6, 'number')"> Hari <span
+                                            class="sort-icon">⇅</span></th>
+                                    <th class="sortable" onclick="handleSort(7, 'number')">Est. Laba <span
+                                            class="sort-icon">⇅</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in all_records %}
+                                <tr class="{% if item.is_due %}due-soon-row{% endif %} clickable-row"
+                                    data-period="{{ item.record.period or '' }}" data-phone="{{ item.phone_display }}"
+                                    onclick="quickLogin('{{ item.phone_display }}')" title="Klik untuk login ke MBA7">
+                                    <td>{{ loop.index }}</td>
+                                    <td>
+                                        <span class="status-badge status-active">+62 {{ item.phone_display }}</span>
+                                    </td>
+                                    <td>
+                                        <!-- Progress Visualization Wrapper -->
+                                        <div class="period-visual" data-period-raw="{{ item.record.period }}">
+                                            <div class="period-text">{{ item.record.period.split('~')[1].split(' ')[0]
+                                                if
+                                                item.record.period and '~' in item.record.period else item.record.period
+                                                }}
+                                            </div>
+                                            <div class="progress-bar-bg">
+                                                <div class="progress-bar-fill" style="width: 0%"></div>
+                                            </div>
+                                            <div class="days-left-text" style="font-size: 0.7rem; color: #64748b;">
+                                                Counting...
+                                            </div>
                                         </div>
-                                        <div class="progress-bar-bg">
-                                            <div class="progress-bar-fill" style="width: 0%"></div>
-                                        </div>
-                                        <div class="days-left-text" style="font-size: 0.7rem; color: #64748b;">
-                                            Counting...
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>{{ item.record.product or '-' }}</td>
-                                <td class="amount-cell">Rp {{ "{:,.0f}".format(item.record.amount or 0).replace(',',
-                                    '.') }}</td>
-                                <td class="rate-cell">{{ item.record.rate or 0 }}%</td>
-                                <td>{{ item.record.days or 0 }}</td>
-                                <td class="profit-cell">Rp {{ "{:,.0f}".format(item.record.profit or 0).replace(',',
-                                    '.') }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                        <tfoot>
-                            <tr class="summary-row">
-                                <td colspan="4" style="text-align:right;">TOTAL</td>
-                                <td class="amount-cell">Rp {{ "{:,.0f}".format(total_amount).replace(',', '.') }}</td>
-                                <td colspan="2"></td>
-                                <td class="profit-cell">Rp {{ "{:,.0f}".format(total_profit).replace(',', '.') }}</td>
-                            </tr>
-                        </tfoot>
-                    </table>
+                                    </td>
+                                    <td>{{ item.record.product or '-' }}</td>
+                                    <td class="amount-cell">Rp {{ "{:,.0f}".format(item.record.amount or 0).replace(',',
+                                        '.') }}</td>
+                                    <td class="rate-cell">{{ item.record.rate or 0 }}%</td>
+                                    <td>{{ item.record.days or 0 }}</td>
+                                    <td class="profit-cell">Rp {{ "{:,.0f}".format(item.record.profit or 0).replace(',',
+                                        '.') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr class="summary-row">
+                                    <td colspan="4" style="text-align:right;">TOTAL</td>
+                                    <td class="amount-cell">Rp {{ "{:,.0f}".format(total_amount).replace(',', '.') }}
+                                    </td>
+                                    <td colspan="2"></td>
+                                    <td class="profit-cell">Rp {{ "{:,.0f}".format(total_profit).replace(',', '.') }}
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
                 </div>
+
+                <!-- Mobile Card View -->
+                <div class="card-view hidden-on-desktop" id="card-container">
+                    {% for item in all_records %}
+                    <div class="da-card {% if item.is_due %}da-card-due{% endif %}"
+                        data-period="{{ item.record.period or '' }}" data-phone="{{ item.phone_display }}"
+                        onclick="quickLogin('{{ item.phone_display }}')">
+
+                        <div class="da-card-header">
+                            <span class="status-badge status-active">+62 {{ item.phone_display }}</span>
+                            <span class="product-badge">{{ item.record.product or '-' }}</span>
+                        </div>
+
+                        <div class="da-card-body">
+                            <!-- Visual Progress - Duplicate logic for mobile but styled larger -->
+                            <div class="period-visual-mobile" data-period-raw="{{ item.record.period }}">
+                                <div class="progress-bar-bg large">
+                                    <div class="progress-bar-fill" style="width: 0%"></div>
+                                </div>
+                                <div class="days-left-text-mobile">Calculating...</div>
+                            </div>
+
+                            <div class="da-card-stats">
+                                <div class="da-stat">
+                                    <label>Invest</label>
+                                    <div class="val">Rp {{ "{:,.0f}".format(item.record.amount or 0).replace(',', '.')
+                                        }}</div>
+                                </div>
+                                <div class="da-stat text-center">
+                                    <label>Rate</label>
+                                    <div class="val rate">{{ item.record.rate or 0 }}%</div>
+                                </div>
+                                <div class="da-stat text-right">
+                                    <label>Est. Laba</label>
+                                    <div class="val profit">Rp {{ "{:,.0f}".format(item.record.profit or 0).replace(',',
+                                        '.') }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+
+                    <!-- Mobile Totals -->
+                    <div class="da-card summary-card">
+                        <div class="da-card-stats">
+                            <div class="da-stat">
+                                <label>Total Invest</label>
+                                <div class="val">Rp {{ "{:,.0f}".format(total_amount).replace(',', '.') }}</div>
+                            </div>
+                            <div class="da-stat text-right">
+                                <label>Total Laba</label>
+                                <div class="val profit">Rp {{ "{:,.0f}".format(total_profit).replace(',', '.') }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {% else %}
                 <div class="empty-state" id="empty-state">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -649,38 +837,52 @@
 
         // Render progress bars on load
         document.addEventListener('DOMContentLoaded', () => {
-            const visuals = document.querySelectorAll('.period-visual');
+            const visuals = document.querySelectorAll('.period-visual, .period-visual-mobile');
             visuals.forEach(v => {
                 const raw = v.dataset.periodRaw;
                 if (!raw) return;
 
                 const data = calculateProgress(raw);
                 const fill = v.querySelector('.progress-bar-fill');
-                const label = v.querySelector('.days-left-text');
+
+                let labelSelector = '.days-left-text';
+                if (v.classList.contains('period-visual-mobile')) {
+                    labelSelector = '.days-left-text-mobile';
+                }
+                const label = v.querySelector(labelSelector);
 
                 // Animate width
                 setTimeout(() => {
                     fill.style.width = data.pct + '%';
                 }, 100);
 
-                label.textContent = data.label;
+                if (label) {
+                    label.textContent = data.label;
 
-                // Color logic
-                if (data.colorClass === 'urgent') {
-                    fill.style.background = '#eab308'; // Gold/Yellow
-                    label.style.color = '#ca8a04';
-                    label.style.fontWeight = '800';
-                } else if (data.colorClass === 'warning') {
-                    fill.style.background = '#10b981'; // Green but bright
-                    label.style.color = '#059669';
-                    label.style.fontWeight = '700';
-                } else if (data.colorClass === 'finished') {
-                    fill.style.background = '#3b82f6'; // Blue
-                    label.textContent = "✅ " + label.textContent;
-                } else {
-                    fill.style.background = '#3b82f6'; // Standard Blue
+                    // Color logic
+                    if (data.colorClass === 'urgent') {
+                        fill.style.background = '#eab308'; // Gold/Yellow
+                        label.style.color = '#ca8a04';
+                        label.style.fontWeight = '800';
+                        const card = v.closest('.da-card');
+                        if (card) card.style.borderColor = '#eab308';
+                    } else if (data.colorClass === 'warning') {
+                        fill.style.background = '#10b981'; // Green but bright
+                        label.style.color = '#059669';
+                        label.style.fontWeight = '700';
+                        const card = v.closest('.da-card');
+                        if (card) card.style.borderColor = '#10b981';
+                    } else if (data.colorClass === 'finished') {
+                        fill.style.background = '#3b82f6'; // Blue
+                        label.textContent = "✅ " + label.textContent;
+                    } else {
+                        fill.style.background = '#3b82f6'; // Standard Blue
+                    }
                 }
             });
+
+            // Initial call to update totals/counts based on default filter (all)
+            applyFilters();
         });
 
         // Toast notification helper
@@ -798,10 +1000,20 @@
         }
 
         function applyFilters() {
+            // Apply to table rows
             const table = document.getElementById("dana-amal-table");
-            if (!table) return;
+            let tableRows = [];
+            if (table) {
+                tableRows = Array.from(table.getElementsByTagName("tbody")[0].getElementsByTagName("tr"));
+            }
 
-            const rows = table.getElementsByTagName("tbody")[0].getElementsByTagName("tr");
+            // Apply to cards
+            const cardContainer = document.getElementById('card-container');
+            let cards = [];
+            if (cardContainer) {
+                cards = Array.from(cardContainer.querySelectorAll('.da-card:not(.summary-card)'));
+            }
+
             const resultsInfo = document.getElementById("filter-results-info");
             const visibleEl = document.getElementById("visible-count");
             const totalEl = document.getElementById("total-count");
@@ -810,20 +1022,23 @@
             let visibleAmount = 0;
             let visibleProfit = 0;
 
-            for (let i = 0; i < rows.length; i++) {
-                const row = rows[i];
-                const phoneCell = row.cells[1].textContent;
-                const isDueRow = row.classList.contains('due-soon-row');
+            // Function to check filter for an element (row or card)
+            const checkFilter = (el, type) => {
+                const phoneData = el.getAttribute('data-phone') || '';
+                const isDue = el.classList.contains(type === 'table' ? 'due-soon-row' : 'da-card-due');
 
                 // Account Filter
-                const matchAccount = activeAccount === 'all' || phoneCell.includes(activeAccount);
+                // Note: phoneData is like "812XXXX", activeAccount can be "all" or specific
+                const matchAccount = activeAccount === 'all' || phoneData.includes(activeAccount) || ("+62 " + phoneData).includes(activeAccount);
+                const matchDue = !showOnlyDue || isDue;
 
-                // Due Filter
-                const matchDue = !showOnlyDue || isDueRow;
+                return matchAccount && matchDue;
+            };
 
-                const show = (matchAccount && matchDue);
+            // Apply to table rows
+            tableRows.forEach(row => {
+                const show = checkFilter(row, 'table');
                 row.style.display = show ? "" : "none";
-
                 if (show) {
                     visibleCount++;
                     const amountCell = row.querySelector('.amount-cell');
@@ -837,22 +1052,44 @@
                         visibleProfit += parseInt(val || 0);
                     }
                 }
-            }
+            });
 
-            // Update row numbers for visible rows
+            // Apply to cards (independent logic for visibility, but totals share same data source so we track visibleCount from table rows primarily if available, else counting cards would be double counting if we did both. 
+            // Since table rows are primary source of truth for totals, we rely on them. But if mobile only, we might rely on cards. 
+            // Safe bet: calculate totals from whatever is processed. If both exist, we might double count if we aren't careful.
+            // Wait, usually both exist in DOM but one is hidden via CSS. 
+            // So we should only sum up ONCE. We summed up tableRows above.
+
+            cards.forEach(card => {
+                const show = checkFilter(card, 'card');
+                card.style.display = show ? "" : "none";
+            });
+
+            // Update row numbers for visible table rows
             updateRowNumbers();
 
-            // Update totals in footer
+            // Update totals in footer (table only has footer)
             const totalAmountCell = document.querySelector('.summary-row .amount-cell');
             const totalProfitCell = document.querySelector('.summary-row .profit-cell');
             if (totalAmountCell) totalAmountCell.textContent = 'Rp ' + formatRupiah(visibleAmount);
             if (totalProfitCell) totalProfitCell.textContent = 'Rp ' + formatRupiah(Math.round(visibleProfit));
 
+            // Update totals in mobile summary card
+            const mobileSumCard = document.querySelector('.summary-card');
+            if (mobileSumCard) {
+                const amountVal = mobileSumCard.querySelector('.da-stat:first-child .val');
+                const profitVal = mobileSumCard.querySelector('.da-stat:last-child .val');
+                if (amountVal) amountVal.textContent = 'Rp ' + formatRupiah(visibleAmount);
+                if (profitVal) profitVal.textContent = 'Rp ' + formatRupiah(Math.round(visibleProfit));
+                mobileSumCard.style.display = (visibleCount > 0) ? "block" : "none";
+            }
+
             // Update results info
             if (activeAccount !== 'all' || showOnlyDue) {
                 resultsInfo.style.display = "block";
                 visibleEl.textContent = visibleCount;
-                totalEl.textContent = rows.length;
+                // Total is total unique items, which effectively is tableRows.length
+                totalEl.textContent = tableRows.length || cards.length;
             } else {
                 resultsInfo.style.display = "none";
             }
@@ -873,42 +1110,68 @@
             // Create status log container
             let logHtml = `<div style="max-height: 150px; overflow-y: auto; background: #f8fafc; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 0.8rem; border: 1px solid #e2e8f0;">`;
 
-            // Create table structure
+            // Create hybrid structure (Table + Cards)
             container.innerHTML = `
                 <div class="progress-indicator" id="progress-indicator">
                     <span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;margin-right:8px;vertical-align:middle;"></span>
                     Memulai...
                 </div>
                 <div id="status-log-container">${logHtml}</div>
-                <div class="table-wrapper">
-                    <table class="records-table" id="dana-amal-table">
-                        <thead>
-                            <tr>
-                                <th>No</th>
-                                <th>Akun</th>
-                                <th>Periode</th>
-                                <th>Produk</th>
-                                <th>Invest</th>
-                                <th>Rate</th>
-                                <th>Hari</th>
-                                <th>Est. Laba</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                        <tfoot>
-                            <tr class="summary-row">
-                                <td colspan="4" style="text-align:right;">TOTAL</td>
-                                <td class="total-amount-cell">Rp 0</td>
-                                <td colspan="2"></td>
-                                <td class="total-profit-cell">Rp 0</td>
-                            </tr>
-                        </tfoot>
-                    </table>
+                
+                <!-- Table View -->
+                <div class="table-view hidden-on-mobile">
+                    <div class="table-wrapper">
+                        <table class="records-table" id="dana-amal-table">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>Akun</th>
+                                    <th class="sortable" onclick="handleSort(2, 'hx')">Periode <span class="sort-icon">⇅</span></th>
+                                    <th>Produk</th>
+                                    <th class="sortable" onclick="handleSort(4, 'number')">Invest <span class="sort-icon">⇅</span></th>
+                                    <th>Rate</th>
+                                    <th class="sortable" onclick="handleSort(6, 'number')"> Hari <span class="sort-icon">⇅</span></th>
+                                    <th class="sortable" onclick="handleSort(7, 'number')">Est. Laba <span class="sort-icon">⇅</span></th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                            <tfoot>
+                                <tr class="summary-row">
+                                    <td colspan="4" style="text-align:right;">TOTAL</td>
+                                    <td class="total-amount-cell">Rp 0</td>
+                                    <td colspan="2"></td>
+                                    <td class="total-profit-cell">Rp 0</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Card View -->
+                <div class="card-view hidden-on-desktop" id="card-container">
+                    <!-- Cards will be appended here -->
+                    <div class="da-card summary-card" style="display:none; order: 9999;">
+                        <div class="da-card-stats">
+                             <div class="da-stat">
+                                <label>Total Invest</label>
+                                <div class="val total-amount-card">Rp 0</div>
+                            </div>
+                             <div class="da-stat text-right">
+                                <label>Total Laba</label>
+                                <div class="val profit total-profit-card">Rp 0</div>
+                            </div>
+                        </div>
+                     </div>
                 </div>
             `;
 
             const progressEl = document.getElementById('progress-indicator');
             const logContainer = document.querySelector('#status-log-container > div');
+
+            // Containers for appending
+            const tbody = document.querySelector('#dana-amal-table tbody');
+            const cardContainer = document.getElementById('card-container');
+            const summaryCard = cardContainer.querySelector('.summary-card');
 
             let grandTotalAmount = 0;
             let grandTotalProfit = 0;
@@ -938,16 +1201,21 @@
                     const data = await res.json();
 
                     if (data.records && data.records.length > 0) {
-                        const tbody = document.querySelector('#dana-amal-table tbody');
 
                         data.records.forEach(r => {
                             rowCount++;
                             grandTotalAmount += r.amount || 0;
                             grandTotalProfit += r.profit || 0;
 
-                            const dueInfo = checkDueDate(r.period || "");
+                            const dueInfo = calculateProgress(r.period || "");
+
+                            // ---- 1. Append to Table ----
                             const tr = document.createElement('tr');
-                            if (dueInfo.isDue) tr.className = 'due-soon-row';
+                            tr.className = 'clickable-row';
+                            tr.setAttribute('data-period', r.period || '');
+                            tr.setAttribute('data-phone', phone);
+                            tr.onclick = () => quickLogin(phone);
+                            if (dueInfo.daysLeft <= 0) tr.classList.add('due-soon-row'); // Simple check reusing logic
 
                             tr.innerHTML = `
                                 <td>${rowCount}</td>
@@ -955,9 +1223,15 @@
                                     <span class="status-badge status-active">+62 ${phone}</span>
                                     <div style="font-size: 0.65rem; color: #94a3b8; margin-top: 2px;">Update: ${new Date().toLocaleString('id-ID')}</div>
                                 </td>
-                                <td class="period-cell">
-                                    ${r.period || '-'}
-                                    ${dueInfo.isDue ? `<span class="due-badge">${dueInfo.label}</span>` : ''}
+                                <td>
+                                    <!-- Progress Visualization -->
+                                    <div class="period-visual" data-period-raw="${r.period || ''}">
+                                        <div class="period-text">${(r.period && r.period.includes('~')) ? r.period.split('~')[1].split(' ')[0] : (r.period || '-')}</div>
+                                        <div class="progress-bar-bg">
+                                            <div class="progress-bar-fill" style="width: ${dueInfo.pct}%; background: ${dueInfo.colorClass === 'urgent' ? '#eab308' : (dueInfo.colorClass === 'warning' ? '#10b981' : '#3b82f6')}"></div>
+                                        </div>
+                                        <div class="days-left-text" style="font-size: 0.7rem; color: #64748b;">${dueInfo.label}</div>
+                                    </div>
                                 </td>
                                 <td>${r.product || '-'}</td>
                                 <td class="amount-cell">Rp ${formatRupiah(r.amount || 0)}</td>
@@ -966,11 +1240,57 @@
                                 <td class="profit-cell">Rp ${formatRupiah(Math.round(r.profit || 0))}</td>
                             `;
                             tbody.appendChild(tr);
+
+                            // ---- 2. Append to Card View ----
+                            const card = document.createElement('div');
+                            card.className = `da-card ${dueInfo.daysLeft <= 0 ? 'da-card-due' : ''}`;
+                            card.setAttribute('data-period', r.period || '');
+                            card.setAttribute('data-phone', phone);
+                            card.onclick = () => quickLogin(phone);
+                            if (dueInfo.colorClass === 'urgent') card.style.borderColor = '#eab308';
+                            if (dueInfo.colorClass === 'warning') card.style.borderColor = '#10b981';
+
+                            card.innerHTML = `
+                                <div class="da-card-header">
+                                    <span class="status-badge status-active">+62 ${phone}</span>
+                                    <span class="product-badge">${r.product || '-'}</span>
+                                </div>
+                                <div class="da-card-body">
+                                    <div class="period-visual-mobile" data-period-raw="${r.period || ''}">
+                                        <div class="progress-bar-bg large">
+                                            <div class="progress-bar-fill" style="width: ${dueInfo.pct}%; background: ${dueInfo.colorClass === 'urgent' ? '#eab308' : (dueInfo.colorClass === 'warning' ? '#10b981' : '#3b82f6')}"></div>
+                                        </div>
+                                        <div class="days-left-text-mobile" style="${dueInfo.colorClass === 'urgent' ? 'color:#ca8a04' : (dueInfo.colorClass === 'warning' ? 'color:#059669' : '')}">${dueInfo.label}</div>
+                                    </div>
+                                    <div class="da-card-stats">
+                                        <div class="da-stat">
+                                            <label>Invest</label>
+                                            <div class="val">Rp ${formatRupiah(r.amount || 0)}</div>
+                                        </div>
+                                        <div class="da-stat text-center">
+                                            <label>Rate</label>
+                                            <div class="val rate">${r.rate || 0}%</div>
+                                        </div>
+                                        <div class="da-stat text-right">
+                                            <label>Est. Laba</label>
+                                            <div class="val profit">Rp ${formatRupiah(Math.round(r.profit || 0))}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                             `;
+                            // Insert before summary card
+                            cardContainer.insertBefore(card, summaryCard);
                         });
 
                         // Update totals
-                        document.querySelector('.total-amount-cell').textContent = 'Rp ' + formatRupiah(grandTotalAmount);
-                        document.querySelector('.total-profit-cell').textContent = 'Rp ' + formatRupiah(Math.round(grandTotalProfit));
+                        const totalAmStr = 'Rp ' + formatRupiah(grandTotalAmount);
+                        const totalPrStr = 'Rp ' + formatRupiah(Math.round(grandTotalProfit));
+
+                        document.querySelector('.total-amount-cell').textContent = totalAmStr;
+                        document.querySelector('.total-profit-cell').textContent = totalPrStr;
+                        document.querySelector('.total-amount-card').textContent = totalAmStr;
+                        document.querySelector('.total-profit-card').textContent = totalPrStr;
+                        summaryCard.style.display = 'block';
 
                         // Log success with timestamp
                         const timeStr = new Date().toLocaleTimeString('id-ID');
