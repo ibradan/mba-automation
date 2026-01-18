@@ -908,17 +908,17 @@ function attachMBA7Buttons() {
       const clipboardText = `${fullPhone}\n${pwd}`;
 
       try {
-        await navigator.clipboard.writeText(pwd);
-        showToast(`🔐 Password tercopy! Buka MBA7...`, 'success');
+        await navigator.clipboard.writeText(fullPhone);
+        showToast(`📱 No HP (+62${phone}) tercopy! Buka MBA7...`, 'success');
       } catch (err) {
         // Fallback for older browsers
         const ta = document.createElement('textarea');
-        ta.value = pwd;
+        ta.value = fullPhone;
         document.body.appendChild(ta);
         ta.select();
         document.execCommand('copy');
         document.body.removeChild(ta);
-        showToast(`🔐 Password tercopy! Buka MBA7...`, 'success');
+        showToast(`📱 No HP (+62${phone}) tercopy! Buka MBA7...`, 'success');
       }
 
       // Open MBA7 login page

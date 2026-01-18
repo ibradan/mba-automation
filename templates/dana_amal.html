@@ -392,6 +392,40 @@
                 font-size: 0.75rem;
             }
         }
+
+        /* Progress Bar Visuals */
+        .period-visual {
+            min-width: 140px;
+        }
+
+        .period-text {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 4px;
+        }
+
+        .progress-bar-bg {
+            width: 100%;
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 2px;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: #3b82f6;
+            border-radius: 3px;
+            width: 0%;
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .days-left-text {
+            font-weight: 500;
+            letter-spacing: 0.3px;
+        }
     </style>
 </head>
 
@@ -508,9 +542,19 @@
                                 <td>
                                     <span class="status-badge status-active">+62 {{ item.phone_display }}</span>
                                 </td>
-                                <td class="period-cell">
-                                    {{ item.hx_display }}
-                                    {% if item.is_due %}<span class="due-badge">{{ item.due_label }}</span>{% endif %}
+                                <td>
+                                    <!-- Progress Visualization Wrapper -->
+                                    <div class="period-visual" data-period-raw="{{ item.record.period }}">
+                                        <div class="period-text">{{ item.record.period.split('~')[1].split(' ')[0] if
+                                            item.record.period and '~' in item.record.period else item.record.period }}
+                                        </div>
+                                        <div class="progress-bar-bg">
+                                            <div class="progress-bar-fill" style="width: 0%"></div>
+                                        </div>
+                                        <div class="days-left-text" style="font-size: 0.7rem; color: #64748b;">
+                                            Counting...
+                                        </div>
+                                    </div>
                                 </td>
                                 <td>{{ item.record.product or '-' }}</td>
                                 <td class="amount-cell">Rp {{ "{:,.0f}".format(item.record.amount or 0).replace(',',
@@ -559,6 +603,86 @@
             showToast('🌐 Opening MBA7...', 2000);
         }
 
+        function calculateProgress(periodStr) {
+            try {
+                // "01/16/2026 12:12:21 ~ 02/05/2026 12:13:21"
+                const parts = periodStr.split('~');
+                if (parts.length < 2) return { pct: 0, daysLeft: 999, label: '-' };
+
+                const startStr = parts[0].trim();
+                const endStr = parts[1].trim();
+
+                const startDate = new Date(startStr);
+                const endDate = new Date(endStr);
+                const now = new Date();
+
+                const totalMs = endDate - startDate;
+                const elapsedMs = now - startDate;
+                const remainingMs = endDate - now;
+
+                let pct = (elapsedMs / totalMs) * 100;
+                pct = Math.max(0, Math.min(100, pct)); // clamp 0-100
+
+                // Days left
+                const daysLeft = Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
+
+                let label = `${daysLeft} Hari Lagi`;
+                let colorClass = 'normal'; // default blue/green
+
+                if (daysLeft < 0) {
+                    label = "SELESAI (Overdue)";
+                    pct = 100;
+                    colorClass = 'finished';
+                } else if (daysLeft == 0) {
+                    label = "CAIR HARI INI 💰";
+                    colorClass = 'urgent';
+                } else if (daysLeft <= 2) {
+                    label = `${daysLeft} Hari Lagi (Segera)`;
+                    colorClass = 'warning';
+                }
+
+                return { pct, daysLeft, label, colorClass };
+            } catch (e) {
+                return { pct: 0, daysLeft: 999, label: 'Error', colorClass: 'normal' };
+            }
+        }
+
+        // Render progress bars on load
+        document.addEventListener('DOMContentLoaded', () => {
+            const visuals = document.querySelectorAll('.period-visual');
+            visuals.forEach(v => {
+                const raw = v.dataset.periodRaw;
+                if (!raw) return;
+
+                const data = calculateProgress(raw);
+                const fill = v.querySelector('.progress-bar-fill');
+                const label = v.querySelector('.days-left-text');
+
+                // Animate width
+                setTimeout(() => {
+                    fill.style.width = data.pct + '%';
+                }, 100);
+
+                label.textContent = data.label;
+
+                // Color logic
+                if (data.colorClass === 'urgent') {
+                    fill.style.background = '#eab308'; // Gold/Yellow
+                    label.style.color = '#ca8a04';
+                    label.style.fontWeight = '800';
+                } else if (data.colorClass === 'warning') {
+                    fill.style.background = '#10b981'; // Green but bright
+                    label.style.color = '#059669';
+                    label.style.fontWeight = '700';
+                } else if (data.colorClass === 'finished') {
+                    fill.style.background = '#3b82f6'; // Blue
+                    label.textContent = "✅ " + label.textContent;
+                } else {
+                    fill.style.background = '#3b82f6'; // Standard Blue
+                }
+            });
+        });
+
         // Toast notification helper
         function showToast(message, duration = 2000) {
             const existing = document.querySelector('.toast');
@@ -581,41 +705,14 @@
             return toast;
         }
 
-        function checkDueDate(periodStr) {
-            try {
-                // Format: "01/16/2026 12:12:21 ~ 02/05/2026 12:13:21"
-                const parts = periodStr.split('~');
-                if (parts.length < 2) return { isDue: false };
-
-                const endFull = parts[1].trim();
-                const endPart = endFull.split(' ')[0]; // "02/05/2026"
-                const endTime = endFull.split(' ')[1]; // "12:13:21"
-                const [m, d, y] = endPart.split('/');
-                const endDate = new Date(y, m - 1, d);
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-
-                const diffTime = endDate.getTime() - today.getTime();
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-                if (diffDays <= 2) {
-                    let label = "Segera";
-                    if (diffDays === 0) label = `Selesai (H-0) ${endTime}`;
-                    else if (diffDays === 1) label = `Selesai (H-1) ${endTime}`;
-                    else if (diffDays === 2) label = `Selesai (H-2) ${endTime}`;
-                    else if (diffDays < 0) label = "Selesai (Overdue)";
-
-                    return { isDue: true, label: label };
-                }
-                return { isDue: false };
-            } catch (e) {
-                return { isDue: false };
-            }
-        }
+        // Kept for backward compatibility if needed, but UI now handles it
+        function checkDueDate(periodStr) { return { isDue: false }; }
 
         let activeAccount = 'all';
         let showOnlyDue = false;
         let currentSort = { index: -1, direction: 1 };
+
+
 
         function setAccountFilter(phone, el) {
             document.querySelectorAll('.account-btn').forEach(btn => btn.classList.remove('active'));
