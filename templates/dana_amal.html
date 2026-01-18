@@ -666,7 +666,7 @@
                                     onclick="quickLogin('{{ item.phone_display }}')" title="Klik untuk login ke MBA7">
                                     <td>{{ loop.index }}</td>
                                     <td>
-                                        <span class="status-badge status-active">+62 {{ item.phone_display }}</span>
+                                        <span class="status-badge status-active">{{ item.phone_display[-4:] }}</span>
                                     </td>
                                     <td>
                                         <!-- Progress Visualization Wrapper -->
@@ -716,7 +716,7 @@
                         onclick="quickLogin('{{ item.phone_display }}')">
 
                         <div class="da-card-header">
-                            <span class="status-badge status-active">+62 {{ item.phone_display }}</span>
+                            <span class="status-badge status-active">{{ item.phone_display[-4:] }}</span>
                             <span class="product-badge">{{ item.record.product or '-' }}</span>
                         </div>
 
@@ -1220,7 +1220,7 @@
                             tr.innerHTML = `
                                 <td>${rowCount}</td>
                                 <td>
-                                    <span class="status-badge status-active">+62 ${phone}</span>
+                                    <span class="status-badge status-active">${phone.slice(-4)}</span>
                                     <div style="font-size: 0.65rem; color: #94a3b8; margin-top: 2px;">Update: ${new Date().toLocaleString('id-ID')}</div>
                                 </td>
                                 <td>
@@ -1252,7 +1252,7 @@
 
                             card.innerHTML = `
                                 <div class="da-card-header">
-                                    <span class="status-badge status-active">+62 ${phone}</span>
+                                    <span class="status-badge status-active">${phone.slice(-4)}</span>
                                     <span class="product-badge">${r.product || '-'}</span>
                                 </div>
                                 <div class="da-card-body">
