@@ -272,10 +272,14 @@ function showToast(message, type = 'info') {
   }, 3000);
 }
 
-// Add message to Run Activity Log (persistent mini log)
+// Add message to Sync Log (shared log area near refresh button)
 function addRunLog(message, type = 'info') {
-  const logArea = document.getElementById('run-activity-log');
-  if (!logArea) return;
+  const logContainer = document.getElementById('sync-log-container');
+  const logArea = document.getElementById('sync-log');
+  if (!logArea || !logContainer) return;
+
+  // Show the log container
+  logContainer.style.display = 'block';
 
   const now = new Date();
   const time = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -288,15 +292,15 @@ function addRunLog(message, type = 'info') {
   if (type === 'progress') { icon = '⏳'; color = '#f59e0b'; }
 
   const line = document.createElement('div');
-  line.className = 'run-log-line';
+  line.className = 'sync-log-line';
   line.style.color = color;
-  line.innerHTML = `<span class="log-time">[${time}]</span> ${icon} ${message}`;
+  line.innerHTML = `<span style="color:#64748b">[${time}]</span> ${icon} ${message}`;
 
   logArea.appendChild(line);
   logArea.scrollTop = logArea.scrollHeight; // Auto scroll to bottom
 
-  // Keep only last 20 lines
-  while (logArea.children.length > 20) {
+  // Keep only last 10 lines
+  while (logArea.children.length > 10) {
     logArea.removeChild(logArea.firstChild);
   }
 }
