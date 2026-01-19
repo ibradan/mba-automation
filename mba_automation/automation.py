@@ -277,11 +277,9 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
                     tasks_total = scraped_total
                     log(f"🔍 [DEBUG] Updated tasks_total from page: {tasks_total}")
                 elif scraped_total < tasks_total:
-                    # IMPORTANT: Also update if scraped is different!
-                    log(f"🔍 [DEBUG] WARNING: scraped_total ({scraped_total}) < configured iterations ({tasks_total})")
-                    # Use scraped value as it's the actual task count on the page
-                    tasks_total = scraped_total
-                    log(f"🔍 [DEBUG] Using scraped tasks_total: {tasks_total}")
+                    # FIX: Do NOT downgrade tasks_total if configured is higher!
+                    log(f"🔍 [DEBUG] Scraped ({scraped_total}) < Configured ({tasks_total}). IGNORING scraped value to ensure full run.")
+                    pass
                 
                 if initial_completed > tasks_completed:
                     tasks_completed = initial_completed
@@ -538,7 +536,8 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
                 
                 # Use the HIGHER value between scraped and accumulated
                 tasks_completed = max(tasks_completed, scraped_completed)
-                tasks_total = scraped_total
+                # CRITICAL FIX: Do NOT downgrade tasks_total! Keep the higher value (configured vs scraped)
+                tasks_total = max(tasks_total, scraped_total)
                 
                 # ========== GUARANTEE 100% COMPLETION ==========
                 # If not fully completed, retry the automation loop
@@ -592,7 +591,9 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
                             if txt and "/" in txt:
                                 p = txt.split("/")
                                 tasks_completed = int(p[0].strip())
-                                tasks_total = int(p[1].strip())
+                                # CRITICAL FIX: Do NOT downgrade tasks_total! Keep the higher value
+                                scraped_t = int(p[1].strip())
+                                tasks_total = max(tasks_total, scraped_t)
                                 log(f"After retry: {tasks_completed}/{tasks_total}")
                     except Exception as e:
                         log(f"Retry error: {e}")
@@ -699,7 +700,9 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
                         if text and "/" in text:
                             parts = text.split("/")
                             tasks_completed = int(parts[0].strip())
-                            tasks_total = int(parts[1].strip())
+                            # CRITICAL FIX: Do NOT downgrade tasks_total! Keep the higher value
+                            scraped_total = int(parts[1].strip())
+                            tasks_total = max(tasks_total, scraped_total)
                             log(f"  ✓ Current progress detected: {tasks_completed}/{tasks_total}")
                             break
                     except Exception as e:
