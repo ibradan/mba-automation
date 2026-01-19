@@ -193,10 +193,11 @@
         <div class="estimation-grid">
             {% for acc in accounts %}
             {% set est = acc.estimation %}
+            <!-- WEEK 1 CARD -->
             <div class="est-card tier-{{ acc.level.lower() }}">
                 <div class="est-header">
                     <span class="phone-display">+62 {{ acc.phone_display }}</span>
-                    <span class="tier-label">{{ acc.level }}</span>
+                    <span class="tier-label">{{ acc.level }} - Minggu 1</span>
                 </div>
 
                 <div class="est-body">
@@ -244,6 +245,55 @@
                     *Minggu tidak dihitung (libur)
                 </div>
             </div>
+
+            <!-- WEEK 2 CARD -->
+            {% if est and est.target_day_week2 %}
+            <div class="est-card tier-{{ acc.level.lower() }}" style="border-top-color: #f59e0b;">
+                <div class="est-header">
+                    <span class="phone-display">+62 {{ acc.phone_display }}</span>
+                    <span class="tier-label" style="background: #fef3c7; color: #d97706;">{{ acc.level }} - Minggu
+                        2</span>
+                </div>
+
+                <div class="est-body">
+                    <div class="data-row">
+                        <span class="data-label">Saldo Saat Ini</span>
+                        <span class="data-value">Rp {{ "{:,.0f}".format(acc.balance).replace(',', '.') }}</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">Tarif Tier ({{ acc.level }})</span>
+                        <span class="data-value">Rp {{ "{:,.0f}".format(est.daily_income).replace(',', '.')
+                            }}/hari</span>
+                    </div>
+
+                    <div class="data-row" style="margin-top: 5px; border-top: 1px dashed #e2e8f0; padding-top: 10px;">
+                        <span class="data-label">Target Penarikan</span>
+                        <span class="data-value" style="color: #d97706;">{{ est.target_day_week2 }}</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">Sisa Hari</span>
+                        <span class="data-value">{{ est.days_left_week2 }} hari lagi</span>
+                    </div>
+
+                    <div class="highlight-box" style="background: #fffbeb; border-color: #fde68a;">
+                        <span class="data-label" style="color: #92400e;">ESTIMASI SALDO MINGGU 2</span>
+                        <span class="data-value" style="color: #d97706;">Rp {{
+                            "{:,.0f}".format(est.estimated_balance_week2).replace(',', '.')
+                            }}</span>
+                    </div>
+                </div>
+
+                <div class="est-footer">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    *Minggu tidak dihitung (libur)
+                </div>
+            </div>
+            {% endif %}
             {% endfor %}
         </div>
     </div>

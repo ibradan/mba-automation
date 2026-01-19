@@ -685,9 +685,10 @@ def api_accounts():
 def calculate_estimation(daily_income, current_balance, level_fallback=None):
     """
     Calculates financial estimation based on FIXED tier rates.
-    E3: 150,000/day
-    E2: 43,500/day
-    E1: 15,000/day
+    Returns projections for BOTH week 1 and week 2.
+    E3: 150,000/day -> Target: Rabu
+    E2: 43,500/day -> Target: Kamis
+    E1: 15,000/day -> Target: Jumat
     """
     try:
         balance = float(current_balance or 0)
@@ -717,32 +718,55 @@ def calculate_estimation(daily_income, current_balance, level_fallback=None):
         target_day_name = 'Jumat'
         if not level_fallback: return None
 
-    # 2. Calculate Days Until Target
+    # 2. Calculate Days Until Target (Week 1)
     now = datetime.datetime.now()
     current_weekday = now.weekday() # Mon=0, Sun=6
     
     # If today is target or after target, target is next week
     if current_weekday >= target_day_idx:
-        days_until = (7 - current_weekday) + target_day_idx
+        days_until_week1 = (7 - current_weekday) + target_day_idx
     else:
-        days_until = target_day_idx - current_weekday
+        days_until_week1 = target_day_idx - current_weekday
+    
+    # Days until Week 2 = Week 1 + 7
+    days_until_week2 = days_until_week1 + 7
         
-    # 3. Calculate Projected Balance (SKIP SUNDAYS)
-    projected_income = 0
-    # Iterate through upcoming days
-    for i in range(1, days_until + 1):
+    # 3. Calculate Projected Balance for WEEK 1 (SKIP SUNDAYS)
+    projected_income_week1 = 0
+    for i in range(1, days_until_week1 + 1):
         future_date = now + datetime.timedelta(days=i)
         if future_date.weekday() != 6: # Skip Sunday
-            projected_income += income
-            
-    estimated_total = balance + projected_income
+            projected_income_week1 += income
+    estimated_total_week1 = balance + projected_income_week1
+    
+    # 4. Calculate Projected Balance for WEEK 2 (SKIP SUNDAYS)
+    projected_income_week2 = 0
+    for i in range(1, days_until_week2 + 1):
+        future_date = now + datetime.timedelta(days=i)
+        if future_date.weekday() != 6: # Skip Sunday
+            projected_income_week2 += income
+    estimated_total_week2 = balance + projected_income_week2
+    
+    # Calculate target dates for display
+    target_date_week1 = now + datetime.timedelta(days=days_until_week1)
+    target_date_week2 = now + datetime.timedelta(days=days_until_week2)
+    
+    # Format: "Rabu, 22 Jan"
+    months_id = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
+    target_day_full_week1 = f"{target_day_name}, {target_date_week1.day} {months_id[target_date_week1.month]}"
+    target_day_full_week2 = f"{target_day_name}, {target_date_week2.day} {months_id[target_date_week2.month]}"
     
     return {
         'tier': tier,
-        'target_day': target_day_name,
-        'days_left': days_until,
-        'estimated_balance': estimated_total,
-        'daily_income': income
+        'daily_income': income,
+        # Week 1
+        'target_day': target_day_full_week1,
+        'days_left': days_until_week1,
+        'estimated_balance': estimated_total_week1,
+        # Week 2
+        'target_day_week2': target_day_full_week2,
+        'days_left_week2': days_until_week2,
+        'estimated_balance_week2': estimated_total_week2,
     }
 
 
