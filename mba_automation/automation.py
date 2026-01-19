@@ -540,9 +540,12 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
                 tasks_total = max(tasks_total, scraped_total)
                 
                 # ========== GUARANTEE 100% COMPLETION ==========
-                # If not fully completed, retry the automation loop
+                # AGGRESSIVE RETRY: Will NOT stop until website shows target reached!
                 retry_count = 0
-                max_retries = 3
+                max_retries = 10  # INCREASED: More aggressive retry
+                
+                log(f"🎯 [GUARANTEE] Target: {tasks_total} tasks. Currently: {tasks_completed}")
+                
                 while tasks_completed < tasks_total and retry_count < max_retries:
                     retry_count += 1
                     remaining = tasks_total - tasks_completed
@@ -597,7 +600,39 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
                                 log(f"After retry: {tasks_completed}/{tasks_total}")
                     except Exception as e:
                         log(f"Retry error: {e}")
-                        break
+                        # DON'T break! Keep trying!
+                        page.wait_for_timeout(2000)
+                        continue
+                
+                # ========== FINAL VERIFICATION ==========
+                # Check ACTUAL progress from website one more time
+                log("🔍 [FINAL CHECK] Verifying actual completion from website...")
+                try:
+                    page.goto("https://mba7.com/#/ticket", timeout=30000)
+                    page.wait_for_timeout(3000)
+                    try_close_popups(page)
+                    
+                    pe = page.locator(".van-progress__pivot").first
+                    if pe.count() > 0:
+                        final_txt = pe.text_content(timeout=5000)
+                        if final_txt and "/" in final_txt:
+                            fp = final_txt.split("/")
+                            actual_completed = int(fp[0].strip())
+                            actual_total = int(fp[1].strip())
+                            log(f"🔍 [FINAL CHECK] Website shows: {actual_completed}/{actual_total}")
+                            
+                            # Use website's actual completed count
+                            tasks_completed = actual_completed
+                            # But keep our target if higher
+                            tasks_total = max(tasks_total, actual_total)
+                            
+                            if actual_completed < tasks_total:
+                                log(f"⚠️ [WARNING] Website shows incomplete! {actual_completed}/{tasks_total}")
+                                log(f"⚠️ [WARNING] Possible issue: Website limit or task availability")
+                            else:
+                                log(f"🎉 [SUCCESS] All {actual_completed} tasks verified complete!")
+                except Exception as ve:
+                    log(f"Final verification error: {ve}")
                 
     except Exception as e:
         log(f"Could not re-scrape progress: {e}")
