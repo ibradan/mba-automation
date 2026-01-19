@@ -677,7 +677,7 @@
                                     <td>
                                         <!-- Progress Bar in Column -->
                                         <div class="period-visual" data-period-raw="{{ item.record.period }}"
-                                            data-amount="{{ item.record.amount or 0 }}">
+                                            data-profit="{{ item.record.profit or 0 }}">
                                             <div class="period-text">{{ item.record.period.split('~')[1].split(' ')[0]
                                                 if item.record.period and '~' in item.record.period else
                                                 item.record.period }}</div>
@@ -840,16 +840,16 @@
                 if (!raw) return;
                 const data = calculateProgress(raw);
                 const days = data.daysLeft;
-                const amount = parseFloat(v.dataset.amount) || 0;
+                const profit = parseFloat(v.dataset.profit) || 0;
 
-                if (days <= 2) { distribution[0]++; amounts[0] += amount; }
-                else if (days <= 7) { distribution[1]++; amounts[1] += amount; }
-                else if (days <= 14) { distribution[2]++; amounts[2] += amount; }
-                else if (days <= 21) { distribution[3]++; amounts[3] += amount; }
-                else { distribution[4]++; amounts[4] += amount; }
+                if (days <= 2) { distribution[0]++; amounts[0] += profit; }
+                else if (days <= 7) { distribution[1]++; amounts[1] += profit; }
+                else if (days <= 14) { distribution[2]++; amounts[2] += profit; }
+                else if (days <= 21) { distribution[3]++; amounts[3] += profit; }
+                else { distribution[4]++; amounts[4] += profit; }
             });
 
-            // Render distribution bars with counts and amounts
+            // Render distribution bars with counts and profits
             const maxCount = Math.max(...distribution, 1);
             const maxHeight = 60; // px
             distribution.forEach((count, i) => {
