@@ -1052,13 +1052,151 @@
             }
         }
 
-        async function refreshAllData() {
+        // Render records from cached data (fast!)
+        function renderRecordsTable(records) {
+            const container = document.getElementById('table-container');
+
+            let grandTotalAmount = 0;
+            let grandTotalProfit = 0;
+
+            // Build table HTML
+            let tableHtml = `
+                <div class="table-view">
+                    <div class="table-wrapper">
+                        <table class="records-table" id="dana-amal-table">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>Akun</th>
+                                    <th class="sortable" onclick="handleSort(2, 'hx')">Periode <span class="sort-icon">⇅</span></th>
+                                    <th>Produk</th>
+                                    <th class="sortable" onclick="handleSort(4, 'number')">Invest <span class="sort-icon">⇅</span></th>
+                                    <th>Rate</th>
+                                    <th class="sortable" onclick="handleSort(6, 'number')">Hari <span class="sort-icon">⇅</span></th>
+                                    <th class="sortable" onclick="handleSort(7, 'number')">Est. Laba <span class="sort-icon">⇅</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
+
+            records.forEach((item, idx) => {
+                const r = item.record;
+                const phone = item.phone_display || '';
+                const dueInfo = calculateProgress(r.period || "");
+                const isDue = dueInfo.daysLeft <= 2;
+
+                grandTotalAmount += r.amount || 0;
+                grandTotalProfit += r.profit || 0;
+
+                // Parse period for display
+                let periodStart = '-';
+                if (r.period && r.period.includes('~')) {
+                    const parts = r.period.split('~');
+                    periodStart = parts[1] ? parts[1].trim().split(' ')[0] : '-';
+                }
+
+                tableHtml += `
+                    <tr class="${isDue ? 'due-soon-row' : ''} clickable-row" 
+                        data-period="${r.period || ''}" 
+                        data-phone="${phone}"
+                        onclick="quickLogin('${phone}')" 
+                        title="Klik untuk login ke MBA7">
+                        <td>${idx + 1}</td>
+                        <td><span class="status-badge status-active">${phone.slice(-4)}</span></td>
+                        <td>
+                            <div class="period-text">${periodStart}</div>
+                            <div class="days-left-text" style="${dueInfo.colorClass === 'urgent' ? 'color:#ca8a04; font-weight:700;' : (dueInfo.colorClass === 'warning' ? 'color:#059669; font-weight:700;' : '')}">
+                                ${dueInfo.label}
+                            </div>
+                        </td>
+                        <td>${r.product || '-'}</td>
+                        <td class="amount-cell">Rp ${formatRupiah(r.amount || 0)}</td>
+                        <td class="rate-cell">${r.rate || 0}%</td>
+                        <td>${r.days || 0}</td>
+                        <td class="profit-cell">Rp ${formatRupiah(Math.round(r.profit || 0))}</td>
+                    </tr>`;
+            });
+
+            tableHtml += `
+                            </tbody>
+                            <tfoot>
+                                <tr class="summary-row">
+                                    <td colspan="4" style="text-align:right;">TOTAL</td>
+                                    <td class="amount-cell">Rp ${formatRupiah(grandTotalAmount)}</td>
+                                    <td colspan="2"></td>
+                                    <td class="profit-cell">Rp ${formatRupiah(Math.round(grandTotalProfit))}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>`;
+
+            container.innerHTML = tableHtml;
+
+            // Re-apply filters
+            applyFilters();
+
+            // Update distribution chart
+            updateDistributionChart(records);
+        }
+
+        function updateDistributionChart(records) {
+            const distribution = [0, 0, 0, 0, 0];
+            const amounts = [0, 0, 0, 0, 0];
+
+            records.forEach(item => {
+                const r = item.record;
+                const dueInfo = calculateProgress(r.period || "");
+                const days = dueInfo.daysLeft;
+                const profit = r.profit || 0;
+
+                if (days <= 2) { distribution[0]++; amounts[0] += profit; }
+                else if (days <= 7) { distribution[1]++; amounts[1] += profit; }
+                else if (days <= 14) { distribution[2]++; amounts[2] += profit; }
+                else if (days <= 21) { distribution[3]++; amounts[3] += profit; }
+                else { distribution[4]++; amounts[4] += profit; }
+            });
+
+            const maxCount = Math.max(...distribution, 1);
+            distribution.forEach((count, i) => {
+                const countEl = document.getElementById(`dist-count-${i}`);
+                const amountEl = document.getElementById(`dist-amount-${i}`);
+                const barEl = document.getElementById(`dist-bar-${i}`);
+                if (countEl) countEl.textContent = count;
+                if (amountEl) amountEl.textContent = 'Rp ' + formatRupiah(amounts[i]);
+                if (barEl) barEl.style.height = Math.max(4, (count / maxCount) * 60) + 'px';
+            });
+        }
+
+        async function refreshAllData(forceFresh = false) {
             const btn = document.getElementById('btn-refresh');
             const container = document.getElementById('table-container');
             const statusText = document.getElementById('status-text');
 
+            btn.disabled = true;
+
+            // First try: use cached data (instant!)
+            if (!forceFresh) {
+                try {
+                    const cacheRes = await fetch('/api/dana_amal_all');
+                    if (cacheRes.ok) {
+                        const cacheData = await cacheRes.json();
+                        if (cacheData.records && cacheData.records.length > 0) {
+                            renderRecordsTable(cacheData.records);
+                            statusText.textContent = `${cacheData.records.length} records (dari cache)`;
+                            btn.disabled = false;
+                            showToast(`✅ ${cacheData.records.length} records loaded dari cache`, 2000);
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    console.error('Cache fetch failed:', e);
+                }
+            }
+
+            // No cache or force fresh - scrape each account
             if (accounts.length === 0) {
                 alert('Tidak ada akun tersedia.');
+                btn.disabled = false;
                 return;
             }
 

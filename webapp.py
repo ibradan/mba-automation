@@ -1948,23 +1948,28 @@ def api_dana_amal(phone_disp):
         
         # Scrape using Playwright with retry logic
         records = []
-        max_retries = 3
+        max_retries = 2  # Reduced retries for speed
         last_error = ""
 
         for attempt in range(max_retries):
             try:
                 with sync_playwright() as p:
-                    # Launch logic
-                    browser = p.chromium.launch(headless=True, args=["--disable-gpu", "--no-sandbox"])
+                    # Launch logic - optimized args
+                    browser = p.chromium.launch(headless=True, args=[
+                        "--disable-gpu", 
+                        "--no-sandbox",
+                        "--disable-dev-shm-usage",
+                        "--no-first-run",
+                    ])
                     context = browser.new_context(viewport={"width": 390, "height": 844})
                     page = context.new_page()
+                    page.set_default_timeout(30000)  # 30s timeout
                     
                     try:
                         # Use the proper login function from automation module
-                        # Increased timeout to 45s for slower connections
-                        if mba_login(page, context, norm, pwd, timeout=45):
+                        if mba_login(page, context, norm, pwd, timeout=30):
                             # Now scrape dana amal
-                            records = scrape_dana_amal_records(page, timeout=30)
+                            records = scrape_dana_amal_records(page, timeout=20)
                             
                             if records:
                                 # Success! Save and break
@@ -1974,29 +1979,17 @@ def api_dana_amal(phone_disp):
                                 for a in acc_list:
                                     if normalize_phone(a.get('phone', '')) == norm:
                                         a['dana_amal_records'] = records
+                                        a['last_dana_amal_update_ts'] = datetime.datetime.now().isoformat()
                                         matched = True
-                                        logger.info(f"DANA AMAL: Matched account {norm} in accounts.json. Records updated.")
                                         break
                                 
                                 if matched:
-                                    # Add timestamp
-                                    now = datetime.datetime.now().isoformat()
-                                    for a in acc_list:
-                                        if normalize_phone(a.get('phone', '')) == norm:
-                                            a['last_dana_amal_update_ts'] = now
-                                            break
-                                            
-                                    if data_manager.write_accounts(acc_list):
-                                        logger.info(f"DANA AMAL: Successfully saved accounts.json with new records for {norm}")
-                                    else:
-                                        logger.error(f"DANA AMAL: FAILED to save accounts.json for {norm}")
-                                else:
-                                    logger.warning(f"DANA AMAL: Could not find account {norm} in accounts.json to save records.")
+                                    data_manager.write_accounts(acc_list)
+                                    logger.info(f"DANA AMAL: Saved records for {norm}")
                                 
                                 break  # Exit retry loop on success
                             else:
                                 last_error = "No records found (empty)"
-                                logger.info(f"DANA AMAL: No records found for {norm} in attempt {attempt+1}")
                         else:
                             last_error = "Login failed"
                     except Exception as inner_e:
@@ -2004,13 +1997,11 @@ def api_dana_amal(phone_disp):
                     finally:
                         browser.close()
                 
-                # If we got here and have records, we are done
                 if records:
                     break
                     
-                # Otherwise wait before retry
                 import time
-                time.sleep(2)
+                time.sleep(1)
                 
             except Exception as e:
                 last_error = str(e)
@@ -2023,6 +2014,42 @@ def api_dana_amal(phone_disp):
         
     except Exception as e:
         logger.exception("Dana Amal API error: %s", e)
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/dana_amal_all")
+@login_required
+def api_dana_amal_all():
+    """Fast API endpoint to return all cached dana amal records without scraping."""
+    try:
+        accounts = data_manager.load_accounts()
+        current_user = session.get('user_id')
+        
+        all_records = []
+        for acc in accounts:
+            if acc.get('owner', 'admin') != current_user:
+                continue
+            
+            phone = acc.get("phone", "")
+            display = phone_display(phone) if phone else ""
+            records = acc.get('dana_amal_records', [])
+            last_update = acc.get('last_dana_amal_update_ts', '')
+            
+            for record in records:
+                all_records.append({
+                    'phone_display': display,
+                    'record': record,
+                    'last_update': last_update
+                })
+        
+        return jsonify({
+            "records": all_records,
+            "total": len(all_records),
+            "status": "cached"
+        })
+        
+    except Exception as e:
+        logger.exception("Dana Amal All API error: %s", e)
         return jsonify({"error": str(e)}), 500
 
 
