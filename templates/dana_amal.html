@@ -567,14 +567,14 @@
                             </svg>
                             Refresh (Cache)
                         </button>
-                        <button type="button" class="btn-refresh" id="btn-scrape" onclick="refreshAllData(true)"
+                        <button type="button" class="btn-refresh" id="btn-scrape" onclick="scrapeBackground()"
                             style="background: #f59e0b;">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2">
                                 <path
                                     d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" />
                             </svg>
-                            Scrape Fresh
+                            Scrape Background
                         </button>
                     </div>
                 </div>
@@ -1176,6 +1176,52 @@
                 if (amountEl) amountEl.textContent = 'Rp ' + formatRupiah(amounts[i]);
                 if (barEl) barEl.style.height = Math.max(4, (count / maxCount) * 60) + 'px';
             });
+        }
+
+        // Background scraping - queues jobs and monitors progress
+        async function scrapeBackground() {
+            const btn = document.getElementById('btn-scrape');
+            const btnRefresh = document.getElementById('btn-refresh');
+            const statusText = document.getElementById('status-text');
+            const container = document.getElementById('table-container');
+
+            btn.disabled = true;
+            if (btnRefresh) btnRefresh.disabled = true;
+            statusText.textContent = '⏳ Queueing scrape jobs...';
+
+            try {
+                const res = await fetch('/api/dana_amal_scrape', { method: 'POST' });
+                const data = await res.json();
+
+                if (data.ok) {
+                    showToast(`✅ ${data.count} jobs queued! Progress lihat di Dashboard`, 3000);
+                    statusText.textContent = `✅ ${data.count} jobs queued - Jalan di background`;
+
+                    // Show log area with message
+                    container.innerHTML = `
+                        <div style="background: #f0fdf4; padding: 20px; border-radius: 12px; border: 1px solid #bbf7d0;">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                                <div class="spinner" style="width: 20px; height: 20px; border-width: 2px;"></div>
+                                <span style="font-weight: 600; color: #15803d;">Scraping berjalan di background...</span>
+                            </div>
+                            <p style="color: #64748b; margin: 0; font-size: 0.875rem;">
+                                📊 ${data.count} akun di-queue untuk sync + scrape dana amal<br>
+                                🔄 Klik "Refresh (Cache)" setelah selesai untuk melihat data<br>
+                                📋 Progress dapat dilihat di <a href="/" style="color: #3b82f6;">Dashboard</a> (log sync)
+                            </p>
+                        </div>
+                    `;
+                } else {
+                    showToast(`❌ Error: ${data.msg}`, 3000);
+                    statusText.textContent = `❌ Error: ${data.msg}`;
+                }
+            } catch (e) {
+                showToast(`❌ Network error: ${e.message}`, 3000);
+                statusText.textContent = `❌ Error: ${e.message}`;
+            }
+
+            btn.disabled = false;
+            if (btnRefresh) btnRefresh.disabled = false;
         }
 
         async function refreshAllData(forceFresh = false) {

@@ -2054,6 +2054,66 @@ def api_dana_amal_all():
 
 
 
+@app.route("/api/dana_amal_scrape", methods=["POST"])
+@login_required
+def api_dana_amal_scrape():
+    """Queue dana amal scraping as a background job for all accounts."""
+    try:
+        accounts = data_manager.load_accounts()
+        current_user = session.get('user_id')
+        
+        queued = 0
+        for acc in accounts:
+            if acc.get('owner', 'admin') != current_user:
+                continue
+            
+            phone = acc.get('phone', '')
+            pwd = acc.get('password', '')
+            if not phone or not pwd:
+                continue
+            
+            phone_display = phone_display_func(phone) if phone else phone
+            
+            # Create a sync job that will also scrape dana amal
+            cmd = [
+                sys.executable, "-m", "mba_automation.cli",
+                "--phone", phone_display,
+                "--password", pwd,
+                "--sync"  # Sync mode includes dana amal scraping
+            ]
+            
+            # Add headless
+            cmd.append("--headless")
+            
+            log_dir = os.path.join(os.path.dirname(__file__), "logs")
+            os.makedirs(log_dir, exist_ok=True)
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            log_file = os.path.join(log_dir, f"dana_amal_{phone_display}_{timestamp}.log")
+            
+            JOB_QUEUE.put({
+                'cmd': cmd,
+                'log_file': log_file,
+                'phone_display': phone_display,
+                'is_sync': True
+            })
+            queued += 1
+        
+        logger.info(f"DANA AMAL: Queued {queued} scraping jobs")
+        return jsonify({"ok": True, "msg": f"Queued {queued} jobs", "count": queued})
+        
+    except Exception as e:
+        logger.exception("Dana Amal queue error: %s", e)
+        return jsonify({"ok": False, "msg": str(e)}), 500
+
+
+# Alias for phone_display function
+def phone_display_func(phone):
+    """Convert phone to display format."""
+    p = str(phone)
+    if p.startswith('62'):
+        return p[2:]
+    return p
+
 
 @app.route("/estimation")
 
