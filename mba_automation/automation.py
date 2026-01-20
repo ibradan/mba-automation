@@ -72,6 +72,7 @@ def login(page: Page, context, phone: str, password: str, timeout: int = 30) -> 
             log(f"Restoring session for {phone}...")
             try:
                 page.goto("https://mba7.com/#/mine", wait_until="domcontentloaded", timeout=timeout*1000)
+                page.wait_for_timeout(3000)  # Give page time to load session
                 try_close_popups(page)
                 if check_is_logged_in():
                     log("Session restored successfully.")
@@ -82,23 +83,71 @@ def login(page: Page, context, phone: str, password: str, timeout: int = 30) -> 
 
         # 2. PERFORM LOGIN
         log(f"Logging in as {phone}...")
-        page.goto("https://mba7.com/#/login", wait_until="domcontentloaded", timeout=timeout*1000)
-        page.wait_for_timeout(1000)
-        try_close_popups(page)
+        
+        # Retry logic for login page navigation
+        for attempt in range(3):
+            try:
+                page.goto("https://mba7.com/#/login", wait_until="domcontentloaded", timeout=timeout*1000)
+                page.wait_for_timeout(3000)  # Increased wait for page to fully render
+                try_close_popups(page)
+                
+                # Wait explicitly for phone field to be ready
+                phone_field = page.get_by_role("textbox", name="Nomor Telepon")
+                phone_field.wait_for(state="visible", timeout=15000)
+                break
+            except Exception as e:
+                log(f"Login page load attempt {attempt+1} failed: {e}")
+                if attempt == 2:
+                    raise
+                page.wait_for_timeout(2000)
 
-        # Fill credentials
-        page.get_by_role("textbox", name="Nomor Telepon").fill(phone_for_login)
-        page.get_by_role("textbox", name="Kata Sandi").fill(password)
+        # Fill credentials with explicit waits
+        try:
+            phone_field = page.get_by_role("textbox", name="Nomor Telepon")
+            phone_field.wait_for(state="visible", timeout=10000)
+            phone_field.click()
+            phone_field.fill(phone_for_login)
+            log(f"  Filled phone: {phone_for_login}")
+        except Exception as e:
+            log(f"  Phone field fill failed: {e}")
+            # Fallback: try input[type='tel'] or first input
+            try:
+                inputs = page.locator("input").all()
+                if len(inputs) >= 1:
+                    inputs[0].fill(phone_for_login)
+                    log("  Filled phone via fallback selector")
+            except:
+                raise Exception("Could not find phone field")
+        
+        page.wait_for_timeout(500)
+        
+        try:
+            pwd_field = page.get_by_role("textbox", name="Kata Sandi")
+            pwd_field.wait_for(state="visible", timeout=10000)
+            pwd_field.click()
+            pwd_field.fill(password)
+            log(f"  Filled password")
+        except Exception as e:
+            log(f"  Password field fill failed: {e}")
+            # Fallback: try input[type='password']
+            try:
+                pwd_input = page.locator("input[type='password']").first
+                pwd_input.fill(password)
+                log("  Filled password via fallback selector")
+            except:
+                raise Exception("Could not find password field")
+        
+        page.wait_for_timeout(500)
         
         # Click Login
         login_btn = page.get_by_role("button", name="Masuk").first
         if login_btn.count() > 0:
             login_btn.click()
+            log("  Clicked login button")
         else:
             smart_click(page, "button", role="button", name="Masuk")
             
-        
-        page.wait_for_timeout(3000) # Wait for network/transition
+        page.wait_for_timeout(5000)  # Increased wait for network/transition
 
         # Handle post-login popups/confirmations
         smart_click(page, "button", role="button", name="Mengonfirmasi", timeout=3000)
@@ -115,7 +164,6 @@ def login(page: Page, context, phone: str, password: str, timeout: int = 30) -> 
         
         # Fail
         log(f"Login verification failed. URL: {page.url}")
-        # Capture screenshot for debug if possible (removed for production safety/size)
         return False
 
     except Exception as e:
@@ -199,6 +247,81 @@ def perform_checkin(page: Page) -> Tuple[float, list]:
         log(f"  Error in perform_checkin: {e}")
         
     return points, calendar
+
+
+def wait_for_stable_and_confirm_order(page: Page, max_wait: int = 30) -> bool:
+    """
+    Waits for the server to become stable (image appears) and handles 'konfirmasi order' if needed.
+    Returns True if stable, False if timeout.
+    """
+    log("  Waiting for server to stabilize...")
+    
+    # Wait for image OR any product image element to appear (indicates stable)
+    image_selectors = [
+        "img[src*='product']",
+        "img[src*='hotel']",
+        "img[src*='travel']",
+        ".van-image img",
+        ".product-image img",
+        "img.van-image__img",
+    ]
+    
+    start_time = time.time()
+    stable = False
+    
+    while time.time() - start_time < max_wait:
+        # Check for konfirmasi order button and click it
+        try:
+            konfirm_btn = page.get_by_role("button", name="Konfirmasi")
+            if konfirm_btn.count() > 0 and konfirm_btn.first.is_visible(timeout=500):
+                log("  🔄 Found 'Konfirmasi' button, clicking...")
+                konfirm_btn.first.click()
+                page.wait_for_timeout(2000)
+                continue
+        except:
+            pass
+        
+        # Also check "Mengonfirmasi" button
+        try:
+            mengonfirm_btn = page.get_by_role("button", name="Mengonfirmasi")
+            if mengonfirm_btn.count() > 0 and mengonfirm_btn.first.is_visible(timeout=500):
+                log("  🔄 Found 'Mengonfirmasi' button, clicking...")
+                mengonfirm_btn.first.click()
+                page.wait_for_timeout(2000)
+                continue
+        except:
+            pass
+        
+        # Check for image (stable indicator)
+        for selector in image_selectors:
+            try:
+                img = page.locator(selector).first
+                if img.count() > 0 and img.is_visible(timeout=500):
+                    log("  ✅ Server stable (image visible)")
+                    stable = True
+                    break
+            except:
+                continue
+        
+        if stable:
+            break
+            
+        # Also check for Kirim button as alternative stability indicator
+        try:
+            kirim = page.get_by_role("button", name="Kirim")
+            if kirim.count() > 0 and kirim.is_visible(timeout=500):
+                log("  ✅ Server stable (Kirim button visible)")
+                stable = True
+                break
+        except:
+            pass
+            
+        page.wait_for_timeout(1000)
+    
+    if not stable:
+        log(f"  ⚠️ Server not stable after {max_wait}s")
+    
+    return stable
 
 
 def perform_tasks(page: Page, context, phone: str, password: str, iterations: int, review_text: Optional[str] = None, progress_callback=None) -> Tuple[int, int]:
@@ -395,102 +518,152 @@ def perform_tasks(page: Page, context, phone: str, password: str, iterations: in
                     if not resurrect_session():
                         break
 
-                log(f"Loop ke-{i+2} (Total progress: {tasks_completed + 1}/{tasks_total})")
+                log(f"Loop ke-{i+2} (Total progress: {tasks_completed}/{tasks_total})")
                 
-                # OPTIMIZATION: Scroll down slightly to trigger lazy loading/visibility
-                try: page.evaluate("window.scrollBy(0, 200)")
-                except: pass
-                
-                page.wait_for_timeout(300) # Short delay
+                page.wait_for_timeout(500)  # Slightly longer delay for stability
 
                 try:
-                    # Robust clicking: find element, ensuring it's enabled
-                    el = None
-                    selectors_to_try = [
-                        ("get_by_text", "Sedang Berlangsung", 1), 
-                        ("get_by_text", "Sedang Berlangsung", 0), 
-                        ("locator", ".task-item.active", 0),
-                        # REMOVED dangerous "Kirim" check here to prevent clicking stuck buttons
-                        ("locator", "[class*='progress']", 0),
+                    # APPROACH 1: Click "Sedang Berlangsung" then "Kirim"
+                    clicked_task = False
+                    
+                    # Try multiple ways to click task
+                    task_selectors = [
+                        ("get_by_text", "Sedang Berlangsung", 1),
+                        ("get_by_text", "Sedang Berlangsung", 0),
+                        ("locator", ".van-cell:has-text('Sedang Berlangsung')", 0),
+                        ("locator", "[class*='task-item']", 0),
                     ]
                     
-                    found_selector = False
-                    for sel_type, sel_val, idx in selectors_to_try:
+                    for sel_type, sel_val, idx in task_selectors:
                         try:
                             if sel_type == "get_by_text":
                                 el = page.get_by_text(sel_val).nth(idx)
                             else:
                                 el = page.locator(sel_val).nth(idx)
                             
-                            # Reduced visibility check timeout for speed
-                            if el.is_visible(timeout=500):
-                                found_selector = True
+                            if el.is_visible(timeout=1000):
+                                el.click(force=True)
+                                clicked_task = True
+                                page.wait_for_timeout(800)
                                 break
-                            el = None
                         except:
-                            el = None
+                            continue
                     
-                    if el and found_selector:
-                        # If we found "Kirim" directly, skip clicking the task item
-                        is_kirim_btn = "Kirim" in str(sel_val)
+                    # If couldn't click task, try direct Kirim click
+                    if not clicked_task:
+                        log("  Could not find task item, trying direct Kirim button...")
+                    
+                    # NEW: Wait for server to stabilize first
+                    if not wait_for_stable_and_confirm_order(page, max_wait=15):
+                        log("  Server not stable, trying to continue anyway...")
+                    
+                    # APPROACH 2: Find and click Kirim button
+                    k_btn = page.get_by_role("button", name="Kirim")
+                    
+                    # Wait up to 5 seconds for Kirim to appear (increased)
+                    kirim_visible = False
+                    for _ in range(10):
+                        if k_btn.is_visible(timeout=500):
+                            kirim_visible = True
+                            break
                         
-                        if not is_kirim_btn:
-                            # Force click to bypass overlay checks
-                            el.click(force=True)
+                        # Check for any confirmation dialogs while waiting
+                        try:
+                            konfirm = page.get_by_role("button", name="Konfirmasi")
+                            if konfirm.count() > 0 and konfirm.first.is_visible(timeout=200):
+                                konfirm.first.click()
+                                log("  Clicked Konfirmasi while waiting for Kirim")
+                                page.wait_for_timeout(1000)
+                        except:
+                            pass
                         
-                        # Wait for Kirim button
-                        # Try finding it quickly first
-                        k_btn = page.get_by_role("button", name="Kirim")
+                        page.wait_for_timeout(500)
+                    
+                    if kirim_visible:
+                        k_btn.click(force=True)
+                        loop_count += 1
+                        tasks_completed += 1
+                        consecutive_failures = 0
                         
-                        # If not immediately visible, wait briefly
-                        if not k_btn.is_visible(timeout=500):
-                             page.wait_for_timeout(500)
-                             
-                        if k_btn.is_visible(timeout=3000):
-                            k_btn.click(force=True)
-                            loop_count += 1
-                            tasks_completed += 1  # ACCUMULATE!
-                            consecutive_failures = 0 # Reset failure count
-                            
-                            # CALLBACK HERE for real-time update
-                            if progress_callback:
-                                try: progress_callback(tasks_completed, tasks_total)
-                                except: pass
-                            
-                            log(f"✓ Task {tasks_completed}/{tasks_total} completed")
-
-                        else:
-                             log("Tombol Kirim tidak muncul (mungkin delay)")
-                             if "login" in page.url:
-                                 resurrect_session()
+                        if progress_callback:
+                            try: progress_callback(tasks_completed, tasks_total)
+                            except: pass
+                        
+                        log(f"✓ Task {tasks_completed}/{tasks_total} completed")
+                        
+                        # Click confirm if appears
+                        try:
+                            page.get_by_role("button", name="Mengonfirmasi").click(timeout=2000)
+                        except:
+                            pass
                     else:
+                        log("  Tombol Kirim tidak muncul")
+                        consecutive_failures += 1
+                        
+                        # Check if login lost
                         if "login" in page.url:
-                            resurrect_session()
-                        else:
-                            log("Elemen utama hidden/hilang (Selector check failed)")
-                            consecutive_failures += 1
+                            if not resurrect_session():
+                                break
+                        
+                        # APPROACH 3: Try JS injection to find and click
+                        try:
+                            result = page.evaluate("""
+                                () => {
+                                    const btns = document.querySelectorAll('button');
+                                    for (let btn of btns) {
+                                        if (btn.textContent.includes('Kirim') && getComputedStyle(btn).display !== 'none') {
+                                            btn.click();
+                                            return 'clicked';
+                                        }
+                                    }
+                                    return 'not_found';
+                                }
+                            """)
+                            if result == 'clicked':
+                                log("  JS injection click successful!")
+                                loop_count += 1
+                                tasks_completed += 1
+                                consecutive_failures = 0
+                                if progress_callback:
+                                    try: progress_callback(tasks_completed, tasks_total)
+                                    except: pass
+                        except Exception as js_err:
+                            log(f"  JS injection failed: {js_err}")
                         
                 except PlaywrightTimeoutError:
+                    log("Elemen utama nggak ketemu (Timeout).")
+                    consecutive_failures += 1
                     if "login" in page.url:
                         resurrect_session()
-                    else:
-                        log("Elemen utama nggak ketemu (Timeout).")
-                        consecutive_failures += 1
+                except Exception as e:
+                    log(f"Loop error: {e}")
+                    consecutive_failures += 1
                 
-                # Self-healing: if too many consecutive failures, try page refresh first
-                if consecutive_failures >= 3:
-                    log("Mencoba refresh halaman...")
+                # Self-healing: if 4+ consecutive failures, try navigating back to /grab
+                if consecutive_failures >= 4:
+                    log("⚠️ Too many failures, navigating back to /grab...")
                     try:
-                        page.reload(timeout=30000)
+                        page.goto("https://mba7.com/#/grab", timeout=30000)
                         page.wait_for_timeout(3000)
                         try_close_popups(page)
-                        consecutive_failures = 0  # Reset after refresh
-                    except:
-                        log("Refresh gagal. Breaking loop untuk restart.")
-                        break
+                        
+                        # Click Mendapatkan again to restart flow
+                        btn = page.get_by_role("button", name="Mendapatkan").first
+                        if btn.count() > 0 and btn.is_visible(timeout=3000):
+                            btn.click()
+                            page.wait_for_timeout(2000)
+                            log("  Re-clicked Mendapatkan, continuing...")
+                        
+                        consecutive_failures = 0
+                    except Exception as nav_err:
+                        log(f"  Navigation recovery failed: {nav_err}")
+                        if consecutive_failures >= 6:
+                            log("  Breaking loop after 6 consecutive failures")
+                            break
 
+                # Try to click Mengonfirmasi at end of each loop
                 try:
-                    page.get_by_role("button", name="Mengonfirmasi").click(timeout=1500)
+                    page.get_by_role("button", name="Mengonfirmasi").click(timeout=1000)
                 except:
                     pass
         else:
@@ -713,7 +886,7 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
                 # Navigate to grab page where progress is shown
                 log("  Navigating to /grab page...")
                 page.goto("https://mba7.com/#/grab", timeout=timeout*1000)
-                page.wait_for_timeout(4000)
+                page.wait_for_timeout(5000)  # Increased wait
                 from .scraper import try_close_popups
                 try_close_popups(page)
                 page.wait_for_timeout(2000)
@@ -721,29 +894,45 @@ def run(playwright: Playwright, phone: str, password: str, headless: bool = Fals
                 # Log current URL to verify navigation
                 log(f"  Current URL: {page.url}")
                 
-                # Look for ALL progress elements and log them
-                progress_elements = page.locator(".van-progress__pivot")
-                count = progress_elements.count()
-                log(f"  Found {count} progress elements")
-                
-                # Try each element to find one with X/Y format
-                for i in range(count):
-                    try:
-                        elem = progress_elements.nth(i)
-                        text = elem.text_content(timeout=2000)
-                        log(f"    Element {i}: '{text}'")
-                        if text and "/" in text:
-                            parts = text.split("/")
-                            tasks_completed = int(parts[0].strip())
-                            # CRITICAL FIX: Do NOT downgrade tasks_total! Keep the higher value
-                            scraped_total = int(parts[1].strip())
-                            tasks_total = max(tasks_total, scraped_total)
-                            log(f"  ✓ Current progress detected: {tasks_completed}/{tasks_total}")
-                            break
-                    except Exception as e:
-                        log(f"    Element {i}: error - {e}")
+                # Retry logic for finding progress
+                for attempt in range(3):
+                    # Look for ALL progress elements and log them
+                    progress_elements = page.locator(".van-progress__pivot")
+                    count = progress_elements.count()
+                    log(f"  Found {count} progress elements (attempt {attempt+1})")
+                    
+                    progress_found = False
+                    # Try each element to find one with X/Y format
+                    for i in range(count):
+                        try:
+                            elem = progress_elements.nth(i)
+                            # Wait for element to be visible
+                            elem.wait_for(state="visible", timeout=3000)
+                            text = elem.text_content(timeout=3000)
+                            log(f"    Element {i}: '{text}'")
+                            if text and "/" in text:
+                                parts = text.split("/")
+                                tasks_completed = int(parts[0].strip())
+                                scraped_total = int(parts[1].strip())
+                                tasks_total = max(tasks_total, scraped_total)
+                                log(f"  ✓ Current progress detected: {tasks_completed}/{tasks_total}")
+                                progress_found = True
+                                break
+                        except Exception as e:
+                            log(f"    Element {i}: error - {e}")
+                    
+                    if progress_found:
+                        break
+                    
+                    # If not found, try refreshing the page
+                    if attempt < 2:
+                        log("  Progress not found, refreshing page...")
+                        page.reload(timeout=30000)
+                        page.wait_for_timeout(3000)
+                        try_close_popups(page)
                 else:
-                    log("  ✗ No valid progress element found")
+                    log("  ✗ No valid progress element found after retries")
+                    
             except Exception as e:
                 log(f"  ✗ Could not read progress during sync: {e}")
 
