@@ -566,6 +566,12 @@
                         Ambil Data
                     </button>
                 </div>
+                <!-- Mini Log Area -->
+                <div id="scrape-log-container" style="display: none; margin-top: 12px;">
+                    <div id="scrape-log"
+                        style="max-height: 120px; overflow-y: auto; background: #f8fafc; padding: 10px 14px; border-radius: 8px; font-size: 0.8rem; border: 1px solid #e2e8f0; font-family: monospace;">
+                    </div>
+                </div>
             </div>
 
             <!-- Distribution Chart -->
@@ -1166,46 +1172,76 @@
             });
         }
 
-        // Background scraping - queues jobs and monitors progress
+        // Scraping - calls API for each account sequentially with progress in mini log
         async function scrapeBackground() {
             const btn = document.getElementById('btn-ambil');
             const statusText = document.getElementById('status-text');
-            const container = document.getElementById('table-container');
+            const logContainer = document.getElementById('scrape-log-container');
+            const logArea = document.getElementById('scrape-log');
 
-            btn.disabled = true;
-            statusText.textContent = '⏳ Mengambil data...';
-
-            try {
-                const res = await fetch('/api/dana_amal_scrape', { method: 'POST' });
-                const data = await res.json();
-
-                if (data.ok) {
-                    showToast(`✅ ${data.count} jobs queued! Progress lihat di Dashboard`, 3000);
-                    statusText.textContent = `✅ ${data.count} jobs queued - Jalan di background`;
-
-                    // Show log area with message
-                    container.innerHTML = `
-                        <div style="background: #f0fdf4; padding: 20px; border-radius: 12px; border: 1px solid #bbf7d0;">
-                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                                <div class="spinner" style="width: 20px; height: 20px; border-width: 2px;"></div>
-                                <span style="font-weight: 600; color: #15803d;">Scraping berjalan di background...</span>
-                            </div>
-                            <p style="color: #64748b; margin: 0; font-size: 0.875rem;">
-                                📊 ${data.count} akun di-queue untuk sync + scrape dana amal<br>
-                                🔄 Refresh halaman setelah selesai untuk melihat data terbaru<br>
-                                📋 Progress dapat dilihat di <a href="/" style="color: #3b82f6;">Dashboard</a> (log sync)
-                            </p>
-                        </div>
-                    `;
-                } else {
-                    showToast(`❌ Error: ${data.msg}`, 3000);
-                    statusText.textContent = `❌ Error: ${data.msg}`;
-                }
-            } catch (e) {
-                showToast(`❌ Network error: ${e.message}`, 3000);
-                statusText.textContent = `❌ Error: ${e.message}`;
+            if (accounts.length === 0) {
+                alert('Tidak ada akun tersedia.');
+                return;
             }
 
+            btn.disabled = true;
+            logContainer.style.display = 'block';
+            logArea.innerHTML = '';
+
+            const timeStart = new Date().toLocaleTimeString('id-ID');
+            logArea.innerHTML = `<div style="color:#3b82f6;">🚀 [${timeStart}] Mulai scraping ${accounts.length} akun...</div>`;
+            statusText.textContent = `⏳ Scraping 0/${accounts.length}...`;
+
+            let success = 0;
+            let failed = 0;
+            let totalRecords = 0;
+
+            for (let i = 0; i < accounts.length; i++) {
+                const phone = accounts[i].phone_display;
+                const timeStr = new Date().toLocaleTimeString('id-ID');
+
+                logArea.innerHTML += `<div style="color:#64748b;">⏳ [${timeStr}] Akun ${i + 1}/${accounts.length}: +62 ${phone}...</div>`;
+                logArea.scrollTop = logArea.scrollHeight;
+                statusText.textContent = `⏳ Scraping ${i + 1}/${accounts.length}...`;
+
+                try {
+                    const res = await fetch(`/api/dana_amal/${phone}`, {
+                        method: 'GET',
+                        signal: AbortSignal.timeout(120000) // 2 minute timeout per account
+                    });
+
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.records && data.records.length > 0) {
+                            success++;
+                            totalRecords += data.records.length;
+                            logArea.innerHTML += `<div style="color:#15803d;">✅ [${timeStr}] +62 ${phone}: ${data.records.length} records</div>`;
+                        } else {
+                            logArea.innerHTML += `<div style="color:#f59e0b;">⚠️ [${timeStr}] +62 ${phone}: 0 records</div>`;
+                        }
+                    } else {
+                        failed++;
+                        logArea.innerHTML += `<div style="color:#dc2626;">❌ [${timeStr}] +62 ${phone}: Error ${res.status}</div>`;
+                    }
+                } catch (e) {
+                    failed++;
+                    const errMsg = e.name === 'TimeoutError' ? 'Timeout' : e.message;
+                    logArea.innerHTML += `<div style="color:#dc2626;">❌ [${timeStr}] +62 ${phone}: ${errMsg}</div>`;
+                }
+
+                logArea.scrollTop = logArea.scrollHeight;
+
+                // Small delay between accounts
+                if (i < accounts.length - 1) {
+                    await new Promise(r => setTimeout(r, 500));
+                }
+            }
+
+            const timeEnd = new Date().toLocaleTimeString('id-ID');
+            logArea.innerHTML += `<div style="color:#059669; font-weight:600; margin-top:8px;">🎉 [${timeEnd}] Selesai! ${success} sukses, ${failed} gagal, ${totalRecords} total records</div>`;
+            logArea.innerHTML += `<div style="color:#3b82f6;">🔄 Refresh halaman untuk lihat data terbaru</div>`;
+
+            statusText.textContent = `✅ Selesai: ${totalRecords} records`;
             btn.disabled = false;
         }
 
