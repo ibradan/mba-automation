@@ -762,6 +762,11 @@
                 // Revert to ceil to match "Hari Lagi" logic
                 const daysLeftCeil = Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
 
+                // Extract the time when it can be collected (HH:MM format)
+                const endHours = endDate.getHours().toString().padStart(2, '0');
+                const endMinutes = endDate.getMinutes().toString().padStart(2, '0');
+                const timeLabel = `${endHours}:${endMinutes}`;
+
                 // Standardize visual progress based on 30 days max
                 // Closer to 0 days = Full Bar
                 // > 30 days = Empty Bar
@@ -774,19 +779,19 @@
                     pct = Math.max(0, Math.min(100, (1 - (daysLeftCeil / standardMaxDays)) * 100));
                 }
 
-                let label = `H-${daysLeftCeil}`;
+                let label = `H-${daysLeftCeil} 🕐${timeLabel}`;
                 let colorClass = 'normal'; // default blue/green
 
                 if (daysLeftCeil < 0) {
-                    label = "SELESAI";
+                    label = "SELESAI ✅";
                     pct = 100;
                     colorClass = 'finished';
                 } else if (daysLeftCeil == 0) {
-                    label = "H-0 💰";
+                    label = `H-0 💰 ${timeLabel}`;
                     colorClass = 'urgent';
                     pct = 100;
                 } else if (daysLeftCeil <= 2) {
-                    label = `H-${daysLeftCeil}`;
+                    label = `H-${daysLeftCeil} 🕐${timeLabel}`;
                     colorClass = 'warning';
                 }
 
