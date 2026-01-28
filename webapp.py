@@ -1664,8 +1664,14 @@ def history(phone, metric):
                 date_formatted = f"{dt.day} {month_name} {dt.year}"
                 
                 if metric == 'pendapatan':
-                    # Value is already NET from scraper/storage
-                    final_val = float(final_val or 0)
+                    # Legacy Data Heuristic for History:
+                    # Before 2026-01-28, stored data is Gross -> Apply 10% Tax
+                    # From 2026-01-28, stored data is Net -> Display Raw
+                    cutoff_date = datetime.datetime(2026, 1, 28)
+                    if dt < cutoff_date:
+                        final_val = float(final_val or 0) * 0.9
+                    else:
+                        final_val = float(final_val or 0)
                 
                 history_items.append({
                     'date': date_str,
