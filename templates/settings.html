@@ -205,6 +205,110 @@
             padding: 4px 12px;
             border-radius: 20px;
         }
+
+        /* System Stats Styles */
+        .system-stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .stat-item {
+            background: #f8fafc;
+            border-radius: 10px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .stat-item.uptime-item {
+            grid-column: span 2;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .stat-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stat-icon.cpu {
+            background: #dbeafe;
+            color: #3b82f6;
+        }
+
+        .stat-icon.ram {
+            background: #dcfce7;
+            color: #22c55e;
+        }
+
+        .stat-icon.temp {
+            background: #fee2e2;
+            color: #ef4444;
+        }
+
+        .stat-icon.uptime {
+            background: #f3e8ff;
+            color: #a855f7;
+        }
+
+        .stat-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .uptime-item .stat-info {
+            flex-direction: row;
+            gap: 8px;
+            align-items: baseline;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: var(--text-sub);
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .stat-bar {
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .stat-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s ease, background 0.3s;
+        }
+
+        .stat-bar-fill.cpu-bar {
+            background: linear-gradient(90deg, #3b82f6, #60a5fa);
+        }
+
+        .stat-bar-fill.ram-bar {
+            background: linear-gradient(90deg, #22c55e, #4ade80);
+        }
+
+        .stat-bar-fill.temp-bar {
+            background: linear-gradient(90deg, #22c55e, #eab308, #ef4444);
+        }
     </style>
 </head>
 
@@ -414,6 +518,104 @@
                     Install ke Home Screen
                 </button>
             </div>
+
+            <!-- System Health Monitor -->
+            <div class="settings-card">
+                <h3>
+                    <div class="card-icon" style="background: #fef3c7; color: #f59e0b;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                            <line x1="8" y1="21" x2="16" y2="21"></line>
+                            <line x1="12" y1="17" x2="12" y2="21"></line>
+                        </svg>
+                    </div>
+                    Kesehatan Server
+                </h3>
+
+                <div class="system-stats-grid">
+                    <!-- CPU -->
+                    <div class="stat-item">
+                        <div class="stat-icon cpu">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+                                <rect x="9" y="9" width="6" height="6"></rect>
+                                <line x1="9" y1="1" x2="9" y2="4"></line>
+                                <line x1="15" y1="1" x2="15" y2="4"></line>
+                                <line x1="9" y1="20" x2="9" y2="23"></line>
+                                <line x1="15" y1="20" x2="15" y2="23"></line>
+                                <line x1="20" y1="9" x2="23" y2="9"></line>
+                                <line x1="20" y1="14" x2="23" y2="14"></line>
+                                <line x1="1" y1="9" x2="4" y2="9"></line>
+                                <line x1="1" y1="14" x2="4" y2="14"></line>
+                            </svg>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-label">CPU</span>
+                            <span class="stat-value" id="stat-cpu">--%</span>
+                        </div>
+                        <div class="stat-bar">
+                            <div class="stat-bar-fill cpu-bar" id="cpu-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- RAM -->
+                    <div class="stat-item">
+                        <div class="stat-icon ram">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M6 19v-14a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v14"></path>
+                                <path d="M6 19h12"></path>
+                                <line x1="12" y1="11" x2="12" y2="14"></line>
+                            </svg>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-label">RAM</span>
+                            <span class="stat-value" id="stat-ram">-- MB</span>
+                        </div>
+                        <div class="stat-bar">
+                            <div class="stat-bar-fill ram-bar" id="ram-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Temperature -->
+                    <div class="stat-item">
+                        <div class="stat-icon temp">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"></path>
+                            </svg>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-label">Suhu</span>
+                            <span class="stat-value" id="stat-temp">--°C</span>
+                        </div>
+                        <div class="stat-bar">
+                            <div class="stat-bar-fill temp-bar" id="temp-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Uptime -->
+                    <div class="stat-item uptime-item">
+                        <div class="stat-icon uptime">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-label">Uptime</span>
+                            <span class="stat-value" id="stat-uptime">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <p style="font-size: 0.75rem; color: var(--text-sub); margin-top: 12px; text-align: center;">
+                    Auto-refresh setiap 5 detik
+                </p>
+            </div>
         </div>
     </div>
 
@@ -618,6 +820,58 @@
                 }
             });
         }
+
+        // ========== SYSTEM STATS ==========
+        async function fetchSystemStats() {
+            try {
+                const res = await fetch('/api/system_stats');
+                const data = await res.json();
+
+                // CPU
+                const cpuEl = document.getElementById('stat-cpu');
+                const cpuBar = document.getElementById('cpu-bar');
+                if (cpuEl) cpuEl.textContent = data.cpu_percent + '%';
+                if (cpuBar) cpuBar.style.width = Math.min(data.cpu_percent, 100) + '%';
+
+                // RAM
+                const ramEl = document.getElementById('stat-ram');
+                const ramBar = document.getElementById('ram-bar');
+                if (ramEl) ramEl.textContent = data.ram_used_mb + ' / ' + data.ram_total_mb + ' MB';
+                if (ramBar) ramBar.style.width = data.ram_percent + '%';
+
+                // Temperature
+                const tempEl = document.getElementById('stat-temp');
+                const tempBar = document.getElementById('temp-bar');
+                if (tempEl) {
+                    tempEl.textContent = data.temperature + '°C';
+                    // Color based on temp
+                    if (data.temperature >= 70) {
+                        tempEl.style.color = '#ef4444';
+                    } else if (data.temperature >= 55) {
+                        tempEl.style.color = '#f59e0b';
+                    } else {
+                        tempEl.style.color = '#22c55e';
+                    }
+                }
+                if (tempBar) {
+                    // Map 30-85°C to 0-100%
+                    const tempPercent = Math.min(100, Math.max(0, ((data.temperature - 30) / 55) * 100));
+                    tempBar.style.width = tempPercent + '%';
+                }
+
+                // Uptime
+                const uptimeEl = document.getElementById('stat-uptime');
+                if (uptimeEl) uptimeEl.textContent = data.uptime_formatted;
+
+            } catch (err) {
+                console.error('Failed to fetch system stats:', err);
+            }
+        }
+
+        // Initial fetch
+        fetchSystemStats();
+        // Auto-refresh every 5 seconds
+        setInterval(fetchSystemStats, 5000);
     </script>
 </body>
 

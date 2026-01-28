@@ -1848,6 +1848,98 @@ def settings_page():
     return render_template('settings.html', settings=settings)
 
 
+@app.route("/api/system_stats")
+@login_required
+def api_system_stats():
+    """Return system health stats: CPU, RAM, Temperature, Uptime."""
+    import subprocess
+    
+    stats = {
+        'cpu_percent': 0,
+        'ram_percent': 0,
+        'ram_used_mb': 0,
+        'ram_total_mb': 0,
+        'temperature': 0,
+        'uptime_seconds': 0,
+        'uptime_formatted': '0d 0h 0m'
+    }
+    
+    try:
+        # CPU Usage (from /proc/stat - simplified 1-second sample)
+        # Using top for a quick snapshot
+        try:
+            result = subprocess.run(
+                ['grep', '-c', '^processor', '/proc/cpuinfo'],
+                capture_output=True, text=True, timeout=2
+            )
+            cpu_count = int(result.stdout.strip()) if result.stdout.strip() else 1
+            
+            # Get load average and estimate CPU %
+            with open('/proc/loadavg', 'r') as f:
+                load_1min = float(f.read().split()[0])
+                stats['cpu_percent'] = min(100, round((load_1min / cpu_count) * 100, 1))
+        except:
+            stats['cpu_percent'] = 0
+        
+        # RAM Usage (from /proc/meminfo)
+        try:
+            with open('/proc/meminfo', 'r') as f:
+                meminfo = {}
+                for line in f:
+                    parts = line.split()
+                    if len(parts) >= 2:
+                        meminfo[parts[0].rstrip(':')] = int(parts[1])
+                
+                total_kb = meminfo.get('MemTotal', 0)
+                available_kb = meminfo.get('MemAvailable', meminfo.get('MemFree', 0))
+                used_kb = total_kb - available_kb
+                
+                stats['ram_total_mb'] = round(total_kb / 1024)
+                stats['ram_used_mb'] = round(used_kb / 1024)
+                stats['ram_percent'] = round((used_kb / total_kb) * 100, 1) if total_kb > 0 else 0
+        except:
+            pass
+        
+        # Temperature (Raspberry Pi specific)
+        try:
+            # Try Pi thermal zone first
+            with open('/sys/class/thermal/thermal_zone0/temp', 'r') as f:
+                temp_millideg = int(f.read().strip())
+                stats['temperature'] = round(temp_millideg / 1000, 1)
+        except:
+            # Fallback: try vcgencmd (Pi specific)
+            try:
+                result = subprocess.run(
+                    ['vcgencmd', 'measure_temp'],
+                    capture_output=True, text=True, timeout=2
+                )
+                if result.stdout:
+                    # Output: temp=42.0'C
+                    temp_str = result.stdout.replace("temp=", "").replace("'C", "").strip()
+                    stats['temperature'] = float(temp_str)
+            except:
+                stats['temperature'] = 0
+        
+        # Uptime (from /proc/uptime)
+        try:
+            with open('/proc/uptime', 'r') as f:
+                uptime_sec = float(f.read().split()[0])
+                stats['uptime_seconds'] = int(uptime_sec)
+                
+                # Format as "Xd Yh Zm"
+                days = int(uptime_sec // 86400)
+                hours = int((uptime_sec % 86400) // 3600)
+                minutes = int((uptime_sec % 3600) // 60)
+                stats['uptime_formatted'] = f"{days}d {hours}h {minutes}m"
+        except:
+            pass
+            
+    except Exception as e:
+        logger.error(f"Error getting system stats: {e}")
+    
+    return jsonify(stats)
+
+
 @app.route("/dana_amal")
 @login_required
 def dana_amal_page():
