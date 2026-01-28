@@ -1637,72 +1637,78 @@ def history(phone, metric):
     target_key = info['key']
     label = info['label']
     
-    history_items = []
-    sorted_dates = sorted(daily_progress.keys(), reverse=True)
+    # Process data using helper
+    history_items = _process_history_items(daily_progress, metric)
+                 
+    return render_template('history.html', 
+                           phone=phone, 
+                           display=acc.get('phone_display', phone),
+                           metric=metric,
+                           label=label,
+                           items=history_items)
+
+
+def _process_history_items(daily_progress, metric):
+    """
+    Helper to process daily progress for history display.
+    - Fills gaps (forward fill)
+    - Applies tax logic for 'pendapatan'
+    - Filters to show only changes (transaction log style)
+    """
+    if not daily_progress:
+        return []
+
+    metric_map = {
+        'modal': 'income',
+        'saldo': 'balance',
+        'pendapatan': 'withdrawal'
+    }
+    target_key = metric_map.get(metric, metric)
     
-    days_id = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu']
-    months_id = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
-    
-    # Build forward-fill map first (oldest to newest)
+    # 1. Forward Fill
     sorted_asc = sorted(daily_progress.keys())
     last_known = 0
     filled_values = {}
+    
     for d in sorted_asc:
         val = daily_progress[d].get(target_key, 0)
         if val > 0:
             last_known = val
         filled_values[d] = last_known if val == 0 and last_known > 0 else val
+        
+    days_id = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu']
+    months_id = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
     
-    # Filter for 'pendapatan' (Withdrawal) to show only changes (Transaction Log style)
-    # For changes, we iterate Oldest -> Newest and keep only days where value increased
-    
+    # 2. Compact & Tax Logic
     compact_history = []
     last_val_seen = -1.0
     
-    # Use sorted_asc (Oldest first)
     for date_str in sorted_asc:
-        # Get raw value (forward filled or not)
-        # Actually, for transaction log, better to use raw daily_progress to avoid filling days that didn't happen?
-        # But user wants to see the date "tertera disitu" (scraped date).
-        # Let's use filled_values to be safe against missing syncs, 
-        # but only record when value *changes* from previous day.
-        
         raw_val = filled_values.get(date_str, 0)
         final_val = float(raw_val or 0)
         
+        # Apply Tax Logic for legacy data
         if metric == 'pendapatan':
-            # Apply Tax Logic
             cutoff_date = datetime.datetime(2026, 1, 28)
-            dt_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+            try:
+                dt_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+                if dt_obj < cutoff_date:
+                    final_val = final_val * 0.9
+            except: pass
             
-            if dt_obj < cutoff_date:
-                final_val = final_val * 0.9
-            # Else (>= 28 Jan) is Net
-            
-        # Comparison logic:
-        # If it's the first item, keep it if > 0
-        # Else, keep if value != last_val_seen
-        # For 'pendapatan', likely only interested in INCREASES (Withdrawals)
-        # But let's show any change to be safe
-        
+        # Filter Logic (Show only changes)
         should_include = False
         if metric == 'pendapatan':
              if last_val_seen < 0: # First item
                  if final_val > 0: should_include = True
              else:
-                 # Show if changed. Use small epsilon for float comparison
-                 if abs(final_val - last_val_seen) > 100: 
-                     should_include = True
+                 if abs(final_val - last_val_seen) > 100: should_include = True
         else:
-             # For other metrics (Saldo, Modal), maybe show all or daily?
-             # User ONLY complained about 'pendapatan'. Keep others standard daily?
-             # Let's just create compact history for ALL to be clean, or check metric.
-             # User context implies broad frustration. Let's compact everything.
              if last_val_seen < 0:
                  if final_val > 0 or metric == 'saldo': should_include = True
              else:
                  if abs(final_val - last_val_seen) > 1: should_include = True
-        
+                 
         if should_include:
              try:
                 dt = datetime.datetime.strptime(date_str, "%Y-%m-%d")
@@ -1718,15 +1724,9 @@ def history(phone, metric):
                 })
                 last_val_seen = final_val
              except: pass
-
+             
     # Reverse to show Newest -> Oldest
-    history_items = compact_history[::-1]
-                 
-    return render_template('history.html', 
-                           phone=phone, 
-                           label=label, 
-                           metric_type=metric,
-                           history_items=history_items)
+    return compact_history[::-1]
 
 
 @app.route("/run_single", methods=["POST"])
