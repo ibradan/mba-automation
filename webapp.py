@@ -1653,34 +1653,74 @@ def history(phone, metric):
             last_known = val
         filled_values[d] = last_known if val == 0 and last_known > 0 else val
     
-    for date_str in sorted_dates:
-        final_val = filled_values.get(date_str, 0)
+    # Filter for 'pendapatan' (Withdrawal) to show only changes (Transaction Log style)
+    # For changes, we iterate Oldest -> Newest and keep only days where value increased
+    
+    compact_history = []
+    last_val_seen = -1.0
+    
+    # Use sorted_asc (Oldest first)
+    for date_str in sorted_asc:
+        # Get raw value (forward filled or not)
+        # Actually, for transaction log, better to use raw daily_progress to avoid filling days that didn't happen?
+        # But user wants to see the date "tertera disitu" (scraped date).
+        # Let's use filled_values to be safe against missing syncs, 
+        # but only record when value *changes* from previous day.
         
-        if final_val is not None:
-            try:
+        raw_val = filled_values.get(date_str, 0)
+        final_val = float(raw_val or 0)
+        
+        if metric == 'pendapatan':
+            # Apply Tax Logic
+            cutoff_date = datetime.datetime(2026, 1, 28)
+            dt_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+            
+            if dt_obj < cutoff_date:
+                final_val = final_val * 0.9
+            # Else (>= 28 Jan) is Net
+            
+        # Comparison logic:
+        # If it's the first item, keep it if > 0
+        # Else, keep if value != last_val_seen
+        # For 'pendapatan', likely only interested in INCREASES (Withdrawals)
+        # But let's show any change to be safe
+        
+        should_include = False
+        if metric == 'pendapatan':
+             if last_val_seen < 0: # First item
+                 if final_val > 0: should_include = True
+             else:
+                 # Show if changed. Use small epsilon for float comparison
+                 if abs(final_val - last_val_seen) > 100: 
+                     should_include = True
+        else:
+             # For other metrics (Saldo, Modal), maybe show all or daily?
+             # User ONLY complained about 'pendapatan'. Keep others standard daily?
+             # Let's just create compact history for ALL to be clean, or check metric.
+             # User context implies broad frustration. Let's compact everything.
+             if last_val_seen < 0:
+                 if final_val > 0 or metric == 'saldo': should_include = True
+             else:
+                 if abs(final_val - last_val_seen) > 1: should_include = True
+        
+        if should_include:
+             try:
                 dt = datetime.datetime.strptime(date_str, "%Y-%m-%d")
                 day_name = days_id[dt.weekday()]
                 month_name = months_id[dt.month]
                 date_formatted = f"{dt.day} {month_name} {dt.year}"
                 
-                if metric == 'pendapatan':
-                    # Legacy Data Heuristic for History:
-                    # Before 2026-01-28, stored data is Gross -> Apply 10% Tax
-                    # From 2026-01-28, stored data is Net -> Display Raw
-                    cutoff_date = datetime.datetime(2026, 1, 28)
-                    if dt < cutoff_date:
-                        final_val = float(final_val or 0) * 0.9
-                    else:
-                        final_val = float(final_val or 0)
-                
-                history_items.append({
+                compact_history.append({
                     'date': date_str,
                     'date_formatted': date_formatted,
-                    'day_name': day_name,
-                    'value': final_val
+                    'value': final_val,
+                    'day_name': day_name
                 })
-            except Exception:
-                continue
+                last_val_seen = final_val
+             except: pass
+
+    # Reverse to show Newest -> Oldest
+    history_items = compact_history[::-1]
                  
     return render_template('history.html', 
                            phone=phone, 
