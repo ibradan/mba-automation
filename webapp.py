@@ -659,7 +659,7 @@ def api_accounts():
             "completed": progress.get('completed', 0),
             "total": progress.get('total', _get_iterations_for_level(it.get('level', 'E2'))),
             "income": display_stats.get('income', 0),
-            "withdrawal": display_stats.get('withdrawal', 0) * 0.9, # Apply 10% tax
+            "withdrawal": display_stats.get('withdrawal', 0) * 0.92, # Apply 8% tax (new rate from 2026-01-28)
             "balance": display_stats.get('balance', 0),
             "points": display_stats.get('points', 0),
             "calendar": display_stats.get('calendar', []),
@@ -1238,17 +1238,19 @@ def index():
                             elif last_known[field] > 0:
                                 new_val[field] = last_known[field]
                         
-                        # Apply 10% tax on withdrawal
+                        # Apply tax on withdrawal: 8% from 2026-01-28, 10% before
                         if 'withdrawal' in new_val:
-                            new_val['withdrawal'] = new_val['withdrawal'] * 0.9
+                            tax_cutoff = '2026-01-28'
+                            tax_multiplier = 0.92 if d_key >= tax_cutoff else 0.9
+                            new_val['withdrawal'] = new_val['withdrawal'] * tax_multiplier
                         
                         dp_display[d_key] = new_val
 
 
-                    # Update display_stats to use the net withdrawal
+                    # Update display_stats to use the net withdrawal (8% tax from 2026-01-28)
                     net_stats = display_stats.copy()
                     if 'withdrawal' in net_stats:
-                        net_stats['withdrawal'] = net_stats['withdrawal'] * 0.9
+                        net_stats['withdrawal'] = net_stats['withdrawal'] * 0.92
 
                     saved_accounts.append({
                         "phone_display": display, 
