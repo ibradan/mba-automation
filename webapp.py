@@ -1643,9 +1643,9 @@ def history(phone, metric):
     return render_template('history.html', 
                            phone=phone, 
                            display=acc.get('phone_display', phone),
-                           metric=metric,
+                           metric_type=metric,
                            label=label,
-                           items=history_items)
+                           history_items=history_items)
 
 
 def _process_history_items(daily_progress, metric):
