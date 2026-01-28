@@ -92,7 +92,16 @@ def scrape_record_page(page: Page, url_suffix: str, record_type: str, timeout: i
                                 else:
                                     cleaned = cleaned.replace(',', '')
                             elif ',' in cleaned: 
-                                cleaned = cleaned.replace(',', '.')
+                                # Comma only: 10,000 or 10,50
+                                if cleaned.count(',') > 1 or len(cleaned.split(',')[-1]) == 3:
+                                    cleaned = cleaned.replace(',', '') # Assume thousands
+                                else:
+                                    cleaned = cleaned.replace(',', '.') # Assume decimal
+                            elif '.' in cleaned:
+                                # Dot only: 10.000 or 10.50
+                                if cleaned.count('.') > 1 or len(cleaned.split('.')[-1]) == 3:
+                                    cleaned = cleaned.replace('.', '') # Assume thousands
+                                # else assume decimal (standard float), do nothing
                             
                             try: amount = float(cleaned)
                             except: pass
