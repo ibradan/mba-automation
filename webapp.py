@@ -651,6 +651,24 @@ def api_accounts():
         
         
         
+        # FIX: Handle Legacy Data (Gross) vs New Data (Net)
+        # If last_sync_ts is before the fix (2026-01-28 17:40), the stored data is Gross -> Apply 0.9 Tax
+        # If last_sync_ts is new, the stored data is Net -> Display Raw
+        withdrawal_val = display_stats.get('withdrawal', 0)
+        last_sync = it.get('last_sync_ts')
+        is_stale_data = True
+        
+        if last_sync:
+            try:
+                ls_dt = datetime.datetime.fromisoformat(last_sync)
+                # Cutoff: 2026-01-28 17:40 (approx time of scraper fix)
+                if ls_dt > datetime.datetime(2026, 1, 28, 17, 40):
+                    is_stale_data = False
+            except: pass
+            
+        if is_stale_data and withdrawal_val > 0:
+            withdrawal_val = withdrawal_val * 0.9
+            
         results.append({
             "phone": phone,
             "phone_display": display,
@@ -661,7 +679,7 @@ def api_accounts():
             "completed": progress.get('completed', 0),
             "total": progress.get('total', _get_iterations_for_level(it.get('level', 'E2'))),
             "income": display_stats.get('income', 0),
-            "withdrawal": display_stats.get('withdrawal', 0), # NET value from scraper
+            "withdrawal": withdrawal_val, 
             "balance": display_stats.get('balance', 0),
             "points": display_stats.get('points', 0),
             "calendar": display_stats.get('calendar', []),
