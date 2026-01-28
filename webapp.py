@@ -649,6 +649,28 @@ def api_accounts():
             'idle': 'Idle 💤'
         }
         
+        # Track which date this withdrawal data is from (for tax calculation)
+        withdrawal_data_date = None
+        if progress and progress.get('withdrawal', 0) > 0:
+            # Use today if we have today's progress
+            if today_str in it.get('daily_progress', {}):
+                withdrawal_data_date = today_str
+            else:
+                # Find which date the withdrawal data came from
+                dp = it.get('daily_progress', {})
+                if dp:
+                    for d_str in sorted(dp.keys(), reverse=True):
+                        if dp[d_str].get('withdrawal', 0) > 0:
+                            withdrawal_data_date = d_str
+                            break
+        
+        # Apply tax based on data date: 8% from 2026-01-28, 10% before
+        withdrawal_gross = display_stats.get('withdrawal', 0)
+        if withdrawal_data_date and withdrawal_data_date >= '2026-01-28':
+            withdrawal_net = withdrawal_gross * 0.92  # 8% tax
+        else:
+            withdrawal_net = withdrawal_gross * 0.9   # 10% tax
+        
         results.append({
             "phone": phone,
             "phone_display": display,
@@ -659,7 +681,7 @@ def api_accounts():
             "completed": progress.get('completed', 0),
             "total": progress.get('total', _get_iterations_for_level(it.get('level', 'E2'))),
             "income": display_stats.get('income', 0),
-            "withdrawal": display_stats.get('withdrawal', 0) * 0.92, # Apply 8% tax (new rate from 2026-01-28)
+            "withdrawal": withdrawal_net, # NET with date-based tax
             "balance": display_stats.get('balance', 0),
             "points": display_stats.get('points', 0),
             "calendar": display_stats.get('calendar', []),
