@@ -649,14 +649,21 @@ def api_accounts():
             'idle': 'Idle 💤'
         }
         
-        # Track which date this withdrawal data is from (for tax calculation)
+        
+        # DELTA-BASED TAX CALCULATION
+        # For data from 2026-01-28 onwards: compare with yesterday to get delta
+        # - Old balance (before 28/01): apply 10% tax
+        # - New delta (from 28/01): apply 8% tax
+        
+        withdrawal_gross_today = display_stats.get('withdrawal', 0)
+        withdrawal_net = 0
+        
+        # Track which date this withdrawal data is from
         withdrawal_data_date = None
         if progress and progress.get('withdrawal', 0) > 0:
-            # Use today if we have today's progress
             if today_str in it.get('daily_progress', {}):
                 withdrawal_data_date = today_str
             else:
-                # Find which date the withdrawal data came from
                 dp = it.get('daily_progress', {})
                 if dp:
                     for d_str in sorted(dp.keys(), reverse=True):
@@ -664,12 +671,32 @@ def api_accounts():
                             withdrawal_data_date = d_str
                             break
         
-        # Apply tax based on data date: 8% from 2026-01-28, 10% before
-        withdrawal_gross = display_stats.get('withdrawal', 0)
+        # If data is from 2026-01-28 or later, use delta calculation
         if withdrawal_data_date and withdrawal_data_date >= '2026-01-28':
-            withdrawal_net = withdrawal_gross * 0.92  # 8% tax
+            # Find yesterday's (last data before 2026-01-28) withdrawal
+            dp = it.get('daily_progress', {})
+            withdrawal_gross_yesterday = 0
+            
+            if dp:
+                for d_str in sorted(dp.keys(), reverse=True):
+                    if d_str < '2026-01-28':
+                        withdrawal_gross_yesterday = dp[d_str].get('withdrawal', 0)
+                        if withdrawal_gross_yesterday > 0:
+                            break
+            
+            # Calculate delta (new withdrawals since tax change)
+            delta = withdrawal_gross_today - withdrawal_gross_yesterday
+            
+            # Apply taxes:
+            # - Old balance: 10% tax
+            # - New delta: 8% tax
+            net_old = withdrawal_gross_yesterday * 0.9
+            net_new = delta * 0.92
+            withdrawal_net = net_old + net_new
+            
         else:
-            withdrawal_net = withdrawal_gross * 0.9   # 10% tax
+            # Data is before 2026-01-28: apply 10% tax to all
+            withdrawal_net = withdrawal_gross_today * 0.9
         
         results.append({
             "phone": phone,
