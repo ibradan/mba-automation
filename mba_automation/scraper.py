@@ -30,7 +30,20 @@ def try_close_popups(page: Page) -> None:
             pass
 
 def scrape_record_page(page: Page, url_suffix: str, record_type: str, timeout: int = 30) -> float:
-    """Generic function to scrape total amount from a record page."""
+    """
+    Generic function to scrape total amount from a record page.
+    For withdrawal: returns NET amount (after applying date-based tax per transaction)
+    For income: returns GROSS amount
+    
+    Tax rules for withdrawal:
+    - Before 2026-01-28: 10% tax (multiply by 0.9)
+    - From 2026-01-28 onwards: 8% tax (multiply by 0.92)
+    """
+    from datetime import datetime
+    
+    # Tax cutoff date: 2026-01-28
+    TAX_CUTOFF = datetime(2026, 1, 28)
+    
     try:
         full_url = f"https://mba7.com/#/{url_suffix}"
         print(f"  Navigating to {record_type} page: {full_url}")
@@ -52,6 +65,7 @@ def scrape_record_page(page: Page, url_suffix: str, record_type: str, timeout: i
         
         for cell in cells:
             try:
+                # 1. Check Status
                 status = ""
                 try: status = cell.locator(".record-status").text_content(timeout=1000)
                 except: pass
@@ -63,26 +77,65 @@ def scrape_record_page(page: Page, url_suffix: str, record_type: str, timeout: i
                     is_valid = True
                 
                 if is_valid:
+                    # 2. Extract Amount
+                    amount = 0.0
                     try:
                         amount_el = cell.locator(".amount-change")
                         amount_text = amount_el.text_content(timeout=1000) if amount_el.count() > 0 else "0"
                         if amount_text:
                             # Improved regex cleaning for financial strings
                             cleaned = re.sub(r'[^\d.,]', '', amount_text)
-                            # Standardize to dot decimal: handle "1.234.567" or "1,234.56"
+                            # Standardize number format
                             if ',' in cleaned and '.' in cleaned:
-                                # Both present (eg 1.234,56 or 1,234.56) -> assume last is decimal
                                 if cleaned.rfind(',') > cleaned.rfind('.'):
                                     cleaned = cleaned.replace('.', '').replace(',', '.')
                                 else:
                                     cleaned = cleaned.replace(',', '')
-                            elif ',' in cleaned: # Only comma eg 1234,56
+                            elif ',' in cleaned: 
                                 cleaned = cleaned.replace(',', '.')
                             
-                            try: total_amount += float(cleaned)
+                            try: amount = float(cleaned)
                             except: pass
                     except: pass
-            except: continue
+                    
+                    if amount > 0:
+                        # 3. Apply Tax (Withdrawal only)
+                        if record_type == "withdrawal":
+                            # Default to 10% (0.9) if date extraction fails
+                            multiplier = 0.9
+                            date_str = "Unknown"
+                            
+                            try:
+                                # Extract full text from cell to find date
+                                full_text = cell.text_content(timeout=1000)
+                                # Look for DD/MM/YYYY pattern
+                                date_match = re.search(r'(\d{2})/(\d{2})/(\d{4})', full_text)
+                                
+                                if date_match:
+                                    day, month, year = int(date_match.group(1)), int(date_match.group(2)), int(date_match.group(3))
+                                    tx_date = datetime(year, month, day)
+                                    date_str = tx_date.strftime('%Y-%m-%d')
+                                    
+                                    # Logic: 8% on or after 2026-01-28
+                                    if tx_date >= TAX_CUTOFF:
+                                        multiplier = 0.92
+                            except Exception as e:
+                                print(f"    Date parsing failed: {e}")
+                            
+                            net_amount = amount * multiplier
+                            if multiplier > 0.9:
+                                print(f"    Withdrawal {date_str}: Rp {amount:,.0f} -> Rp {net_amount:,.0f} (8% tax)")
+                            else:
+                                print(f"    Withdrawal {date_str}: Rp {amount:,.0f} -> Rp {net_amount:,.0f} (10% tax)")
+                                
+                            total_amount += net_amount
+                        else:
+                            # Income is gross
+                            total_amount += amount
+                            
+            except Exception as e: 
+                print(f"Error processing cell: {e}")
+                continue
             
         return total_amount
     except Exception as e:

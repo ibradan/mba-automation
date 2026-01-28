@@ -650,53 +650,6 @@ def api_accounts():
         }
         
         
-        # DELTA-BASED TAX CALCULATION
-        # For data from 2026-01-28 onwards: compare with yesterday to get delta
-        # - Old balance (before 28/01): apply 10% tax
-        # - New delta (from 28/01): apply 8% tax
-        
-        withdrawal_gross_today = display_stats.get('withdrawal', 0)
-        withdrawal_net = 0
-        
-        # Track which date this withdrawal data is from
-        withdrawal_data_date = None
-        if progress and progress.get('withdrawal', 0) > 0:
-            if today_str in it.get('daily_progress', {}):
-                withdrawal_data_date = today_str
-            else:
-                dp = it.get('daily_progress', {})
-                if dp:
-                    for d_str in sorted(dp.keys(), reverse=True):
-                        if dp[d_str].get('withdrawal', 0) > 0:
-                            withdrawal_data_date = d_str
-                            break
-        
-        # If data is from 2026-01-28 or later, use delta calculation
-        if withdrawal_data_date and withdrawal_data_date >= '2026-01-28':
-            # Find yesterday's (last data before 2026-01-28) withdrawal
-            dp = it.get('daily_progress', {})
-            withdrawal_gross_yesterday = 0
-            
-            if dp:
-                for d_str in sorted(dp.keys(), reverse=True):
-                    if d_str < '2026-01-28':
-                        withdrawal_gross_yesterday = dp[d_str].get('withdrawal', 0)
-                        if withdrawal_gross_yesterday > 0:
-                            break
-            
-            # Calculate delta (new withdrawals since tax change)
-            delta = withdrawal_gross_today - withdrawal_gross_yesterday
-            
-            # Apply taxes:
-            # - Old balance: 10% tax
-            # - New delta: 8% tax
-            net_old = withdrawal_gross_yesterday * 0.9
-            net_new = delta * 0.92
-            withdrawal_net = net_old + net_new
-            
-        else:
-            # Data is before 2026-01-28: apply 10% tax to all
-            withdrawal_net = withdrawal_gross_today * 0.9
         
         results.append({
             "phone": phone,
@@ -708,7 +661,7 @@ def api_accounts():
             "completed": progress.get('completed', 0),
             "total": progress.get('total', _get_iterations_for_level(it.get('level', 'E2'))),
             "income": display_stats.get('income', 0),
-            "withdrawal": withdrawal_net, # NET with date-based tax
+            "withdrawal": display_stats.get('withdrawal', 0), # NET value from scraper
             "balance": display_stats.get('balance', 0),
             "points": display_stats.get('points', 0),
             "calendar": display_stats.get('calendar', []),
@@ -1287,19 +1240,12 @@ def index():
                             elif last_known[field] > 0:
                                 new_val[field] = last_known[field]
                         
-                        # Apply tax on withdrawal: 8% from 2026-01-28, 10% before
-                        if 'withdrawal' in new_val:
-                            tax_cutoff = '2026-01-28'
-                            tax_multiplier = 0.92 if d_key >= tax_cutoff else 0.9
-                            new_val['withdrawal'] = new_val['withdrawal'] * tax_multiplier
-                        
+                        # Default behavior for other fields or if no special logic
                         dp_display[d_key] = new_val
 
 
-                    # Update display_stats to use the net withdrawal (8% tax from 2026-01-28)
+                    # Update display_stats to use the new values
                     net_stats = display_stats.copy()
-                    if 'withdrawal' in net_stats:
-                        net_stats['withdrawal'] = net_stats['withdrawal'] * 0.92
 
                     saved_accounts.append({
                         "phone_display": display, 
@@ -1700,7 +1646,8 @@ def history(phone, metric):
                 date_formatted = f"{dt.day} {month_name} {dt.year}"
                 
                 if metric == 'pendapatan':
-                    final_val = float(final_val or 0) * 0.9
+                    # Value is already NET from scraper/storage
+                    final_val = float(final_val or 0)
                 
                 history_items.append({
                     'date': date_str,
